@@ -61,4 +61,7 @@ Mỗi mục ghi rõ cần chốt trước khi làm phần nào. Chưa tới ph�
 - [Rủi ro] Kiểm tra sớm điều kiện cấp Partner API của GetYourGuide/Tiqets và họ có bao nhiêu địa điểm ở Việt Nam. Bản mô tả ghi "tạo token ngay", nhưng điều này chưa được xác minh.
 
 ## Ngôn ngữ
-Giải thích bằng tiếng Việt. Code, tên biến, comment và commit message bằng tiếng Anh.
+- Giải thích bằng tiếng Việt. Code, tên biến, comment và commit message bằng tiếng Anh.
+- Tên file, tên nhánh và README bằng tiếng Anh; tài liệu mô tả trong docs/ có thể bằng tiếng Việt.
+- README và tài liệu trong repo chỉ chứa nội dung dự án, không đưa nội dung trao đổi với Claude vào.
+- Commit message không kèm dòng Co-Authored-By.
