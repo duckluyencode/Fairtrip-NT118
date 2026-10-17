@@ -1,4 +1,4 @@
-# FairTrip
+# TripFair
 
 An Android app that recommends places to visit and generates travel itineraries within a budget and a time limit, with fair cost splitting for group trips.
 
