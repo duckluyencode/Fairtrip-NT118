@@ -71,6 +71,7 @@ README.md
 - 2026-10-18: Nguồn giá vé thêm Klook bên cạnh GetYourGuide/Tiqets; dùng dữ liệu mẫu khi chưa được duyệt đối tác.
 - 2026-10-18: Giá chỉ hiện ở Chi tiết địa điểm, Bình chọn, Lộ trình và Kết quả tối ưu.
 - 2026-10-18: Backend dùng NestJS 12 (ESM) trên Node.js 24 LTS; test bằng Vitest, lint bằng oxlint.
+- 2026-10-18: ORM là Prisma 7.10.1 (ghim phiên bản) với adapter MariaDB; database MySQL 8.4 LTS, trên máy chạy bằng Docker Compose (`backend/docker-compose.yml`).
 
 ## Câu hỏi mở
 Mỗi mục ghi rõ cần chốt trước khi làm phần nào. Chưa tới phần đó thì để nguyên.
