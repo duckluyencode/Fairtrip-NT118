@@ -18,13 +18,15 @@ Khi đề xuất tạo thư mục hoặc module mới: giải thích vai trò c�
 Khi có `android/` và `backend/`: lệnh build/test và quy ước riêng của từng phần đặt trong `android/CLAUDE.md` và `backend/CLAUDE.md`; file này chỉ giữ phần dùng chung.
 
 ```
+backend/     API server NestJS (TypeScript), xem backend/CLAUDE.md
 docs/        Tài liệu dự án (mô tả tổng quan)
 CLAUDE.md
 README.md
 ```
 
 ## Lệnh thường dùng
-[Điền khi đã thiết lập: build Android, chạy backend local, test, lint, docker compose]
+- Backend: xem [backend/CLAUDE.md](backend/CLAUDE.md).
+- [Điền khi đã thiết lập: build Android, docker compose]
 
 ## Cách làm việc với tôi
 - Tôi muốn hiểu mọi thứ được tạo ra. Trước khi viết code cho một task: nêu kế hoạch ngắn (file sẽ tạo/sửa, cách tiếp cận) và chờ tôi đồng ý.
@@ -68,6 +70,7 @@ README.md
 - 2026-10-18: Thêm lưu trú (khách sạn qua Agoda) vào app và vào ngân sách.
 - 2026-10-18: Nguồn giá vé thêm Klook bên cạnh GetYourGuide/Tiqets; dùng dữ liệu mẫu khi chưa được duyệt đối tác.
 - 2026-10-18: Giá chỉ hiện ở Chi tiết địa điểm, Bình chọn, Lộ trình và Kết quả tối ưu.
+- 2026-10-18: Backend dùng NestJS 12 (ESM) trên Node.js 24 LTS; test bằng Vitest, lint bằng oxlint.
 
 ## Câu hỏi mở
 Mỗi mục ghi rõ cần chốt trước khi làm phần nào. Chưa tới phần đó thì để nguyên.
