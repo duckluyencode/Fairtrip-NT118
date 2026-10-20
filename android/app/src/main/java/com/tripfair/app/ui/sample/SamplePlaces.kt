@@ -55,7 +55,7 @@ object SamplePlaces {
     val miQuang = SamplePlace(
         id = "mi-quang-ba-mua",
         name = "Mì Quảng Bà Mua",
-        area = "Hải Châu · Đà Nẵng",
+        area = "Trần Bình Trọng · Hải Châu",
         categories = setOf(PlaceCategory.Food),
         categoryLabel = "Ăn uống",
         rating = "4,6",
@@ -76,7 +76,7 @@ object SamplePlaces {
     val myKhe = SamplePlace(
         id = "my-khe-beach",
         name = "Bãi biển Mỹ Khê",
-        area = "Sơn Trà · Đà Nẵng",
+        area = "Phước Mỹ · Sơn Trà",
         categories = setOf(PlaceCategory.Scenic),
         categoryLabel = "Cảnh đẹp",
         rating = "4,7",
@@ -97,10 +97,10 @@ object SamplePlaces {
     val nightMarket = SamplePlace(
         id = "son-tra-night-market",
         name = "Chợ đêm Sơn Trà",
-        area = "Sơn Trà · Đà Nẵng",
+        area = "Mai Hắc Đế · Sơn Trà",
         categories = setOf(PlaceCategory.Food, PlaceCategory.Fun),
-        categoryLabel = "Hải sản",
-        rating = "4,4",
+        categoryLabel = "Vui chơi",
+        rating = "4,5",
         reviewCount = "5.120",
         openingHours = "Mở cửa đến 23:30",
         description = "Khu chợ đêm cạnh cầu Rồng với nhiều quầy hải sản và đồ lưu niệm. Hợp dạo chơi buổi tối sau khi xem cầu Rồng phun lửa.",
@@ -123,6 +123,9 @@ object SamplePlaces {
     /** Results for the sample query "Đà Nẵng". */
     val searchResults = listOf(goldenBridge, myKhe, nightMarket)
 
+    /** Places saved in "Yêu thích". */
+    val favorites = listOf(goldenBridge, myKhe, nightMarket, miQuang)
+
     fun byId(id: String): SamplePlace = all.firstOrNull { it.id == id } ?: goldenBridge
 }
 
@@ -130,5 +133,6 @@ object SamplePlaces {
 object SampleTrip {
     const val NAME = "Đà Nẵng, mình đi thôi!"
     const val DATES = "12–14 tháng 10 · 3 ngày 2 đêm"
+    const val DATE_RANGE = "12–14 tháng 10"
     const val MEMBER_COUNT = 4
 }

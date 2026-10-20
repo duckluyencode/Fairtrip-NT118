@@ -29,12 +29,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tripfair.app.R
 
-/** The four bottom tabs ("Điều hướng" in Figma). */
-enum class MainTab(@param:StringRes val label: Int, @param:DrawableRes val icon: Int, val iconSize: Int) {
-    Explore(R.string.tab_explore, R.drawable.ic_discover, 24),
-    Trips(R.string.tab_trips, R.drawable.ic_calendar, 20),
-    Favorites(R.string.tab_favorites, R.drawable.ic_heart, 20),
-    Profile(R.string.tab_profile, R.drawable.ic_user, 20),
+/** The four bottom tabs ("Điều hướng" in Figma); [selectedIcon] is the filled variant. */
+enum class MainTab(
+    @param:StringRes val label: Int,
+    @param:DrawableRes val icon: Int,
+    @param:DrawableRes val selectedIcon: Int,
+    val iconSize: Int,
+) {
+    Explore(R.string.tab_explore, R.drawable.ic_discover, R.drawable.ic_discover, 24),
+    Trips(R.string.tab_trips, R.drawable.ic_calendar, R.drawable.ic_calendar, 20),
+    Favorites(R.string.tab_favorites, R.drawable.ic_heart, R.drawable.ic_heart_filled, 20),
+    Profile(R.string.tab_profile, R.drawable.ic_user, R.drawable.ic_person_selected, 20),
 }
 
 @Composable
@@ -63,9 +68,9 @@ fun MainTabBar(selected: MainTab, onSelect: (MainTab) -> Unit) {
                 ) {
                     Box(modifier = Modifier.size(24.dp), contentAlignment = Alignment.Center) {
                         Icon(
-                            painter = painterResource(tab.icon),
+                            painter = painterResource(if (isSelected) tab.selectedIcon else tab.icon),
                             contentDescription = null,
-                            tint = if (isSelected) colors.onSurface else colors.onSurfaceVariant,
+                            tint = if (isSelected) colors.primary else colors.onSurfaceVariant,
                             modifier = Modifier.size(tab.iconSize.dp),
                         )
                     }

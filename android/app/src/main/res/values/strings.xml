@@ -141,9 +141,84 @@
     <string name="reviews_write">Viết đánh giá</string>
     <string name="cd_more_options">Thêm tùy chọn</string>
 
+    <!-- Profile (Tôi) -->
+    <string name="profile_title">Tôi</string>
+    <string name="profile_edit_link">Chỉnh sửa hồ sơ</string>
+    <string name="profile_account">Quản lý tài khoản</string>
+    <string name="profile_account_detail">%1$s · Số điện thoại và email</string>
+    <string name="profile_security">Bảo mật</string>
+    <string name="profile_security_detail">Mật khẩu và bảo vệ tài khoản</string>
+    <string name="profile_trip_history">Lịch sử chuyến đi</string>
+    <plurals name="profile_trip_members">
+        <item quantity="other">%1$s · %2$d người</item>
+    </plurals>
+    <string name="profile_trip_status">Sắp tới · 3 ngày 2 đêm</string>
+    <string name="profile_favorites">Địa điểm yêu thích</string>
+    <string name="profile_sos">Liên hệ khẩn cấp SOS</string>
+    <string name="profile_settings">Cài đặt</string>
+    <string name="profile_notifications">Thông báo</string>
+    <string name="profile_notifications_on">Đang bật</string>
+    <string name="profile_help">Trợ giúp &amp; hỗ trợ</string>
+    <string name="action_logout">Đăng xuất</string>
+    <string name="logout_confirm_title">Đăng xuất?</string>
+    <string name="logout_confirm_text">Bạn sẽ cần đăng nhập lại để xem chuyến đi và nhóm của mình.</string>
+
+    <!-- Edit profile -->
+    <string name="edit_profile_title">Chỉnh sửa hồ sơ</string>
+    <string name="edit_profile_change_photo">Thay đổi ảnh đại diện</string>
+    <string name="edit_profile_section">Thông tin cá nhân</string>
+    <string name="edit_profile_email">Email</string>
+    <string name="edit_profile_phone">Số điện thoại</string>
+    <string name="edit_profile_verify_title">Đổi email hoặc số điện thoại cần xác thực</string>
+    <string name="edit_profile_verify_text">Khi đổi email hoặc số điện thoại, TripFair gửi mã 6 chữ số đến địa chỉ mới để xác nhận trước khi lưu.</string>
+    <string name="edit_profile_save">Lưu thay đổi</string>
+
+    <!-- Favorites -->
+    <string name="favorites_intro">Những nơi bạn muốn ghé, lưu lại ở đây.</string>
+    <plurals name="favorites_count">
+        <item quantity="other">%1$d địa điểm đã lưu</item>
+    </plurals>
+    <string name="favorites_hint">Chạm vào trái tim để bỏ lưu địa điểm.</string>
+    <string name="cd_unsave">Bỏ lưu</string>
+    <string name="favorites_empty_title">Chưa có địa điểm yêu thích</string>
+    <string name="favorites_empty_text">Bấm ♡ ở địa điểm bạn thích để lưu lại và thêm vào chuyến đi sau.</string>
+    <string name="favorites_empty_action">Khám phá địa điểm</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Cài đặt</string>
+    <string name="settings_preferences">Tùy chọn ứng dụng</string>
+    <string name="settings_trip_notifications">Thông báo chuyến đi</string>
+    <string name="settings_trip_notifications_detail">Lịch trình và hoạt động nhóm</string>
+    <string name="settings_account_security">Tài khoản &amp; bảo mật</string>
+    <string name="settings_info_support">Thông tin &amp; hỗ trợ</string>
+    <string name="settings_support_center">Trung tâm hỗ trợ</string>
+    <string name="privacy_policy_row">Quyền riêng tư</string>
+
+    <!-- Support -->
+    <string name="support_title">Hỗ trợ</string>
+    <string name="support_intro">TripFair có thể giúp gì cho bạn?</string>
+    <string name="support_search_placeholder">Tìm câu hỏi, chủ đề hỗ trợ…</string>
+    <string name="support_topics">Chủ đề phổ biến</string>
+    <string name="support_topic_group">Nhóm &amp; bình chọn</string>
+    <string name="support_topic_group_detail">Cùng lên kế hoạch</string>
+    <string name="support_topic_price">Giá &amp; ngân sách</string>
+    <string name="support_topic_price_detail">Cách tính giá</string>
+    <string name="support_faq">Câu hỏi thường gặp</string>
+    <string name="support_faq_group_q">Làm sao để tạo nhóm chuyến đi?</string>
+    <string name="support_faq_group_a">Vào tab Chuyến đi, chọn “Tạo chuyến đi” rồi chọn “Cùng nhóm”. Sau khi tạo, bạn mời bạn bè bằng mã hoặc liên kết.</string>
+    <string name="support_faq_vote_q">Bình chọn địa điểm như thế nào?</string>
+    <string name="support_faq_price_q">Giá trong app lấy từ đâu?</string>
+    <string name="support_contact">Bạn vẫn cần trợ giúp?</string>
+    <string name="support_email">Gửi email hỗ trợ</string>
+    <string name="support_email_detail">Phản hồi trong 1–2 ngày làm việc</string>
+    <string name="support_feedback">Gửi phản hồi</string>
+    <string name="support_feedback_detail">Góp ý hoặc báo lỗi ứng dụng</string>
+    <string name="cd_expand">Mở rộng</string>
+
     <!-- Placeholder for screens built later -->
     <string name="placeholder_coming">Màn hình này sẽ có ở bước sau.</string>
     <string name="sos_title">SOS khẩn cấp</string>
     <string name="camera_title">Nhận diện địa điểm</string>
     <string name="itinerary_title">Lộ trình theo ngày</string>
+    <string name="emergency_contacts_title">Liên hệ khẩn cấp</string>
 </resources>

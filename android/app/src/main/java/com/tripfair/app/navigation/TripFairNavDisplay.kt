@@ -23,6 +23,14 @@ import com.tripfair.app.ui.screens.explore.SearchHistoryScreen
 import com.tripfair.app.ui.screens.explore.SearchResultsScreen
 import com.tripfair.app.ui.screens.explore.SearchScreen
 import com.tripfair.app.ui.screens.home.HomeScreen
+import com.tripfair.app.ui.screens.legal.LegalDocumentScreen
+import com.tripfair.app.ui.screens.legal.PrivacyPolicy
+import com.tripfair.app.ui.screens.legal.TermsOfUse
+import com.tripfair.app.ui.screens.profile.EditProfileScreen
+import com.tripfair.app.ui.screens.profile.FavoritesScreen
+import com.tripfair.app.ui.screens.profile.ProfileScreen
+import com.tripfair.app.ui.screens.profile.SettingsScreen
+import com.tripfair.app.ui.screens.profile.SupportScreen
 
 /**
  * Connects every button to its target screen, following the flow notes in Figma.
@@ -60,9 +68,8 @@ fun TripFairNavDisplay() {
                 RegisterScreen(
                     onCreateAccount = { backStack.add(OtpVerification(OtpPurpose.Register)) },
                     onLogin = { backStack.popUpTo(Login) },
-                    // Legal pages are not built yet.
-                    onTermsClick = {},
-                    onPrivacyClick = {},
+                    onTermsClick = { backStack.add(TermsPage) },
+                    onPrivacyClick = { backStack.add(PrivacyPolicyPage) },
                 )
             }
             entry<ForgotPassword> {
@@ -70,8 +77,7 @@ fun TripFairNavDisplay() {
                     onBack = { backStack.goBack() },
                     onSendCode = { backStack.add(OtpVerification(OtpPurpose.ResetPassword)) },
                     onBackToLogin = { backStack.popUpTo(Login) },
-                    // Support page is not built yet.
-                    onSupport = {},
+                    onSupport = { backStack.add(Support) },
                 )
             }
             entry<OtpVerification> { route ->
@@ -86,7 +92,7 @@ fun TripFairNavDisplay() {
                     },
                     onChangeDestination = { backStack.goBack() },
                     onBackToLogin = { backStack.popUpTo(Login) },
-                    onSupport = {},
+                    onSupport = { backStack.add(Support) },
                 )
             }
             entry<NewPassword> {
@@ -94,7 +100,7 @@ fun TripFairNavDisplay() {
                     email = SampleData.USER_EMAIL,
                     onBack = { backStack.goBack() },
                     onSave = { backStack.popUpTo(Login) },
-                    onSupport = {},
+                    onSupport = { backStack.add(Support) },
                 )
             }
 
@@ -115,10 +121,23 @@ fun TripFairNavDisplay() {
                 PlaceholderScreen(stringResource(R.string.tab_trips), selectedTab = MainTab.Trips, onTabSelect = selectTab)
             }
             entry<Favorites> {
-                PlaceholderScreen(stringResource(R.string.tab_favorites), selectedTab = MainTab.Favorites, onTabSelect = selectTab)
+                FavoritesScreen(
+                    onPlace = { backStack.add(PlaceDetail(it.id)) },
+                    onExplore = { selectTab(MainTab.Explore) },
+                    onTabSelect = selectTab,
+                )
             }
             entry<Profile> {
-                PlaceholderScreen(stringResource(R.string.tab_profile), selectedTab = MainTab.Profile, onTabSelect = selectTab)
+                ProfileScreen(
+                    onEditProfile = { backStack.add(EditProfile) },
+                    onTrip = { backStack.add(DayItinerary) },
+                    onFavorites = { selectTab(MainTab.Favorites) },
+                    onEmergencyContacts = { backStack.add(EmergencyContacts) },
+                    onSettings = { backStack.add(Settings) },
+                    onHelp = { backStack.add(Support) },
+                    onLogout = { backStack.replaceAll(Login) },
+                    onTabSelect = selectTab,
+                )
             }
 
             // 02 Explore & search
@@ -160,7 +179,28 @@ fun TripFairNavDisplay() {
                 )
             }
 
+            // 08 Profile & favorites
+            entry<EditProfile> {
+                EditProfileScreen(onBack = { backStack.goBack() }, onSave = { backStack.goBack() })
+            }
+            entry<Settings> {
+                SettingsScreen(
+                    onBack = { backStack.goBack() },
+                    onEditProfile = { backStack.add(EditProfile) },
+                    onPrivacy = { backStack.add(PrivacyPolicyPage) },
+                    onSupport = { backStack.add(Support) },
+                    onTerms = { backStack.add(TermsPage) },
+                    onLogout = { backStack.replaceAll(Login) },
+                )
+            }
+            entry<Support> { SupportScreen(onBack = { backStack.goBack() }) }
+            entry<PrivacyPolicyPage> { LegalDocumentScreen(document = PrivacyPolicy, onBack = { backStack.goBack() }) }
+            entry<TermsPage> { LegalDocumentScreen(document = TermsOfUse, onBack = { backStack.goBack() }) }
+
             // Screens of later groups
+            entry<EmergencyContacts> {
+                PlaceholderScreen(stringResource(R.string.emergency_contacts_title), onBack = { backStack.goBack() })
+            }
             entry<Sos> { PlaceholderScreen(stringResource(R.string.sos_title), onBack = { backStack.goBack() }) }
             entry<CameraScan> { PlaceholderScreen(stringResource(R.string.camera_title), onBack = { backStack.goBack() }) }
             entry<DayItinerary> { PlaceholderScreen(stringResource(R.string.itinerary_title), onBack = { backStack.goBack() }) }

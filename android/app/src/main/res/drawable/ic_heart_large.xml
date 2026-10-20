@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lucide "heart-large" icon exported from the TripFair Figma file. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="40dp"
+    android:height="40dp"
+    android:viewportWidth="40"
+    android:viewportHeight="40">
+    <path
+        android:pathData="M20 33.3333C20 33.3333 8.33333 26 4.66667 19C2.16667 14 5.33333 8.33333 11 8.33333C14.3333 8.33333 16.5 10.1667 17.8333 12.1667H22.1667C23.5 10.1667 25.6667 8.33333 29 8.33333C34.6667 8.33333 37.8333 14 35.3333 19C31.6667 26 20 33.3333 20 33.3333Z"
+        android:strokeColor="#176B62"
+        android:strokeWidth="3.33333"
+        android:strokeLineJoin="round" />
+</vector>

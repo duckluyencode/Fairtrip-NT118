@@ -57,7 +57,27 @@ data class PlaceDetail(val placeId: String) : NavKey
 @Serializable
 data class PlaceReviews(val placeId: String) : NavKey
 
+// 08 Profile & favorites
+
+@Serializable
+data object EditProfile : NavKey
+
+@Serializable
+data object Settings : NavKey
+
+@Serializable
+data object Support : NavKey
+
+@Serializable
+data object PrivacyPolicyPage : NavKey
+
+@Serializable
+data object TermsPage : NavKey
+
 // Screens of later groups, reached from the ones above
+
+@Serializable
+data object EmergencyContacts : NavKey
 
 @Serializable
 data object Sos : NavKey
