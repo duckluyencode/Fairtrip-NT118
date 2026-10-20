@@ -12,7 +12,16 @@ Package `com.tripfair.app`, minSdk 26, compileSdk/targetSdk 37. AGP 9.4.1 (Kotli
 - `./gradlew installDebug`: cài APK debug lên máy ảo hoặc điện thoại đang kết nối
 - `./gradlew lint`: kiểm tra code bằng Android Lint
 
+## Cấu trúc code (`app/src/main/java/com/tripfair/app/`)
+- `navigation/`: route của từng màn (`Routes.kt`) và `TripFairNavDisplay.kt` nối nút với màn đích.
+- `ui/theme/`: màu, chữ, bo góc, `@ThemePreviews` (Preview sáng + tối).
+- `ui/components/`: component dùng chung (nút chính, ô nhập, checkbox…).
+- `ui/screens/<nhóm>/`: màn hình theo nhóm Figma (auth, home…).
+- `ui/sample/`: dữ liệu mẫu khi chưa nối backend.
+
 ## Quy ước
 - Màn hình và component viết bằng Compose; mỗi màn hình có `@Preview` với dữ liệu mẫu.
 - Màu, chữ, bo góc lấy từ `MaterialTheme` (`ui/theme/`); không viết mã màu trực tiếp trong màn hình. Màu ngoài vai trò M3 dùng `MaterialTheme.extendedColors`.
+- Chữ hiển thị đặt trong `res/values/strings.xml`. Icon là `res/drawable/ic_*.xml` chuyển từ SVG trong Figma.
+- Màn hình nhận dữ liệu và callback (`onBack`, `onLogin`…) qua tham số; việc chuyển màn chỉ nằm trong `TripFairNavDisplay.kt`.
 - API key đặt trong `local.properties`, không đưa vào source code.
