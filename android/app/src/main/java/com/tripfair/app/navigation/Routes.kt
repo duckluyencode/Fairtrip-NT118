@@ -74,7 +74,33 @@ data object PrivacyPolicyPage : NavKey
 @Serializable
 data object TermsPage : NavKey
 
+// 03 Groups & members
+
+@Serializable
+data object GroupChoice : NavKey
+
+@Serializable
+data object CreateGroup : NavKey
+
+@Serializable
+data object JoinGroup : NavKey
+
+@Serializable
+data object InviteFriends : NavKey
+
+@Serializable
+data object GroupPlan : NavKey
+
+@Serializable
+data object EditBudget : NavKey
+
 // Screens of later groups, reached from the ones above
+
+@Serializable
+data object CreateTrip : NavKey
+
+@Serializable
+data object VoteList : NavKey
 
 @Serializable
 data object EmergencyContacts : NavKey

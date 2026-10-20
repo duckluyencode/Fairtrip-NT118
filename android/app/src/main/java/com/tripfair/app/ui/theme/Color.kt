@@ -137,7 +137,12 @@ data class ExtendedColors(
     val imageScrim: Color,
     /** Rating stars. */
     val rating: Color,
+    /** Avatar colors for group members, in member order. */
+    val memberColors: List<Color>,
 )
+
+// Member avatars are identity colors, so they stay the same in dark mode.
+private val MemberColors = listOf(Color(0xFFF06B4F), Color(0xFFF5B84B), Color(0xFF176B62), Color(0xFF6E75B5))
 
 internal val LightExtendedColors = ExtendedColors(
     success = Color(0xFF2B7D5B),
@@ -148,6 +153,7 @@ internal val LightExtendedColors = ExtendedColors(
     primaryIconContainer = Color(0xFFE8F7F2),
     imageScrim = Color(0x800A3930),
     rating = Color(0xFFF5B84B),
+    memberColors = MemberColors,
 )
 
 internal val DarkExtendedColors = ExtendedColors(
@@ -159,6 +165,7 @@ internal val DarkExtendedColors = ExtendedColors(
     primaryIconContainer = Color(0xFF1B3530),
     imageScrim = Color(0x800A3930),
     rating = Color(0xFFF7C66A),
+    memberColors = MemberColors,
 )
 
 internal val LocalExtendedColors = staticCompositionLocalOf { LightExtendedColors }

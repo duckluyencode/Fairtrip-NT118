@@ -22,6 +22,13 @@ import com.tripfair.app.ui.screens.explore.PlaceReviewsScreen
 import com.tripfair.app.ui.screens.explore.SearchHistoryScreen
 import com.tripfair.app.ui.screens.explore.SearchResultsScreen
 import com.tripfair.app.ui.screens.explore.SearchScreen
+import com.tripfair.app.ui.screens.group.CreateGroupScreen
+import com.tripfair.app.ui.screens.group.CreateOrJoinGroupScreen
+import com.tripfair.app.ui.screens.group.EditBudgetScreen
+import com.tripfair.app.ui.screens.group.GroupPlanScreen
+import com.tripfair.app.ui.screens.group.GroupsScreen
+import com.tripfair.app.ui.screens.group.InviteFriendsScreen
+import com.tripfair.app.ui.screens.group.JoinGroupScreen
 import com.tripfair.app.ui.screens.home.HomeScreen
 import com.tripfair.app.ui.screens.legal.LegalDocumentScreen
 import com.tripfair.app.ui.screens.legal.PrivacyPolicy
@@ -118,7 +125,17 @@ fun TripFairNavDisplay() {
                 )
             }
             entry<Trips> {
-                PlaceholderScreen(stringResource(R.string.tab_trips), selectedTab = MainTab.Trips, onTabSelect = selectTab)
+                GroupsScreen(
+                    onNewGroup = { backStack.add(GroupChoice) },
+                    onOpenGroup = { backStack.add(GroupPlan) },
+                    onInvite = { backStack.add(InviteFriends) },
+                    onSchedule = { backStack.add(DayItinerary) },
+                    onVote = { backStack.add(VoteList) },
+                    onPlaces = { backStack.add(SearchResults(SampleSearch.QUERY)) },
+                    onCreateTrip = { backStack.add(CreateTrip) },
+                    onJoinGroup = { backStack.add(JoinGroup) },
+                    onTabSelect = selectTab,
+                )
             }
             entry<Favorites> {
                 FavoritesScreen(
@@ -197,7 +214,40 @@ fun TripFairNavDisplay() {
             entry<PrivacyPolicyPage> { LegalDocumentScreen(document = PrivacyPolicy, onBack = { backStack.goBack() }) }
             entry<TermsPage> { LegalDocumentScreen(document = TermsOfUse, onBack = { backStack.goBack() }) }
 
+            // 03 Groups & members
+            entry<GroupChoice> {
+                CreateOrJoinGroupScreen(
+                    onBack = { backStack.goBack() },
+                    onCreate = { backStack.add(CreateGroup) },
+                    onJoin = { backStack.add(JoinGroup) },
+                )
+            }
+            entry<CreateGroup> {
+                CreateGroupScreen(
+                    onBack = { backStack.goBack() },
+                    onInvite = { backStack.add(InviteFriends) },
+                    onContinue = { backStack.add(GroupPlan) },
+                )
+            }
+            entry<JoinGroup> {
+                JoinGroupScreen(onBack = { backStack.goBack() }, onJoin = { selectTab(MainTab.Trips) })
+            }
+            entry<InviteFriends> { InviteFriendsScreen(onBack = { backStack.goBack() }) }
+            entry<GroupPlan> {
+                GroupPlanScreen(
+                    onBack = { backStack.goBack() },
+                    onInvite = { backStack.add(InviteFriends) },
+                    onEditBudget = { backStack.add(EditBudget) },
+                    onStartVote = { backStack.add(VoteList) },
+                )
+            }
+            entry<EditBudget> {
+                EditBudgetScreen(onBack = { backStack.goBack() }, onSave = { backStack.goBack() })
+            }
+
             // Screens of later groups
+            entry<CreateTrip> { PlaceholderScreen(stringResource(R.string.trips_create), onBack = { backStack.goBack() }) }
+            entry<VoteList> { PlaceholderScreen(stringResource(R.string.vote_list_title), onBack = { backStack.goBack() }) }
             entry<EmergencyContacts> {
                 PlaceholderScreen(stringResource(R.string.emergency_contacts_title), onBack = { backStack.goBack() })
             }

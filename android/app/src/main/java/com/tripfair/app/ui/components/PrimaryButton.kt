@@ -1,6 +1,7 @@
 package com.tripfair.app.ui.components
 
 import androidx.annotation.DrawableRes
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -11,6 +12,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -18,6 +20,36 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+
+/** Full-width white button with a teal outline, e.g. "Chỉnh ngân sách của bạn". */
+@Composable
+fun OutlineButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    @DrawableRes trailingIcon: Int? = null,
+    height: Dp = 52.dp,
+) {
+    OutlinedButton(
+        onClick = onClick,
+        modifier = modifier
+            .fillMaxWidth()
+            .height(height),
+        shape = MaterialTheme.shapes.small,
+        border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary),
+        colors = ButtonDefaults.outlinedButtonColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            contentColor = MaterialTheme.colorScheme.primary,
+        ),
+        contentPadding = PaddingValues(horizontal = 18.dp),
+    ) {
+        Text(text = text, style = MaterialTheme.typography.labelLarge)
+        if (trailingIcon != null) {
+            Spacer(Modifier.width(9.dp))
+            Icon(painter = painterResource(trailingIcon), contentDescription = null, modifier = Modifier.size(19.dp))
+        }
+    }
+}
 
 /** Full-width filled button ("Nút chính" in Figma). */
 @Composable
