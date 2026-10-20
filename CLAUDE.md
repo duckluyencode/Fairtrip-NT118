@@ -74,6 +74,7 @@ README.md
 - 2026-10-18: Giá chỉ hiện ở Chi tiết địa điểm, Bình chọn, Lộ trình và Kết quả tối ưu.
 - 2026-10-18: Backend dùng NestJS 12 (ESM) trên Node.js 24 LTS; test bằng Vitest, lint bằng oxlint.
 - 2026-10-19: App Android: package com.tripfair.app, minSdk 26, compileSdk/targetSdk 37; AGP 9.4.1 (Kotlin tích hợp, 2.2.10), Gradle 9.6.0, Compose BOM 2026.09.00 (Material 3).
+- 2026-10-19: Giao diện có chế độ sáng (theo Figma) và tối (tự thiết kế từ màu Figma, đạt WCAG AA), theo cài đặt của điện thoại; không dùng màu động Material You. Font Inter đóng gói trong app (file biến thiên, giấy phép OFL).
 
 ## Câu hỏi mở
 Mỗi mục ghi rõ cần chốt trước khi làm phần nào. Chưa tới phần đó thì để nguyên.

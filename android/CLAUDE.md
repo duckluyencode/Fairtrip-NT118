@@ -14,4 +14,5 @@ Package `com.tripfair.app`, minSdk 26, compileSdk/targetSdk 37. AGP 9.4.1 (Kotli
 
 ## Quy ước
 - Màn hình và component viết bằng Compose; mỗi màn hình có `@Preview` với dữ liệu mẫu.
+- Màu, chữ, bo góc lấy từ `MaterialTheme` (`ui/theme/`); không viết mã màu trực tiếp trong màn hình. Màu ngoài vai trò M3 dùng `MaterialTheme.extendedColors`.
 - API key đặt trong `local.properties`, không đưa vào source code.
