@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 private val Teal = Color(0xFF176B62)
 private val TealLight = Color(0xFF7DD3C4)
 private val TealContainerLight = Color(0xFFDDF1EC)
+private val OnTealContainerLight = Color(0xFF0E514A)
 private val TealContainerDark = Color(0xFF17423C)
 private val OnTealContainerDark = Color(0xFFB5ECE2)
 private val OnTealDark = Color(0xFF00382F)
@@ -50,7 +51,7 @@ internal val LightColors = lightColorScheme(
     primary = Teal,
     onPrimary = Color.White,
     primaryContainer = TealContainerLight,
-    onPrimaryContainer = Teal,
+    onPrimaryContainer = OnTealContainerLight,
     inversePrimary = TealLight,
     // The design has no second accent, so secondary reuses the brand teal.
     secondary = Teal,

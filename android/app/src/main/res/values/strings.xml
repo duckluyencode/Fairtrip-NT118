@@ -1,3 +1,75 @@
 <resources>
     <string name="app_name">TripFair</string>
+    <string name="brand_tagline">Đi cùng nhau · vui công bằng</string>
+
+    <!-- Shared -->
+    <string name="cd_back">Quay lại</string>
+    <string name="cd_show_password">Hiện mật khẩu</string>
+    <string name="cd_hide_password">Ẩn mật khẩu</string>
+    <string name="action_login">Đăng nhập</string>
+    <string name="back_to_login">Quay lại đăng nhập</string>
+    <string name="support_card">Cần hỗ trợ? Liên hệ đội ngũ TripFair</string>
+    <string name="field_contact_label">Số điện thoại hoặc email</string>
+    <string name="field_password_label">Mật khẩu</string>
+    <string name="password_rule_helper">Tối thiểu 8 ký tự, gồm chữ và số.</string>
+    <string name="terms_of_use">Điều khoản sử dụng</string>
+    <string name="privacy_policy">Chính sách bảo mật</string>
+
+    <!-- Login -->
+    <string name="login_title">Chào mừng trở lại</string>
+    <string name="login_subtitle">Tiếp tục hành trình nhóm mà ai cũng thấy hợp lý.</string>
+    <string name="login_remember_me">Ghi nhớ đăng nhập</string>
+    <string name="login_forgot_password">Quên mật khẩu?</string>
+    <string name="login_no_account">Chưa có tài khoản?</string>
+    <string name="login_register_now">Đăng ký ngay</string>
+    <string name="login_security_note">🔒 Thông tin chuyến đi của bạn luôn được bảo vệ</string>
+
+    <!-- Register -->
+    <string name="register_step_badge">TÀI KHOẢN MỚI</string>
+    <string name="register_title">Lên đường cùng nhau</string>
+    <string name="register_subtitle">Tạo tài khoản để cả nhóm cùng chọn nơi, thời gian và ngân sách công bằng.</string>
+    <string name="register_full_name_label">Họ và tên</string>
+    <string name="register_contact_helper">Chúng tôi sẽ gửi mã 6 chữ số để xác minh.</string>
+    <string name="register_confirm_password_label">Xác nhận mật khẩu</string>
+    <string name="register_confirm_password_placeholder">Nhập lại mật khẩu</string>
+    <string name="register_terms_prefix">Tôi đồng ý với</string>
+    <string name="register_terms_and">và</string>
+    <string name="register_terms_suffix">của TripFair.</string>
+    <string name="register_submit">Tạo tài khoản</string>
+    <string name="register_have_account">Đã có tài khoản?</string>
+
+    <!-- Forgot password -->
+    <string name="forgot_top_title">Quên mật khẩu</string>
+    <string name="forgot_title">Đặt lại mật khẩu</string>
+    <string name="forgot_subtitle">Nhập email hoặc số điện thoại đã dùng cho TripFair. Chúng tôi sẽ gửi mã 6 chữ số để bạn đặt mật khẩu mới.</string>
+    <string name="forgot_contact_label">Email hoặc số điện thoại</string>
+    <string name="forgot_contact_helper">Nếu nhận mã qua email, hãy kiểm tra cả thư rác.</string>
+    <string name="forgot_code_validity_note">Mã xác thực có hiệu lực trong 15 phút để bảo vệ tài khoản của bạn.</string>
+    <string name="forgot_submit">Gửi mã xác thực</string>
+    <string name="forgot_remembered">Đã nhớ mật khẩu?</string>
+
+    <!-- OTP verification -->
+    <string name="otp_top_title">Xác thực</string>
+    <string name="otp_title">Nhập mã xác thực</string>
+    <string name="otp_subtitle">Nhập mã 6 chữ số TripFair vừa gửi đến:</string>
+    <string name="otp_change_destination">Đổi email hoặc số điện thoại</string>
+    <string name="otp_code_label">Mã xác thực</string>
+    <string name="otp_validity">Mã có hiệu lực trong 15 phút.</string>
+    <string name="otp_submit">Xác thực mã</string>
+    <string name="otp_not_received">Chưa nhận được mã?</string>
+    <string name="otp_resend_countdown">Gửi lại mã sau %1$s</string>
+    <string name="otp_spam_hint">Nếu nhận mã qua email, hãy kiểm tra cả mục Thư rác.</string>
+
+    <!-- New password -->
+    <string name="new_password_top_title">Mật khẩu mới</string>
+    <string name="new_password_title">Đặt mật khẩu mới</string>
+    <string name="new_password_subtitle">Tạo mật khẩu mới để tiếp tục hành trình cùng TripFair.</string>
+    <string name="new_password_verified">Tài khoản đã được xác thực</string>
+    <string name="new_password_label">Mật khẩu mới</string>
+    <string name="new_password_confirm_label">Xác nhận mật khẩu mới</string>
+    <string name="new_password_submit">Lưu mật khẩu mới</string>
+    <string name="new_password_after_save">Lưu thành công, bạn sẽ trở về đăng nhập bằng mật khẩu mới.</string>
+
+    <!-- Home -->
+    <string name="home_title">Trang chủ</string>
 </resources>
