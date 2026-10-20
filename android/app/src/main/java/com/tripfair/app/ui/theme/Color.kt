@@ -134,6 +134,8 @@ data class ExtendedColors(
     val primaryIconContainer: Color,
     /** Dark overlay that keeps white text readable on photos. */
     val imageScrim: Color,
+    /** Rating stars. */
+    val rating: Color,
 )
 
 internal val LightExtendedColors = ExtendedColors(
@@ -144,6 +146,7 @@ internal val LightExtendedColors = ExtendedColors(
     primaryBorder = Color(0xFFD7EFE6),
     primaryIconContainer = Color(0xFFE8F7F2),
     imageScrim = Color(0x800A3930),
+    rating = Color(0xFFF5B84B),
 )
 
 internal val DarkExtendedColors = ExtendedColors(
@@ -154,6 +157,7 @@ internal val DarkExtendedColors = ExtendedColors(
     primaryBorder = Color(0xFF24413B),
     primaryIconContainer = Color(0xFF1B3530),
     imageScrim = Color(0x800A3930),
+    rating = Color(0xFFF7C66A),
 )
 
 internal val LocalExtendedColors = staticCompositionLocalOf { LightExtendedColors }

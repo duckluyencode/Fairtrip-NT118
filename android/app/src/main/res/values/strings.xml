@@ -70,6 +70,80 @@
     <string name="new_password_submit">Lưu mật khẩu mới</string>
     <string name="new_password_after_save">Lưu thành công, bạn sẽ trở về đăng nhập bằng mật khẩu mới.</string>
 
+    <!-- Main tabs -->
+    <string name="tab_explore">Khám phá</string>
+    <string name="tab_trips">Chuyến đi</string>
+    <string name="tab_favorites">Yêu thích</string>
+    <string name="tab_profile">Tôi</string>
+    <string name="cd_profile">Trang cá nhân</string>
+    <string name="cd_clear">Xóa</string>
+    <string name="cd_favorite">Yêu thích</string>
+
     <!-- Home -->
-    <string name="home_title">Trang chủ</string>
+    <string name="home_greeting">Chào %1$s 👋</string>
+    <string name="home_search_placeholder">Tìm nơi bạn muốn đi…</string>
+    <string name="home_sos_title">SOS</string>
+    <string name="home_sos_subtitle">Khẩn cấp</string>
+    <string name="home_camera_title">Nhận diện</string>
+    <string name="home_camera_subtitle">Bằng camera</string>
+    <string name="home_upcoming_trip">CHUYẾN ĐI SẮP TỚI · %1$d NGƯỜI</string>
+    <string name="home_group_suggestions">Gợi ý cho cả nhóm</string>
+    <string name="home_see_all">Xem tất cả</string>
+    <string name="home_recent">Khám phá gần đây</string>
+    <string name="action_history">Lịch sử</string>
+    <string name="place_card_detail">%1$s ★ · %2$s</string>
+
+    <!-- Search -->
+    <string name="search_title">Tìm kiếm</string>
+    <string name="action_cancel">Hủy</string>
+    <string name="search_suggestions">Gợi ý tìm kiếm</string>
+    <string name="search_recent">Gần đây</string>
+
+    <!-- Search results -->
+    <string name="results_title">Khám phá</string>
+    <string name="results_map">Bản đồ</string>
+    <string name="cd_filter">Bộ lọc</string>
+    <string name="filter_all">Tất cả</string>
+    <string name="filter_food">Ăn uống</string>
+    <string name="filter_fun">Vui chơi</string>
+    <string name="filter_scenic">Cảnh đẹp</string>
+    <plurals name="results_count">
+        <item quantity="other">%1$d địa điểm phù hợp</item>
+    </plurals>
+
+    <!-- Search history -->
+    <string name="history_title">Lịch sử tìm kiếm</string>
+    <plurals name="history_count">
+        <item quantity="other">%1$d tìm kiếm gần đây</item>
+    </plurals>
+    <string name="history_clear">Xóa lịch sử</string>
+    <string name="history_hint">Chạm vào một tìm kiếm để tìm lại địa điểm hoặc từ khóa đó.</string>
+
+    <!-- Place detail -->
+    <string name="detail_title">Chi tiết</string>
+    <string name="detail_reviews_line">%1$s đánh giá Google · %2$s</string>
+    <string name="detail_rating_chip">%1$s ★</string>
+    <string name="detail_duration">Thời lượng</string>
+    <string name="detail_distance">Từ trung tâm</string>
+    <string name="detail_add_to_vote">Thêm vào bình chọn nhóm</string>
+
+    <!-- Place reviews -->
+    <string name="reviews_title">Đánh giá địa điểm</string>
+    <string name="reviews_google_count">%1$s đánh giá trên Google</string>
+    <string name="reviews_section">Đánh giá</string>
+    <string name="reviews_sort_newest">Mới nhất</string>
+    <string name="reviews_filter_5">5 sao</string>
+    <string name="reviews_filter_4">4 sao</string>
+    <string name="reviews_filter_photo">Có ảnh</string>
+    <string name="reviews_source_note">Điểm trung bình lấy từ Google Maps. Danh sách bên dưới là đánh giá của người dùng TripFair (nội dung minh họa).</string>
+    <string name="reviews_helpful">Hữu ích</string>
+    <string name="reviews_report">Báo cáo</string>
+    <string name="reviews_write">Viết đánh giá</string>
+    <string name="cd_more_options">Thêm tùy chọn</string>
+
+    <!-- Placeholder for screens built later -->
+    <string name="placeholder_coming">Màn hình này sẽ có ở bước sau.</string>
+    <string name="sos_title">SOS khẩn cấp</string>
+    <string name="camera_title">Nhận diện địa điểm</string>
+    <string name="itinerary_title">Lộ trình theo ngày</string>
 </resources>

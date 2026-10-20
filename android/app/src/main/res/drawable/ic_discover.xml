@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- "discover" icon exported from the TripFair Figma file. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:pathData="M12 20.9375C16.936 20.9375 20.9375 16.936 20.9375 12C20.9375 7.06396 16.936 3.0625 12 3.0625C7.06396 3.0625 3.0625 7.06396 3.0625 12C3.0625 16.936 7.06396 20.9375 12 20.9375ZM23 12C23 18.0751 18.0751 23 12 23C5.92487 23 1 18.0751 1 12C1 5.92487 5.92487 1 12 1C18.0751 1 23 5.92487 23 12Z"
+        android:fillColor="#000000"
+        android:fillType="evenOdd" />
+    <path
+        android:pathData="M14.0896 14.1212C14.4107 13.927 14.6351 13.6065 14.7078 13.2384L15.9351 7.0176C16.0024 6.67675 15.633 6.41811 15.3357 6.59788L9.90991 9.87887C9.58879 10.073 9.36436 10.3936 9.29172 10.7617L8.06435 16.9825C7.9971 17.3233 8.36647 17.582 8.66376 17.4022L14.0896 14.1212ZM10.7275 13.8171L12.8026 12.5622L13.272 10.183L11.1969 11.4379L10.7275 13.8171Z"
+        android:fillColor="#000000"
+        android:fillType="evenOdd" />
+</vector>
