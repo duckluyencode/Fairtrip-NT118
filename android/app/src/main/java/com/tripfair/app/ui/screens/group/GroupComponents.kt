@@ -17,6 +17,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -26,15 +27,28 @@ import com.tripfair.app.R
 import com.tripfair.app.ui.sample.SampleGroup
 import com.tripfair.app.ui.theme.extendedColors
 
-/** Colored circle standing in for a member photo; the color follows the member's position. */
+/**
+ * Colored circle standing in for a member photo; the color follows the member's position.
+ * [initial] shows the first letter of the name, as in the small avatars of the vote screens.
+ */
 @Composable
-internal fun MemberAvatar(index: Int, size: Dp) {
+internal fun MemberAvatar(index: Int, size: Dp, initial: String? = null) {
     val palette = MaterialTheme.extendedColors.memberColors
     Box(
         modifier = Modifier
             .size(size)
             .background(palette[index % palette.size], CircleShape),
-    )
+        contentAlignment = Alignment.Center,
+    ) {
+        if (initial != null) {
+            // Member colors stay the same in dark mode, so the letter stays white.
+            Text(
+                text = initial,
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, fontWeight = FontWeight.Bold),
+                color = Color.White,
+            )
+        }
+    }
 }
 
 /** Small grey pill on the right of a member row ("Trưởng nhóm", "Đã mời", a budget). */

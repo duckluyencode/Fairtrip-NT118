@@ -31,11 +31,11 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.tripfair.app.R
 import com.tripfair.app.ui.components.AvatarButton
 import com.tripfair.app.ui.components.PrimaryButton
+import com.tripfair.app.ui.components.QuickFact
 import com.tripfair.app.ui.components.TripFairTopBar
 import com.tripfair.app.ui.sample.SamplePlace
 import com.tripfair.app.ui.sample.SamplePlaces
@@ -147,14 +147,6 @@ fun PlaceDetailScreen(
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun QuickFact(label: String, value: String) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(text = label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(text = value, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold))
     }
 }
 

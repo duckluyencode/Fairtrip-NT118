@@ -317,11 +317,122 @@
     <string name="budget_preferences_intro">Chọn những trải nghiệm bạn yêu thích.</string>
     <string name="budget_fairness_note">Tối ưu công bằng ưu tiên mức hài lòng chung và không để ai vượt ngân sách cá nhân.</string>
 
+    <!-- Votes -->
+    <string name="add_vote_title">Thêm vào bình chọn</string>
+    <string name="add_vote_choose_trip">Chọn chuyến nhóm</string>
+    <string name="vote_open_status">Đang nhận bình chọn</string>
+    <string name="add_vote_back_to_detail">Quay lại chi tiết %1$s</string>
+    <string name="add_vote_note">Thêm địa điểm vào danh sách để nhóm bình chọn, chưa phải gửi phiếu của bạn.</string>
+    <string name="vote_list_summary">Tổng hợp lựa chọn của cả nhóm.</string>
+    <plurals name="vote_progress">
+        <item quantity="other">%1$d/%2$d người đã gửi phiếu</item>
+    </plurals>
+    <string name="vote_deadline">Hạn %1$s</string>
+    <string name="vote_places">Địa điểm bình chọn</string>
+    <plurals name="vote_place_count">
+        <item quantity="other">%1$d địa điểm</item>
+    </plurals>
+    <string name="vote_agreed">%1$s đồng ý</string>
+    <string name="vote_leader_note">Chỉ trưởng nhóm có thể kết thúc bình chọn để bắt đầu tối ưu. Bình chọn của nhóm vẫn đang mở.</string>
+    <string name="vote_finish">Kết thúc bình chọn &amp; tối ưu</string>
+    <string name="ballot_title">Bình chọn</string>
+    <string name="ballot_open_title">Chọn những nơi bạn muốn đi</string>
+    <string name="ballot_open_text">Gửi phiếu trước %1$s. Bạn sửa được sau khi gửi.</string>
+    <string name="ballot_sent_title">Đã gửi bình chọn của bạn</string>
+    <string name="ballot_sent_text">Đang chờ thành viên còn lại.</string>
+    <string name="ballot_options">Lựa chọn</string>
+    <string name="ballot_add_place">Thêm địa điểm vào bình chọn</string>
+    <plurals name="ballot_send">
+        <item quantity="other">Gửi phiếu (%1$d địa điểm)</item>
+    </plurals>
+    <string name="ballot_edit">Sửa phiếu của bạn</string>
+    <string name="cd_vote_pick">Chọn %1$s</string>
+
+    <!-- Create trip -->
+    <string name="trip_new_title">Chuyến đi mới</string>
+    <string name="trip_new_intro">Cho chúng mình vài thông tin để đề xuất lịch trình vừa vui vừa hợp túi tiền.</string>
+    <string name="trip_type">KIỂU CHUYẾN ĐI</string>
+    <string name="trip_type_solo">Một mình</string>
+    <string name="trip_type_group">Cùng nhóm</string>
+    <string name="trip_destination">ĐIỂM ĐẾN</string>
+    <string name="trip_dates">THỜI GIAN</string>
+    <string name="trip_budget">NGÂN SÁCH CỦA BẠN</string>
+    <string name="trip_budget_helper">Gồm vé, ăn uống và lưu trú; chưa gồm di chuyển. Nhập 0đ để app chỉ chọn nơi miễn phí.</string>
+    <string name="trip_budget_helper_group">Gồm vé, ăn uống và lưu trú; chưa gồm di chuyển. Nhập 0đ để app chỉ chọn nơi miễn phí. Mỗi thành viên tự nhập ngân sách của mình và số này được giữ kín.</string>
+    <string name="trip_lodging_title">Gợi ý chỗ ở qua Agoda</string>
+    <string name="trip_lodging_text">App gợi ý 3 khách sạn hợp ngân sách. Tắt nếu bạn tự lo chỗ ở.</string>
+    <string name="trip_continue_group">Tiếp tục lập nhóm</string>
+    <string name="trip_continue_lodging">Tiếp tục chọn chỗ ở</string>
+    <string name="trip_continue_plan">Lập lộ trình</string>
+
+    <!-- Lodging -->
+    <string name="lodging_title">Chọn chỗ ở</string>
+    <string name="lodging_heading">Chỗ ở hợp ngân sách</string>
+    <string name="lodging_intro">Giá phòng lấy từ Agoda lúc %1$s. Tiền phòng được trừ khỏi ngân sách trước, phần còn lại dành cho các điểm.</string>
+    <string name="lodging_rating">%1$s Agoda · %2$s tới lộ trình</string>
+    <plurals name="lodging_price">
+        <item quantity="other">%1$s/đêm · phòng %2$d người</item>
+    </plurals>
+    <string name="lodging_share">Phần của bạn %1$s · còn %2$s cho các điểm</string>
+    <string name="lodging_self_title">Tự lo chỗ ở</string>
+    <string name="lodging_self_text">Không tính tiền phòng; toàn bộ ngân sách dành cho các điểm.</string>
+    <string name="lodging_price_note">Giá phòng thay đổi theo thời gian; app kiểm tra lại giá trước khi bạn đặt.</string>
+    <string name="lodging_confirm">Chọn %1$s và lập lộ trình</string>
+    <string name="lodging_confirm_self">Tự lo chỗ ở và lập lộ trình</string>
+
+    <!-- Optimizing -->
+    <string name="optimizing_title">Đang lập lộ trình</string>
+    <string name="optimizing_heading">Đang tìm lộ trình hợp ngân sách</string>
+    <string name="optimizing_time">Thường mất dưới 10 giây</string>
+    <string name="optimizing_step_tickets">Lấy giá vé từ Klook, GetYourGuide</string>
+    <string name="optimizing_step_rooms">Lấy giá phòng từ Agoda</string>
+    <string name="optimizing_step_pick">Chọn điểm theo giá trị và chi phí</string>
+    <string name="optimizing_step_fair">Kiểm tra không ai vượt ngân sách</string>
+    <string name="optimizing_leave">Bạn có thể rời màn hình này; app sẽ báo khi lộ trình sẵn sàng.</string>
+
+    <!-- Optimization result -->
+    <string name="result_title">Kế hoạch tối ưu</string>
+    <string name="result_caps">TỐI ƯU CÔNG BẰNG</string>
+    <string name="result_satisfaction">%1$d%% hài lòng</string>
+    <string name="result_no_overspend">Không ai vượt ngân sách cá nhân</string>
+    <string name="result_split">Chia chi phí &amp; mức hài lòng</string>
+    <string name="result_member_line">%1$s · %2$d%%</string>
+    <string name="result_you_left">Còn %1$s trong ngân sách của bạn</string>
+    <string name="result_group_total">Tổng nhóm</string>
+    <string name="result_privacy">Ngân sách của từng người được ẩn. Cả nhóm chỉ thấy phần chi; số tiền còn lại chỉ hiện với chính bạn.</string>
+    <string name="result_costs">Chi phí theo điểm · mỗi người</string>
+    <string name="result_view_itinerary">Xem lộ trình 3 ngày</string>
+
+    <!-- Day itinerary and editor -->
+    <string name="itinerary_day_chip_selected">Ngày %1$d · %2$s</string>
+    <string name="itinerary_day_chip">Ngày %1$d</string>
+    <string name="itinerary_day_title">Ngày %1$d · %2$s</string>
+    <string name="itinerary_day_summary">%1$s · %2$s</string>
+    <string name="itinerary_trip_total">Cả chuyến của bạn</string>
+    <string name="itinerary_used_of">%1$s / %2$s</string>
+    <string name="itinerary_left">Còn lại %1$s</string>
+    <string name="itinerary_over">Vượt ngân sách %1$s</string>
+    <string name="itinerary_no_transport">Chưa gồm di chuyển</string>
+    <string name="itinerary_breakdown">Gồm lưu trú %1$s (%2$d đêm) và các điểm %3$s</string>
+    <string name="itinerary_suggest_drop">Gợi ý: bỏ %1$s (%2$s) để về lại trong ngân sách.</string>
+    <string name="itinerary_suggest_generic">Gợi ý: bỏ bớt điểm có phí để về lại trong ngân sách.</string>
+    <string name="itinerary_running_total">Tổng %1$s</string>
+    <string name="itinerary_free">Miễn phí</string>
+    <string name="itinerary_new">Mới thêm</string>
+    <string name="cd_itinerary_menu">Tùy chọn lộ trình</string>
+    <string name="cd_itinerary_map">Bản đồ các điểm dừng của ngày %1$d</string>
+    <string name="itinerary_edit">Sửa lộ trình</string>
+    <string name="editor_save">Lưu</string>
+    <string name="editor_hint">Giữ và kéo để đổi thứ tự · vuốt sang trái để xóa điểm</string>
+    <string name="editor_add_place">+ Thêm địa điểm</string>
+    <string name="editor_reoptimize">Để app tối ưu lại</string>
+    <string name="editor_save_itinerary">Lưu lộ trình</string>
+    <string name="cd_delete_stop">Xóa điểm</string>
+
     <!-- Placeholder for screens built later -->
     <string name="placeholder_coming">Màn hình này sẽ có ở bước sau.</string>
     <string name="sos_title">SOS khẩn cấp</string>
     <string name="camera_title">Nhận diện địa điểm</string>
-    <string name="itinerary_title">Lộ trình theo ngày</string>
     <string name="emergency_contacts_title">Liên hệ khẩn cấp</string>
     <string name="vote_list_title">Danh sách bình chọn</string>
 </resources>

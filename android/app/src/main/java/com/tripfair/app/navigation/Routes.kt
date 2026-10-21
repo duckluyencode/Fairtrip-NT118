@@ -94,13 +94,39 @@ data object GroupPlan : NavKey
 @Serializable
 data object EditBudget : NavKey
 
-// Screens of later groups, reached from the ones above
+// 04 Votes
+
+@Serializable
+data class AddToGroupVote(val placeId: String) : NavKey
+
+@Serializable
+data object VoteList : NavKey
+
+@Serializable
+data object Ballot : NavKey
+
+// 05 Trip & optimization, 10 Solo trip & lodging
 
 @Serializable
 data object CreateTrip : NavKey
 
+/** [group] decides where the optimizer goes next: the fairness result or the itinerary. */
 @Serializable
-data object VoteList : NavKey
+data class LodgingChoice(val group: Boolean) : NavKey
+
+@Serializable
+data class Optimizing(val group: Boolean) : NavKey
+
+@Serializable
+data object OptimizationResult : NavKey
+
+@Serializable
+data object DayItinerary : NavKey
+
+@Serializable
+data object ItineraryEditor : NavKey
+
+// Screens of later groups, reached from the ones above
 
 @Serializable
 data object EmergencyContacts : NavKey
@@ -110,9 +136,3 @@ data object Sos : NavKey
 
 @Serializable
 data object CameraScan : NavKey
-
-@Serializable
-data object DayItinerary : NavKey
-
-@Serializable
-data class AddToGroupVote(val placeId: String) : NavKey

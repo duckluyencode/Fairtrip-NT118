@@ -112,14 +112,22 @@ fun Chevron(tint: Color = MaterialTheme.colorScheme.onSurfaceVariant) {
     )
 }
 
-/** Small 38x23 switch from the settings design ("Switch" in Figma). */
+/** On/off switch ("Switch" in Figma): 38x23 in settings, 44x26 when [large]. */
 @Composable
-fun TripFairSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit, modifier: Modifier = Modifier) {
+fun TripFairSwitch(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+    large: Boolean = false,
+) {
     val colors = MaterialTheme.colorScheme
-    val thumbOffset by animateDpAsState(if (checked) 15.dp else 0.dp, label = "thumb")
+    // The settings list uses 38x23; the trip form uses the larger 44x26 switch.
+    val width = if (large) 44.dp else 38.dp
+    val thumbSize = if (large) 20.dp else 17.dp
+    val thumbOffset by animateDpAsState(if (checked) width - thumbSize - 6.dp else 0.dp, label = "thumb")
     Box(
         modifier = modifier
-            .size(width = 38.dp, height = 23.dp)
+            .size(width = width, height = if (large) 26.dp else 23.dp)
             .clip(CircleShape)
             .background(if (checked) colors.primary else colors.outline)
             .toggleable(value = checked, role = Role.Switch, onValueChange = onCheckedChange)
@@ -128,7 +136,7 @@ fun TripFairSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit, modifie
         Box(
             modifier = Modifier
                 .offset { IntOffset(thumbOffset.roundToPx(), 0) }
-                .size(17.dp)
+                .size(thumbSize)
                 .background(Color.White, CircleShape),
         )
     }

@@ -20,6 +20,8 @@ data class SamplePlace(
     /** Price label and value; non-official prices start with "~" (CLAUDE.md price rules). */
     val priceLabel: String,
     val price: String,
+    /** Price label with the per-person unit, used in votes. */
+    val pricePerPersonLabel: String,
     val duration: String,
     val distanceFromCenter: String,
     /** Second line in search results, e.g. "Bà Nà Hills · 25 km". */
@@ -42,6 +44,7 @@ object SamplePlaces {
         openingHours = "Mở cửa đến 22:00",
         description = "Cây cầu giữa mây nổi tiếng với đôi bàn tay khổng lồ. Phù hợp ngắm cảnh, chụp ảnh và trải nghiệm cáp treo cùng nhóm.",
         priceLabel = "Vé · chính thức",
+        pricePerPersonLabel = "Vé / người · chính thức",
         price = "900.000đ",
         duration = "4 giờ",
         distanceFromCenter = "25 km",
@@ -63,6 +66,7 @@ object SamplePlaces {
         openingHours = "Mở cửa đến 21:00",
         description = "Quán mì Quảng lâu năm, tô đầy đặn với tôm, thịt và bánh tráng giòn. Hợp cho bữa trưa nhanh của cả nhóm.",
         priceLabel = "Ăn uống · Google",
+        pricePerPersonLabel = "Ăn uống / người · Google",
         price = "~50.000đ",
         duration = "1 giờ",
         distanceFromCenter = "1,5 km",
@@ -84,6 +88,7 @@ object SamplePlaces {
         openingHours = "Mở cả ngày",
         description = "Bãi biển cát trắng dài, nước trong và sóng êm. Hợp tắm biển buổi sáng và ngắm hoàng hôn cùng nhóm.",
         priceLabel = "Vé",
+        pricePerPersonLabel = "Vé",
         price = "Miễn phí",
         duration = "2 giờ",
         distanceFromCenter = "2,1 km",
@@ -105,6 +110,7 @@ object SamplePlaces {
         openingHours = "Mở cửa đến 23:30",
         description = "Khu chợ đêm cạnh cầu Rồng với nhiều quầy hải sản và đồ lưu niệm. Hợp dạo chơi buổi tối sau khi xem cầu Rồng phun lửa.",
         priceLabel = "Ăn uống · ước tính",
+        pricePerPersonLabel = "Ăn uống / người · ước tính",
         price = "~250.000đ",
         duration = "2 giờ",
         distanceFromCenter = "1,8 km",
@@ -134,5 +140,8 @@ object SampleTrip {
     const val NAME = "Đà Nẵng, mình đi thôi!"
     const val DATES = "12–14 tháng 10 · 3 ngày 2 đêm"
     const val DATE_RANGE = "12–14 tháng 10"
+    const val DESTINATION = "Đà Nẵng"
+    /** Dates as the "Tạo chuyến đi" form shows them. */
+    const val FORM_DATES = "12 – 14 tháng 10 · 3 ngày"
     const val MEMBER_COUNT = 4
 }

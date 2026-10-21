@@ -1,6 +1,10 @@
 package com.tripfair.app.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
@@ -9,6 +13,7 @@ import androidx.navigation3.ui.NavDisplay
 import com.tripfair.app.R
 import com.tripfair.app.ui.components.MainTab
 import com.tripfair.app.ui.sample.SampleData
+import com.tripfair.app.ui.sample.SampleItinerary
 import com.tripfair.app.ui.sample.SamplePlaces
 import com.tripfair.app.ui.sample.SampleSearch
 import com.tripfair.app.ui.screens.PlaceholderScreen
@@ -38,6 +43,15 @@ import com.tripfair.app.ui.screens.profile.FavoritesScreen
 import com.tripfair.app.ui.screens.profile.ProfileScreen
 import com.tripfair.app.ui.screens.profile.SettingsScreen
 import com.tripfair.app.ui.screens.profile.SupportScreen
+import com.tripfair.app.ui.screens.trip.CreateTripScreen
+import com.tripfair.app.ui.screens.trip.ItineraryEditorScreen
+import com.tripfair.app.ui.screens.trip.ItineraryScreen
+import com.tripfair.app.ui.screens.trip.LodgingScreen
+import com.tripfair.app.ui.screens.trip.OptimizationResultScreen
+import com.tripfair.app.ui.screens.trip.OptimizingScreen
+import com.tripfair.app.ui.screens.vote.AddToVoteScreen
+import com.tripfair.app.ui.screens.vote.BallotScreen
+import com.tripfair.app.ui.screens.vote.VoteListScreen
 
 /**
  * Connects every button to its target screen, following the flow notes in Figma.
@@ -46,6 +60,14 @@ import com.tripfair.app.ui.screens.profile.SupportScreen
 @Composable
 fun TripFairNavDisplay() {
     val backStack = rememberNavBackStack(Login)
+
+    // The saved itinerary is shared by the itinerary screen and its editor until there is a backend.
+    var itinerary by remember { mutableStateOf(SampleItinerary.days) }
+
+    // Shows the itinerary, going back to it if it is already open below.
+    val showItinerary: () -> Unit = {
+        if (DayItinerary in backStack) backStack.popUpTo(DayItinerary) else backStack.add(DayItinerary)
+    }
 
     // Switching tabs starts a fresh history at that tab's root screen.
     val selectTab: (MainTab) -> Unit = { tab ->
@@ -130,7 +152,7 @@ fun TripFairNavDisplay() {
                     onOpenGroup = { backStack.add(GroupPlan) },
                     onInvite = { backStack.add(InviteFriends) },
                     onSchedule = { backStack.add(DayItinerary) },
-                    onVote = { backStack.add(VoteList) },
+                    onVote = { backStack.add(Ballot) },
                     onPlaces = { backStack.add(SearchResults(SampleSearch.QUERY)) },
                     onCreateTrip = { backStack.add(CreateTrip) },
                     onJoinGroup = { backStack.add(JoinGroup) },
@@ -245,18 +267,79 @@ fun TripFairNavDisplay() {
                 EditBudgetScreen(onBack = { backStack.goBack() }, onSave = { backStack.goBack() })
             }
 
+            // 04 Votes
+            entry<AddToGroupVote> { route ->
+                AddToVoteScreen(
+                    place = SamplePlaces.byId(route.placeId),
+                    onBack = { backStack.goBack() },
+                    onBackToDetail = { backStack.goBack() },
+                    onAdd = { backStack.replaceTop(VoteList) },
+                )
+            }
+            entry<VoteList> {
+                VoteListScreen(onBack = { backStack.goBack() }, onFinish = { backStack.add(LodgingChoice(group = true)) })
+            }
+            entry<Ballot> {
+                BallotScreen(onBack = { backStack.goBack() }, onAddPlace = { backStack.add(Search) })
+            }
+
+            // 05 Trip & optimization, 10 Solo trip & lodging
+            entry<CreateTrip> {
+                CreateTripScreen(
+                    onBack = { backStack.goBack() },
+                    onProfile = { selectTab(MainTab.Profile) },
+                    onContinueGroup = { backStack.add(CreateGroup) },
+                    onChooseLodging = { backStack.add(LodgingChoice(group = false)) },
+                    onPlanWithoutLodging = { backStack.add(Optimizing(group = false)) },
+                )
+            }
+            entry<LodgingChoice> { route ->
+                LodgingScreen(onBack = { backStack.goBack() }, onConfirm = { backStack.add(Optimizing(route.group)) })
+            }
+            entry<Optimizing> { route ->
+                OptimizingScreen(
+                    onBack = { backStack.goBack() },
+                    onDone = {
+                        itinerary = SampleItinerary.days
+                        // The progress screen is replaced, so Back does not return to it.
+                        backStack.replaceTop(if (route.group) OptimizationResult else DayItinerary)
+                    },
+                )
+            }
+            entry<OptimizationResult> {
+                OptimizationResultScreen(
+                    onBack = { backStack.goBack() },
+                    onProfile = { selectTab(MainTab.Profile) },
+                    onViewItinerary = showItinerary,
+                )
+            }
+            entry<DayItinerary> {
+                ItineraryScreen(
+                    days = itinerary,
+                    onBack = { backStack.goBack() },
+                    onEdit = { backStack.add(ItineraryEditor) },
+                    onPlace = { backStack.add(PlaceDetail(it)) },
+                )
+            }
+            entry<ItineraryEditor> {
+                ItineraryEditorScreen(
+                    initialDays = SampleItinerary.editDraft(itinerary),
+                    onBack = { backStack.goBack() },
+                    onSave = { days ->
+                        itinerary = days
+                        backStack.goBack()
+                    },
+                    onAddPlace = { backStack.add(Search) },
+                    onReoptimize = { backStack.replaceTop(Optimizing(group = true)) },
+                )
+            }
+
             // Screens of later groups
-            entry<CreateTrip> { PlaceholderScreen(stringResource(R.string.trips_create), onBack = { backStack.goBack() }) }
-            entry<VoteList> { PlaceholderScreen(stringResource(R.string.vote_list_title), onBack = { backStack.goBack() }) }
             entry<EmergencyContacts> {
                 PlaceholderScreen(stringResource(R.string.emergency_contacts_title), onBack = { backStack.goBack() })
             }
             entry<Sos> { PlaceholderScreen(stringResource(R.string.sos_title), onBack = { backStack.goBack() }) }
             entry<CameraScan> { PlaceholderScreen(stringResource(R.string.camera_title), onBack = { backStack.goBack() }) }
-            entry<DayItinerary> { PlaceholderScreen(stringResource(R.string.itinerary_title), onBack = { backStack.goBack() }) }
-            entry<AddToGroupVote> {
-                PlaceholderScreen(stringResource(R.string.detail_add_to_vote), onBack = { backStack.goBack() })
-            }
         },
     )
 }
@@ -269,6 +352,12 @@ private fun MutableList<NavKey>.goBack() {
 /** Removes screens above [route] so it is on top again; keeps the root if [route] is not in the stack. */
 private fun MutableList<NavKey>.popUpTo(route: NavKey) {
     while (size > 1 && last() != route) removeAt(lastIndex)
+}
+
+/** Replaces the top screen with [route], e.g. a finished progress screen with its result. */
+private fun MutableList<NavKey>.replaceTop(route: NavKey) {
+    add(route)
+    if (size > 1) removeAt(lastIndex - 1)
 }
 
 /** Starts a new history with only [route], e.g. after logging in so Back does not return to Login. */
