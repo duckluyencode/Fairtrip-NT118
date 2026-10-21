@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lucide "arrow-up-left" icon exported from the TripFair Figma file. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="16dp"
+    android:height="16dp"
+    android:viewportWidth="16"
+    android:viewportHeight="16">
+    <path
+        android:pathData="M11.3328 4.6672H4.6672V11.3328M4.6672 4.6672L11.3328 11.3328"
+        android:strokeColor="#66726F"
+        android:strokeWidth="1.7"
+        android:strokeLineCap="round" />
+</vector>

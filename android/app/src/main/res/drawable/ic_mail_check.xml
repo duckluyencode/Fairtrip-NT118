@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lucide "mail-check" icon exported from the TripFair Figma file. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="25dp"
+    android:height="25dp"
+    android:viewportWidth="25"
+    android:viewportHeight="25">
+    <path
+        android:pathData="M22.9175 13.5421V7.29235M22.9175 7.29235V6.25074C22.9175 5.69823 22.698 5.16835 22.3073 4.77767C21.9165 4.38698 21.3866 4.1675 20.834 4.1675H4.166C3.61342 4.1675 3.08347 4.38698 2.69274 4.77767C2.30201 5.16835 2.0825 5.69823 2.0825 6.25074V7.29235M22.9175 7.29235L13.573 13.2296C13.2514 13.431 12.8795 13.5379 12.5 13.5379C12.1205 13.5379 11.7486 13.431 11.427 13.2296L2.0825 7.29235M2.0825 7.29235V18.7501C2.0825 19.8959 3.02008 20.8334 4.166 20.8334H12.5M16.667 19.7918L18.7505 21.875L22.9175 17.7085"
+        android:strokeColor="#176B62"
+        android:strokeWidth="2"
+        android:strokeLineCap="round" />
+</vector>

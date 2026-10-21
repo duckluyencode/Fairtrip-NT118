@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lucide "vote" icon exported from the TripFair Figma file. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="18dp"
+    android:height="18dp"
+    android:viewportWidth="18"
+    android:viewportHeight="18">
+    <path
+        android:pathData="M6.74982 9L8.24994 10.5002L11.2502 7.49983M16.5006 14.2506H14.2504M14.2504 14.2506H3.74958M14.2504 14.2506V5.24957C14.2504 4.8517 14.0924 4.47013 13.811 4.18879C13.5297 3.90745 13.1482 3.7494 12.7503 3.7494H5.2497C4.42463 3.7494 3.74958 4.42448 3.74958 5.24957V14.2506M3.74958 14.2506H1.4994"
+        android:strokeColor="#176B62"
+        android:strokeWidth="1.7"
+        android:strokeLineCap="round" />
+</vector>

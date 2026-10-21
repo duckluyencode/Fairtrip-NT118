@@ -18,6 +18,7 @@ Khi đề xuất tạo thư mục hoặc module mới: giải thích vai trò c�
 Khi có `android/` và `backend/`: lệnh build/test và quy ước riêng của từng phần đặt trong `android/CLAUDE.md` và `backend/CLAUDE.md`; file này chỉ giữ phần dùng chung.
 
 ```
+android/     App Android Kotlin + Jetpack Compose, xem android/CLAUDE.md
 backend/     API server NestJS (TypeScript), xem backend/CLAUDE.md
 docs/        Tài liệu dự án (mô tả tổng quan)
 CLAUDE.md
@@ -25,8 +26,9 @@ README.md
 ```
 
 ## Lệnh thường dùng
+- Android: xem [android/CLAUDE.md](android/CLAUDE.md).
 - Backend: xem [backend/CLAUDE.md](backend/CLAUDE.md).
-- [Điền khi đã thiết lập: build Android, docker compose]
+- [Điền khi đã thiết lập: docker compose]
 
 ## Cách làm việc với tôi
 - Tôi muốn hiểu mọi thứ được tạo ra. Trước khi viết code cho một task: nêu kế hoạch ngắn (file sẽ tạo/sửa, cách tiếp cận) và chờ tôi đồng ý.
@@ -72,6 +74,9 @@ README.md
 - 2026-10-18: Giá chỉ hiện ở Chi tiết địa điểm, Bình chọn, Lộ trình và Kết quả tối ưu.
 - 2026-10-18: Backend dùng NestJS 12 (ESM) trên Node.js 24 LTS; test bằng Vitest, lint bằng oxlint.
 - 2026-10-18: ORM là Prisma 7.10.1 (ghim phiên bản) với adapter MariaDB; database MySQL 8.4 LTS, trên máy chạy bằng Docker Compose (`backend/docker-compose.yml`).
+- 2026-10-19: App Android: package com.tripfair.app, minSdk 26, compileSdk/targetSdk 37; AGP 9.4.1 (Kotlin tích hợp, 2.2.10), Gradle 9.6.0, Compose BOM 2026.09.00 (Material 3).
+- 2026-10-19: Giao diện có chế độ sáng (theo Figma) và tối (tự thiết kế từ màu Figma, đạt WCAG AA), theo cài đặt của điện thoại; không dùng màu động Material You. Font Inter đóng gói trong app (file biến thiên, giấy phép OFL).
+- 2026-10-20: Điều hướng Android dùng Navigation 3 (1.2.0) + kotlinx-serialization. Icon lấy từ Figma (bộ Lucide) chuyển sang VectorDrawable, không dùng thư viện icon. Màn hình làm theo Figma với dữ liệu mẫu trước, nối backend sau.
 
 ## Câu hỏi mở
 Mỗi mục ghi rõ cần chốt trước khi làm phần nào. Chưa tới phần đó thì để nguyên.
@@ -82,6 +87,8 @@ Mỗi mục ghi rõ cần chốt trước khi làm phần nào. Chưa tới ph�
 - [Trip] Thời gian và quãng đường giữa các điểm lấy bằng ước tính đường chim bay hay Google Routes API? Cần cho ràng buộc tổng thời gian ≤ T.
 - [Database] Thuật toán cần thời gian ghé thăm và khoảng giá (min/max, đơn vị tiền tệ), nhưng bảng Place chưa có các cột này. Cũng chưa có bảng lưu trú, bình chọn và cách chia chi phí.
 - [Rủi ro] Kiểm tra sớm điều kiện cấp Partner API của Klook, GetYourGuide, Tiqets, Agoda và độ phủ ở Việt Nam. Tất cả đều cần duyệt đối tác; đồ án sinh viên có thể không được duyệt.
+- [Camera] Có thêm CameraX (dependency lớn) để khung ngắm dùng camera thật không? Hiện màn nhận diện dùng ảnh mẫu. Chốt trước khi làm nhận diện ảnh thật.
+- [Offline] Giao diện offline trong Figma (mất mạng, cần mạng, có mạng lại) đang tạm bỏ qua. Chốt phạm vi trước khi làm lưu lộ trình bằng Room.
 
 ## Ngôn ngữ
 - Giải thích bằng tiếng Việt. Code, tên biến, comment và commit message bằng tiếng Anh.

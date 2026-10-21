@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lucide "flame" icon exported from the TripFair Figma file. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="18dp"
+    android:height="18dp"
+    android:viewportWidth="18"
+    android:viewportHeight="18">
+    <path
+        android:pathData="M9 16.5C12 16.5 14.25 14.475 14.25 11.4C14.25 9 12.75 7.2 11.55 5.925C11.25 7.425 10.425 8.4 9.45 8.775C9.75 6 8.85 3.45 6.75 1.5C6.975 3.825 5.7 5.25 4.5 6.6C3.6 7.65 3.75 9.225 3.75 11.4C3.75 14.475 6 16.5 9 16.5Z"
+        android:strokeColor="#D92D20"
+        android:strokeWidth="1.5"
+        android:strokeLineJoin="round" />
+</vector>

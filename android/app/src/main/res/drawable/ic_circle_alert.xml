@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lucide "circle-alert" icon exported from the TripFair Figma file. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="19dp"
+    android:height="19dp"
+    android:viewportWidth="19"
+    android:viewportHeight="19">
+    <path
+        android:pathData="M9.5 6.33308V9.5M9.5 12.6669H9.50792M17.4173 9.5C17.4173 13.8726 13.8726 17.4173 9.5 17.4173C5.1274 17.4173 1.5827 13.8726 1.5827 9.5C1.5827 5.1274 5.1274 1.5827 9.5 1.5827C13.8726 1.5827 17.4173 5.1274 17.4173 9.5Z"
+        android:strokeColor="#D92D20"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round" />
+</vector>

@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Draft legal texts from the Figma design (not approved legal documents). -->
+<resources>
+    <string name="legal_draft">Bản dự thảo cho đồ án</string>
+    <string name="legal_toc_title">Nội dung chính</string>
+    <plurals name="legal_toc_count">
+        <item quantity="other">%1$d mục</item>
+    </plurals>
+
+    <!-- Privacy policy -->
+    <string name="privacy_title">Chính sách bảo mật</string>
+    <string name="privacy_badge">TripFair · Quyền riêng tư</string>
+    <string name="privacy_intro">Tìm hiểu dữ liệu được dùng khi bạn khám phá địa điểm, lên kế hoạch cùng nhóm và sử dụng SOS.</string>
+    <string name="privacy_disclaimer">Nội dung mô tả thiết kế dự kiến của TripFair, chưa phải chính sách pháp lý đã phê duyệt.</string>
+
+    <string name="privacy_s1">Dữ liệu TripFair xử lý</string>
+    <string name="privacy_s1_account_lead">Tài khoản.</string>
+    <string name="privacy_s1_account">Họ tên, email, số điện thoại và thông tin đăng nhập bạn cung cấp.</string>
+    <string name="privacy_s1_trip_lead">Hành trình.</string>
+    <string name="privacy_s1_trip">Lịch sử tìm kiếm, địa điểm yêu thích, lịch trình, ngân sách, sở thích và bình chọn trong nhóm.</string>
+    <string name="privacy_s1_safety_lead">Ảnh &amp; an toàn.</string>
+    <string name="privacy_s1_safety">Ảnh chụp để nhận diện, vị trí GPS và danh sách người thân dùng cho SOS.</string>
+
+    <string name="privacy_s2">Mục đích sử dụng</string>
+    <string name="privacy_s2_p1">Dữ liệu được dùng để quản lý tài khoản, lưu lựa chọn của bạn, gợi ý địa điểm phù hợp và xây dựng lịch trình theo ngân sách, sở thích của nhóm.</string>
+    <string name="privacy_s2_p2">Bình chọn giúp nhóm cùng chọn phương án. Ảnh phục vụ nhận diện địa điểm; GPS hỗ trợ bản đồ, gợi ý gần bạn và gửi vị trí khi SOS.</string>
+
+    <string name="privacy_s3">Chia sẻ dữ liệu</string>
+    <string name="privacy_s3_group_lead">Trong nhóm.</string>
+    <string name="privacy_s3_group">Lịch trình, sở thích, bình chọn và phần chi của bạn hiển thị cho thành viên cùng chuyến. Ngân sách tối đa của bạn được giữ kín.</string>
+    <string name="privacy_s3_vendors_lead">Nhà cung cấp dịch vụ.</string>
+    <string name="privacy_s3_vendors">Backend xử lý dữ liệu của ứng dụng. Google Cloud Vision nhận ảnh để nhận diện. Google Maps/Places, Klook, GetYourGuide, Tiqets và Agoda nhận điểm đến và ngày đi để trả về giá, không nhận thông tin cá nhân của bạn.</string>
+    <string name="privacy_s3_sos_lead">Khi SOS.</string>
+    <string name="privacy_s3_sos">Các liên hệ khẩn cấp đã lưu nhận SMS chứa vị trí của bạn. Việc gửi tin còn liên quan đến dịch vụ SMS và nhà mạng.</string>
+    <string name="privacy_s3_note">Hãy kiểm tra thông tin trước khi đưa vào nhóm hoặc gửi đi. Dịch vụ bên ngoài có chính sách riêng về xử lý dữ liệu.</string>
+
+    <string name="privacy_s4">Camera, vị trí và SMS</string>
+    <string name="privacy_s4_camera">Camera</string>
+    <string name="privacy_s4_camera_text">Chụp ảnh để nhận diện địa điểm. Ảnh được gửi đến backend và Google Cloud Vision để xử lý.</string>
+    <string name="privacy_s4_gps">Vị trí (GPS)</string>
+    <string name="privacy_s4_gps_text">Gợi ý địa điểm gần bạn, hiển thị trên bản đồ và lấy vị trí để gửi khi dùng SOS.</string>
+    <string name="privacy_s4_sms">SMS</string>
+    <string name="privacy_s4_sms_text">Gửi tin nhắn chứa vị trí SOS đến các liên hệ khẩn cấp bạn đã lưu; quyền cần thiết tùy hệ điều hành.</string>
+    <string name="privacy_s4_note">Nếu không cấp quyền, tính năng tương ứng có thể không hoạt động hoặc bị hạn chế.</string>
+
+    <string name="privacy_s5">Liên hệ khẩn cấp &amp; SOS</string>
+    <string name="privacy_s5_warning">Đây là dữ liệu nhạy cảm</string>
+    <string name="privacy_s5_p1">Tên, số điện thoại người thân và vị trí SOS có thể tiết lộ người liên hệ và nơi bạn đang ở. Danh sách được lưu để gửi SMS vị trí khi bạn dùng SOS.</string>
+    <string name="privacy_s5_p2">Chỉ thêm người bạn tin cậy, thông báo cho họ về việc nhận tin và kiểm tra người nhận. Bạn có thể chỉnh sửa hoặc xóa liên hệ trong “Liên hệ khẩn cấp SOS”.</string>
+
+    <string name="privacy_s6">Quản lý quyền &amp; xóa dữ liệu</string>
+    <string name="privacy_s6_permissions_lead">Thay đổi quyền.</string>
+    <string name="privacy_s6_permissions">Vào Cài đặt của điện thoại → TripFair để xem, cấp hoặc thu hồi quyền camera, vị trí và SMS nếu hệ điều hành hỗ trợ.</string>
+    <string name="privacy_s6_manage_lead">Quản lý thông tin.</string>
+    <string name="privacy_s6_manage">Bạn có thể sửa hồ sơ, bỏ lưu địa điểm yêu thích và cập nhật liên hệ SOS tại các mục tương ứng trong ứng dụng.</string>
+    <string name="privacy_s6_delete_lead">Đề nghị xóa dữ liệu.</string>
+    <string name="privacy_s6_delete">Liên hệ đội ngũ TripFair qua mục Trợ giúp &amp; hỗ trợ, nêu dữ liệu hoặc tài khoản muốn xóa để được hướng dẫn.</string>
+    <string name="privacy_s6_note">Thu hồi quyền không đồng nghĩa với xóa dữ liệu đã gửi. Thời hạn lưu trữ và quy trình xử lý yêu cầu xóa cần được xác định trong bản chính sách hoàn thiện.</string>
+
+    <string name="privacy_s7">Liên hệ hỗ trợ</string>
+    <string name="privacy_s7_p1">Có câu hỏi về quyền riêng tư hoặc cần đề nghị xóa dữ liệu? Vào Tôi → Trợ giúp &amp; hỗ trợ để liên hệ đội ngũ TripFair.</string>
+    <string name="privacy_s7_note">Không gửi mật khẩu hoặc vị trí SOS trong nội dung yêu cầu nếu không cần thiết.</string>
+
+    <!-- Terms of use -->
+    <string name="terms_title">Điều khoản sử dụng</string>
+    <string name="terms_badge">TripFair · Điều khoản</string>
+    <string name="terms_intro">Những điều cần biết khi dùng TripFair để tìm địa điểm, lập lộ trình theo ngân sách và gửi SOS.</string>
+    <string name="terms_disclaimer">Nội dung mô tả thiết kế dự kiến của TripFair, chưa phải điều khoản pháp lý đã phê duyệt.</string>
+
+    <string name="terms_s1">Phạm vi dịch vụ</string>
+    <string name="terms_s1_what_lead">TripFair làm gì.</string>
+    <string name="terms_s1_what">Gợi ý địa điểm, chỗ ở và lộ trình theo ngân sách cho một người hoặc cả nhóm.</string>
+    <string name="terms_s1_booking_lead">Không bán vé, không đặt phòng.</string>
+    <string name="terms_s1_booking">Khi đặt chỗ, bạn được chuyển tới Klook, GetYourGuide, Tiqets hoặc Agoda và theo điều khoản của họ.</string>
+    <string name="terms_s1_student_lead">Đồ án sinh viên.</string>
+    <string name="terms_s1_student">TripFair là đồ án môn NT118, đang trong giai đoạn phát triển.</string>
+
+    <string name="terms_s2">Giá và ngân sách</string>
+    <string name="terms_s2_reference_lead">Giá tham khảo.</string>
+    <string name="terms_s2_reference">Giá lấy từ đối tác và Google tại thời điểm tra cứu; giá thực tế khi đặt có thể khác.</string>
+    <string name="terms_s2_estimate_lead">Giá ước tính.</string>
+    <string name="terms_s2_estimate">Giá có dấu ~ là ước tính. Ngân sách gồm vé, ăn uống và lưu trú, chưa gồm di chuyển.</string>
+
+    <string name="terms_s3">Tài khoản và nhóm</string>
+    <string name="terms_s3_account_lead">Tài khoản.</string>
+    <string name="terms_s3_account">Bạn tự bảo vệ mật khẩu và mã OTP; không chia sẻ mã cho người khác.</string>
+    <string name="terms_s3_group_lead">Trong nhóm.</string>
+    <string name="terms_s3_group">Trưởng nhóm kết thúc bình chọn và chọn chỗ ở cho cả nhóm. Ngân sách tối đa của mỗi người được giữ kín.</string>
+    <string name="terms_s3_content_lead">Nội dung người dùng.</string>
+    <string name="terms_s3_content">Đánh giá cần trung thực, không xúc phạm; TripFair có thể ẩn nội dung bị báo cáo.</string>
+    <string name="terms_s3_note">Vi phạm nhiều lần có thể dẫn tới khóa tài khoản.</string>
+
+    <string name="terms_s4">SOS không thay thế dịch vụ khẩn cấp</string>
+    <string name="terms_s4_warning">Khi nguy hiểm, hãy gọi 113, 114 hoặc 115</string>
+    <string name="terms_s4_p1">SOS gửi SMS từ điện thoại của bạn và phụ thuộc vào sóng di động, GPS và quyền ứng dụng; TripFair không bảo đảm tin nhắn luôn tới nơi.</string>
+    <string name="terms_s4_p2">Kiểm tra số điện thoại người thân trước chuyến đi và báo để họ biết mình là người nhận tin SOS.</string>
+
+    <string name="terms_s5">Thay đổi điều khoản</string>
+    <string name="terms_s5_update_lead">Cập nhật.</string>
+    <string name="terms_s5_update">Khi điều khoản thay đổi, TripFair báo trong ứng dụng trước khi áp dụng.</string>
+    <string name="terms_s5_stop_lead">Ngừng sử dụng.</string>
+    <string name="terms_s5_stop">Bạn có thể xóa tài khoản bất cứ lúc nào qua mục Trợ giúp &amp; hỗ trợ.</string>
+    <string name="terms_s5_law_lead">Luật áp dụng.</string>
+    <string name="terms_s5_law">Điều khoản tuân theo pháp luật Việt Nam.</string>
+    <string name="terms_s5_note">Bản dự thảo cho đồ án, sẽ được rà soát trước khi phát hành.</string>
+
+    <string name="terms_s6">Liên hệ</string>
+    <string name="terms_s6_p1">Có câu hỏi về điều khoản? Vào Tôi → Trợ giúp &amp; hỗ trợ để gửi email cho nhóm TripFair.</string>
+    <string name="terms_s6_note">Không gửi mật khẩu hoặc mã OTP trong nội dung yêu cầu.</string>
+</resources>
