@@ -22,41 +22,72 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.error
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tripfair.app.R
+import com.tripfair.app.data.auth.AuthValidation
+import com.tripfair.app.ui.AppViewModelProvider
 import com.tripfair.app.ui.components.FillHeightScrollColumn
 import com.tripfair.app.ui.components.PrimaryButton
 import com.tripfair.app.ui.sample.SampleData
 import com.tripfair.app.ui.theme.ThemePreviews
 import com.tripfair.app.ui.theme.TripFairTheme
 
-private const val OTP_LENGTH = 6
+/** Connects [OtpVerificationScreen] to its [OtpViewModel]; [onVerified] runs once the code is accepted. */
+@Composable
+fun OtpRoute(
+    onBack: () -> Unit,
+    onVerified: () -> Unit,
+    onChangeDestination: () -> Unit,
+    onBackToLogin: () -> Unit,
+    onSupport: () -> Unit,
+    viewModel: OtpViewModel = viewModel(factory = AppViewModelProvider.Factory),
+) {
+    val state = viewModel.state
+    LaunchedEffect(state.verified) {
+        if (state.verified) {
+            viewModel.onVerifiedHandled()
+            onVerified()
+        }
+    }
+    OtpVerificationScreen(
+        state = state,
+        onCodeChange = viewModel::onCodeChange,
+        onVerify = viewModel::verify,
+        onResend = viewModel::resend,
+        onBack = onBack,
+        onChangeDestination = onChangeDestination,
+        onBackToLogin = onBackToLogin,
+        onSupport = onSupport,
+    )
+}
 
 @Composable
 fun OtpVerificationScreen(
-    destination: String,
+    state: OtpUiState,
+    onCodeChange: (String) -> Unit,
+    onVerify: () -> Unit,
+    onResend: () -> Unit,
     onBack: () -> Unit,
-    onVerified: () -> Unit,
     onChangeDestination: () -> Unit,
     onBackToLogin: () -> Unit,
     onSupport: () -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
     val type = MaterialTheme.typography
-    var code by rememberSaveable { mutableStateOf(SampleData.OTP_CODE) }
 
     Scaffold(topBar = { AuthTopBar(title = stringResource(R.string.otp_top_title), onBack = onBack) }) { innerPadding ->
         FillHeightScrollColumn(
@@ -73,7 +104,7 @@ fun OtpVerificationScreen(
                     subtitle = stringResource(R.string.otp_subtitle),
                 ) {
                     Column {
-                        Text(text = destination, style = type.titleSmall)
+                        Text(text = state.destination, style = type.titleSmall)
                         Text(
                             text = stringResource(R.string.otp_change_destination),
                             style = type.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
@@ -88,7 +119,11 @@ fun OtpVerificationScreen(
                 Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(text = stringResource(R.string.otp_code_label), style = type.labelMedium)
-                        OtpCodeField(code = code, onCodeChange = { code = it })
+                        val error = state.codeError?.let { stringResource(it) }
+                        OtpCodeField(code = state.code, onCodeChange = onCodeChange, error = error)
+                        if (error != null) {
+                            Text(text = error, style = type.labelSmall, color = colors.error)
+                        }
                     }
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                         Icon(
@@ -105,8 +140,9 @@ fun OtpVerificationScreen(
                     }
                     PrimaryButton(
                         text = stringResource(R.string.otp_submit),
-                        onClick = onVerified,
+                        onClick = onVerify,
                         trailingIcon = R.drawable.ic_arrow_right,
+                        enabled = !state.loading,
                     )
                     Column(
                         modifier = Modifier.fillMaxWidth(),
@@ -118,18 +154,25 @@ fun OtpVerificationScreen(
                             style = type.bodyMedium,
                             color = colors.onSurfaceVariant,
                         )
-                        // Resend stays locked until the countdown ends; only the locked state is designed.
+                        // Locked (grey, Figma) while counting down; when it ends it becomes a teal button.
+                        val canResend = state.resendInSeconds == 0
                         Box(
                             modifier = Modifier
                                 .height(40.dp)
-                                .background(colors.outline, RoundedCornerShape(12.dp))
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(if (canResend) colors.primaryContainer else colors.outline)
+                                .clickable(enabled = canResend, role = Role.Button, onClick = onResend)
                                 .padding(horizontal = 16.dp),
                             contentAlignment = Alignment.Center,
                         ) {
                             Text(
-                                text = stringResource(R.string.otp_resend_countdown, SampleData.OTP_RESEND_IN),
+                                text = if (canResend) {
+                                    stringResource(R.string.otp_resend)
+                                } else {
+                                    stringResource(R.string.otp_resend_countdown, formatCountdown(state.resendInSeconds))
+                                },
                                 style = type.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                                color = colors.onSurfaceVariant,
+                                color = if (canResend) colors.primary else colors.onSurfaceVariant,
                             )
                         }
                         Text(
@@ -160,18 +203,25 @@ fun OtpVerificationScreen(
     }
 }
 
-/** Six boxes that show the typed digits ("Mã sáu chữ số" in Figma), backed by one hidden text field. */
+/** "01:05" style countdown for "Gửi lại mã sau …". */
+private fun formatCountdown(seconds: Int): String = "%02d:%02d".format(seconds / 60, seconds % 60)
+
+/**
+ * Six boxes that show the typed digits ("Mã sáu chữ số" in Figma), backed by one hidden text field.
+ * With an [error] every box gets a red border.
+ */
 @Composable
-private fun OtpCodeField(code: String, onCodeChange: (String) -> Unit) {
+private fun OtpCodeField(code: String, onCodeChange: (String) -> Unit, error: String?) {
     val colors = MaterialTheme.colorScheme
     BasicTextField(
         value = code,
-        onValueChange = { input -> onCodeChange(input.filter { it.isDigit() }.take(OTP_LENGTH)) },
+        onValueChange = onCodeChange,
+        modifier = if (error != null) Modifier.semantics { error(error) } else Modifier,
         singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
         decorationBox = {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                repeat(OTP_LENGTH) { index ->
+                repeat(AuthValidation.CODE_LENGTH) { index ->
                     val isNext = index == code.length
                     Box(
                         modifier = Modifier
@@ -180,7 +230,11 @@ private fun OtpCodeField(code: String, onCodeChange: (String) -> Unit) {
                             .background(colors.surfaceContainerLow, MaterialTheme.shapes.small)
                             .border(
                                 width = 1.dp,
-                                color = if (isNext) colors.primary else colors.outline,
+                                color = when {
+                                    error != null -> colors.error
+                                    isNext -> colors.primary
+                                    else -> colors.outline
+                                },
                                 shape = MaterialTheme.shapes.small,
                             ),
                         contentAlignment = Alignment.Center,
@@ -205,9 +259,11 @@ private fun OtpCodeField(code: String, onCodeChange: (String) -> Unit) {
 private fun OtpVerificationScreenPreview() {
     TripFairTheme {
         OtpVerificationScreen(
-            destination = SampleData.USER_EMAIL,
+            state = OtpUiState(destination = SampleData.USER_EMAIL, resendInSeconds = 45),
+            onCodeChange = {},
+            onVerify = {},
+            onResend = {},
             onBack = {},
-            onVerified = {},
             onChangeDestination = {},
             onBackToLogin = {},
             onSupport = {},

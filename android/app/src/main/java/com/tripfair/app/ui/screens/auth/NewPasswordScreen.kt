@@ -11,15 +11,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tripfair.app.R
+import com.tripfair.app.ui.AppViewModelProvider
 import com.tripfair.app.ui.components.FillHeightScrollColumn
 import com.tripfair.app.ui.components.InfoNote
 import com.tripfair.app.ui.components.LabeledTextField
@@ -28,16 +27,37 @@ import com.tripfair.app.ui.sample.SampleData
 import com.tripfair.app.ui.theme.ThemePreviews
 import com.tripfair.app.ui.theme.TripFairTheme
 
+/** Connects [NewPasswordScreen] to its [NewPasswordViewModel]; [onSaved] runs once the password is changed. */
+@Composable
+fun NewPasswordRoute(
+    onBack: () -> Unit,
+    onSaved: () -> Unit,
+    onSupport: () -> Unit,
+    viewModel: NewPasswordViewModel = viewModel(factory = AppViewModelProvider.Factory),
+) {
+    val state = viewModel.state
+    LaunchedEffect(state.saved) {
+        if (state.saved) onSaved()
+    }
+    NewPasswordScreen(
+        state = state,
+        onPasswordChange = viewModel::onPasswordChange,
+        onConfirmPasswordChange = viewModel::onConfirmPasswordChange,
+        onBack = onBack,
+        onSave = viewModel::save,
+        onSupport = onSupport,
+    )
+}
+
 @Composable
 fun NewPasswordScreen(
-    email: String,
+    state: NewPasswordUiState,
+    onPasswordChange: (String) -> Unit,
+    onConfirmPasswordChange: (String) -> Unit,
     onBack: () -> Unit,
     onSave: () -> Unit,
     onSupport: () -> Unit,
 ) {
-    var password by rememberSaveable { mutableStateOf(SampleData.PASSWORD) }
-    var confirmPassword by rememberSaveable { mutableStateOf(SampleData.PASSWORD) }
-
     Scaffold(
         topBar = { AuthTopBar(title = stringResource(R.string.new_password_top_title), onBack = onBack) },
     ) { innerPadding ->
@@ -60,22 +80,24 @@ fun NewPasswordScreen(
                     InfoNote(
                         icon = R.drawable.ic_shield_check,
                         title = stringResource(R.string.new_password_verified),
-                        text = email,
+                        text = state.contact,
                     )
                     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                         LabeledTextField(
-                            value = password,
-                            onValueChange = { password = it },
+                            value = state.password,
+                            onValueChange = onPasswordChange,
                             label = stringResource(R.string.new_password_label),
                             leadingIcon = R.drawable.ic_lock_keyhole,
                             helperText = stringResource(R.string.password_rule_helper),
+                            errorText = state.passwordError?.let { stringResource(it) },
                             isPassword = true,
                         )
                         LabeledTextField(
-                            value = confirmPassword,
-                            onValueChange = { confirmPassword = it },
+                            value = state.confirmPassword,
+                            onValueChange = onConfirmPasswordChange,
                             label = stringResource(R.string.new_password_confirm_label),
                             leadingIcon = R.drawable.ic_shield_check,
+                            errorText = state.confirmPasswordError?.let { stringResource(it) },
                             isPassword = true,
                         )
                     }
@@ -85,6 +107,7 @@ fun NewPasswordScreen(
                         text = stringResource(R.string.new_password_submit),
                         onClick = onSave,
                         trailingIcon = R.drawable.ic_arrow_right,
+                        enabled = !state.loading,
                     )
                     Text(
                         text = stringResource(R.string.new_password_after_save),
@@ -106,6 +129,13 @@ fun NewPasswordScreen(
 @Composable
 private fun NewPasswordScreenPreview() {
     TripFairTheme {
-        NewPasswordScreen(email = SampleData.USER_EMAIL, onBack = {}, onSave = {}, onSupport = {})
+        NewPasswordScreen(
+            state = NewPasswordUiState(contact = SampleData.USER_EMAIL),
+            onPasswordChange = {},
+            onConfirmPasswordChange = {},
+            onBack = {},
+            onSave = {},
+            onSupport = {},
+        )
     }
 }
