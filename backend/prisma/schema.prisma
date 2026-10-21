@@ -1,0 +1,11 @@
+// Prisma schema for the TripFair backend.
+// Models are added in step A4 after the database design is approved.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}

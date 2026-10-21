@@ -8,15 +8,25 @@ REST API for the TripFair Android app, built with NestJS and TypeScript.
 
 - Node.js 24 LTS
 - npm 11
+- Docker Desktop (for the local MySQL database)
 
 ## Getting started
 
-```bash
-npm install
-npm run start:dev
-```
+1. Copy `.env.example` to `.env` and set the passwords.
+2. Start MySQL 8.4 and install dependencies:
 
-The server runs at http://localhost:3000. Set `PORT` to use a different port.
+   ```bash
+   docker compose up -d
+   npm install
+   ```
+
+3. Start the API:
+
+   ```bash
+   npm run start:dev
+   ```
+
+The server runs at http://localhost:3000. `GET /health` returns `200` when the database is reachable and `503` when it is not.
 
 ## Scripts
 
@@ -29,3 +39,5 @@ The server runs at http://localhost:3000. Set `PORT` to use a different port.
 | `npm run test:e2e` | Run end-to-end tests |
 | `npm run lint` | Lint with oxlint |
 | `npm run format` | Format with Prettier |
+| `npm run db:generate` | Regenerate the Prisma Client after schema changes |
+| `npm run db:migrate` | Create and apply a database migration |

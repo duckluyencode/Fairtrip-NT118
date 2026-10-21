@@ -73,6 +73,7 @@ README.md
 - 2026-10-18: Nguồn giá vé thêm Klook bên cạnh GetYourGuide/Tiqets; dùng dữ liệu mẫu khi chưa được duyệt đối tác.
 - 2026-10-18: Giá chỉ hiện ở Chi tiết địa điểm, Bình chọn, Lộ trình và Kết quả tối ưu.
 - 2026-10-18: Backend dùng NestJS 12 (ESM) trên Node.js 24 LTS; test bằng Vitest, lint bằng oxlint.
+- 2026-10-18: ORM là Prisma 7.10.1 (ghim phiên bản) với adapter MariaDB; database MySQL 8.4 LTS, trên máy chạy bằng Docker Compose (`backend/docker-compose.yml`).
 - 2026-10-19: App Android: package com.tripfair.app, minSdk 26, compileSdk/targetSdk 37; AGP 9.4.1 (Kotlin tích hợp, 2.2.10), Gradle 9.6.0, Compose BOM 2026.09.00 (Material 3).
 - 2026-10-19: Giao diện có chế độ sáng (theo Figma) và tối (tự thiết kế từ màu Figma, đạt WCAG AA), theo cài đặt của điện thoại; không dùng màu động Material You. Font Inter đóng gói trong app (file biến thiên, giấy phép OFL).
 - 2026-10-20: Điều hướng Android dùng Navigation 3 (1.2.0) + kotlinx-serialization. Icon lấy từ Figma (bộ Lucide) chuyển sang VectorDrawable, không dùng thư viện icon. Màn hình làm theo Figma với dữ liệu mẫu trước, nối backend sau.
