@@ -88,7 +88,7 @@ fun ItineraryEditorScreen(
     Scaffold(
         topBar = {
             TripFairTopBar(title = stringResource(R.string.itinerary_edit), onBack = onBack) {
-                TopBarTextAction(text = stringResource(R.string.editor_save), onClick = { onSave(days) })
+                TopBarTextAction(text = stringResource(R.string.action_save), onClick = { onSave(days) })
             }
         },
         bottomBar = {

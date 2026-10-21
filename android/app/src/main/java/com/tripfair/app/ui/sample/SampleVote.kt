@@ -42,7 +42,7 @@ object SampleVote {
             placeId = SamplePlaces.myKhe.id,
             name = "Bãi biển Mỹ Khê",
             priceLine = "Miễn phí",
-            image = R.drawable.sample_vote_my_khe,
+            image = R.drawable.sample_my_khe_sunset,
             agreed = "4/4",
             agreedFraction = 1f,
             ballotOpen = "2/2",

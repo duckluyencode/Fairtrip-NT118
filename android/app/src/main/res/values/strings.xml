@@ -96,6 +96,9 @@
     <!-- Search -->
     <string name="search_title">Tìm kiếm</string>
     <string name="action_cancel">Hủy</string>
+    <string name="action_save">Lưu</string>
+    <string name="action_close">Đóng</string>
+    <string name="list_and">%1$s và %2$s</string>
     <string name="search_suggestions">Gợi ý tìm kiếm</string>
     <string name="search_recent">Gần đây</string>
 
@@ -422,15 +425,98 @@
     <string name="cd_itinerary_menu">Tùy chọn lộ trình</string>
     <string name="cd_itinerary_map">Bản đồ các điểm dừng của ngày %1$d</string>
     <string name="itinerary_edit">Sửa lộ trình</string>
-    <string name="editor_save">Lưu</string>
     <string name="editor_hint">Giữ và kéo để đổi thứ tự · vuốt sang trái để xóa điểm</string>
     <string name="editor_add_place">+ Thêm địa điểm</string>
     <string name="editor_reoptimize">Để app tối ưu lại</string>
     <string name="editor_save_itinerary">Lưu lộ trình</string>
     <string name="cd_delete_stop">Xóa điểm</string>
 
-    <!-- Placeholder for screens built later -->
-    <string name="placeholder_coming">Màn hình này sẽ có ở bước sau.</string>
+    <!-- Camera recognition -->
+    <string name="camera_help">Trợ giúp</string>
+    <string name="camera_ready">Chụp để nhận diện</string>
+    <string name="camera_frame_hint">Đặt toàn bộ công trình vào trong khung</string>
+    <string name="camera_steady">Giữ máy ổn định · đủ ánh sáng</string>
+    <string name="camera_usage">TripFair sẽ dùng ảnh để gợi ý địa điểm gần chuyến %1$s</string>
+    <string name="camera_library">Thư viện</string>
+    <string name="camera_switch">Đổi camera</string>
+    <string name="cd_camera_shutter">Chụp ảnh</string>
+    <string name="cd_flash_off">Đèn flash đang tắt</string>
+    <string name="camera_analyzing">Đang phân tích ảnh…</string>
+    <string name="camera_analyzing_hint">Đang nhận diện bằng Google Cloud Vision</string>
+    <string name="camera_analyzing_time">Thường mất 2–3 giây</string>
+    <string name="camera_permission_title">Chưa có quyền camera</string>
+    <string name="camera_permission_text">TripFair cần camera để chụp và nhận diện địa điểm. Bạn vẫn chọn được ảnh từ thư viện.</string>
+    <string name="camera_permission_action">Cấp quyền camera</string>
+    <string name="recognition_title">Kết quả nhận diện</string>
+    <string name="recognition_retake">Chụp lại</string>
+    <string name="recognition_found">ĐÃ NHẬN RA ĐỊA DANH</string>
+    <string name="recognition_not_found">CHƯA NHẬN RA ĐỊA DANH</string>
+    <string name="recognition_confidence">tin cậy</string>
+    <string name="recognition_labels">Nhãn trong ảnh</string>
+    <string name="recognition_source">Google Cloud Vision</string>
+    <string name="recognition_similar">Tương tự &amp; gần đó</string>
+    <string name="recognition_by_labels">Gợi ý theo nhãn trong ảnh</string>
+    <string name="recognition_for_trip">Cho chuyến %1$s</string>
+    <string name="recognition_view_trip">Xem trong chuyến đi 3 ngày</string>
+    <string name="recognition_search_by_name">Tìm bằng tên địa điểm</string>
+    <string name="cd_add_to_trip">Thêm %1$s vào chuyến đi</string>
+
+    <!-- SOS -->
+    <string name="sos_contacts_action">Liên hệ</string>
+    <string name="sos_warning">Chỉ dùng khi cần trợ giúp khẩn cấp. Hệ thống sẽ chia sẻ vị trí GPS hiện tại.</string>
+    <string name="sos_gps">GPS chính xác %1$s</string>
+    <string name="sos_updated">%1$s · cập nhật vừa xong</string>
+    <string name="sos_send_sms">Gửi SMS vị trí cho người thân</string>
+    <string name="sos_quick_call">Gọi nhanh</string>
+    <string name="sos_tap_to_choose">Chạm để chọn</string>
+    <string name="sos_police">Công an</string>
+    <string name="sos_ambulance">Cấp cứu</string>
+    <string name="sos_fire">Cứu hỏa</string>
+    <string name="sos_saved">Đã lưu</string>
+    <string name="sos_confirm_title">Xác nhận gửi vị trí?</string>
+    <string name="sos_confirm_to">SMS sẽ gửi cho %1$s.</string>
+    <string name="sos_no_recipients">Chưa có người nhận. Chọn người nhận trong Liên hệ.</string>
+    <string name="sos_hold_hint">Để tránh bấm nhầm, hãy giữ nút trong 3 giây.</string>
+    <string name="sos_hold_button">Giữ 3 giây để gửi SOS</string>
+    <string name="sos_sent_title">Đã gửi vị trí</string>
+    <string name="sos_sent_text">SMS kèm vị trí đã gửi cho %1$s.</string>
+    <string name="sos_permission_title">Chưa có quyền vị trí</string>
+    <string name="sos_permission_text">TripFair cần vị trí để gửi tọa độ cho người thân. Bạn vẫn gọi được 113, 114, 115 khi chưa cấp quyền.</string>
+    <string name="sos_permission_action">Cấp quyền vị trí</string>
+    <string name="cd_call">Gọi %1$s</string>
+
+    <!-- Emergency contacts -->
+    <string name="contacts_intro_title">Người nhận tin SOS</string>
+    <string name="contacts_intro_text">Đánh dấu những người sẽ nhận SMS kèm vị trí GPS khi bạn gửi SOS.</string>
+    <string name="contacts_section">Người thân của bạn</string>
+    <plurals name="contacts_count">
+        <item quantity="other">%1$d liên hệ</item>
+    </plurals>
+    <string name="contacts_add">Thêm liên hệ khẩn cấp</string>
+    <string name="contacts_edit">Sửa liên hệ khẩn cấp</string>
+    <string name="contacts_receivers">Sẽ nhận tin SOS</string>
+    <string name="contacts_select_all">Chọn tất cả</string>
+    <string name="contacts_receivers_note_two">Khi gửi SOS, cả hai người sẽ nhận địa chỉ, tọa độ và liên kết bản đồ.</string>
+    <plurals name="contacts_receivers_note">
+        <item quantity="other">Khi gửi SOS, %1$d người sẽ nhận địa chỉ, tọa độ và liên kết bản đồ.</item>
+    </plurals>
+    <string name="contacts_receivers_none">Chưa chọn ai. Đánh dấu ít nhất một người để gửi được SOS.</string>
+    <string name="cd_edit_contact">Sửa %1$s</string>
+    <string name="cd_receives_sos">%1$s nhận tin SOS</string>
+    <string name="contact_form_section">Thông tin liên hệ</string>
+    <string name="contact_form_name">Họ và tên</string>
+    <string name="contact_form_name_hint">Ví dụ: Nguyễn Thị Hoa</string>
+    <string name="contact_form_phone">Số điện thoại</string>
+    <string name="contact_form_phone_hint">Ví dụ: 0912 345 678</string>
+    <string name="contact_form_relation">Mối quan hệ</string>
+    <string name="contact_form_receives">Nhận tin SOS</string>
+    <string name="contact_form_receives_text">Người này nhận SMS kèm vị trí khi bạn gửi SOS</string>
+    <string name="contact_form_note_title">Báo trước cho người này</string>
+    <string name="contact_form_note_text">Số điện thoại chỉ lưu trong tài khoản của bạn và chỉ dùng khi bạn gửi SOS.</string>
+    <string name="contact_form_pick">Chọn từ danh bạ</string>
+    <string name="contact_form_save">Lưu liên hệ</string>
+
+    <!-- Screen titles -->
     <string name="sos_title">SOS khẩn cấp</string>
     <string name="camera_title">Nhận diện địa điểm</string>
     <string name="emergency_contacts_title">Liên hệ khẩn cấp</string>

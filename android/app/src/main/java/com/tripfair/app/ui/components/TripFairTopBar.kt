@@ -30,13 +30,14 @@ import com.tripfair.app.R
 
 /**
  * Top bar of the main screens ("Thanh tiêu đề" in Figma): optional back arrow, 22sp title,
- * and actions on the right.
+ * and actions on the right. [contentColor] is white on the dark camera screens.
  */
 @Composable
 fun TripFairTopBar(
     title: String,
     modifier: Modifier = Modifier,
     onBack: (() -> Unit)? = null,
+    contentColor: Color = MaterialTheme.colorScheme.onSurface,
     actions: @Composable RowScope.() -> Unit = {},
 ) {
     Row(
@@ -52,7 +53,7 @@ fun TripFairTopBar(
                 Icon(
                     painter = painterResource(R.drawable.ic_arrow_left),
                     contentDescription = stringResource(R.string.cd_back),
-                    tint = MaterialTheme.colorScheme.onSurface,
+                    tint = contentColor,
                     modifier = Modifier.size(20.dp),
                 )
             }
@@ -60,6 +61,7 @@ fun TripFairTopBar(
         Text(
             text = title,
             style = MaterialTheme.typography.titleLarge,
+            color = contentColor,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier

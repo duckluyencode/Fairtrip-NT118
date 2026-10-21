@@ -126,13 +126,20 @@ data object DayItinerary : NavKey
 @Serializable
 data object ItineraryEditor : NavKey
 
-// Screens of later groups, reached from the ones above
+// 06 Camera & SOS
 
 @Serializable
-data object EmergencyContacts : NavKey
+data object CameraScan : NavKey
+
+@Serializable
+data class RecognitionResult(val recognized: Boolean) : NavKey
 
 @Serializable
 data object Sos : NavKey
 
 @Serializable
-data object CameraScan : NavKey
+data object EmergencyContacts : NavKey
+
+/** Adds a contact, or edits the one with [contactId]. */
+@Serializable
+data class ContactForm(val contactId: String? = null) : NavKey

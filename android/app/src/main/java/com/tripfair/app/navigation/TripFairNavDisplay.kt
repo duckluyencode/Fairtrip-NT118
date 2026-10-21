@@ -5,23 +5,24 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.res.stringResource
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
-import com.tripfair.app.R
 import com.tripfair.app.ui.components.MainTab
 import com.tripfair.app.ui.sample.SampleData
+import com.tripfair.app.ui.sample.SampleCamera
 import com.tripfair.app.ui.sample.SampleItinerary
 import com.tripfair.app.ui.sample.SamplePlaces
 import com.tripfair.app.ui.sample.SampleSearch
-import com.tripfair.app.ui.screens.PlaceholderScreen
+import com.tripfair.app.ui.sample.SampleSos
 import com.tripfair.app.ui.screens.auth.ForgotPasswordScreen
 import com.tripfair.app.ui.screens.auth.LoginScreen
 import com.tripfair.app.ui.screens.auth.NewPasswordScreen
 import com.tripfair.app.ui.screens.auth.OtpVerificationScreen
 import com.tripfair.app.ui.screens.auth.RegisterScreen
+import com.tripfair.app.ui.screens.camera.CameraScreen
+import com.tripfair.app.ui.screens.camera.RecognitionResultScreen
 import com.tripfair.app.ui.screens.explore.PlaceDetailScreen
 import com.tripfair.app.ui.screens.explore.PlaceReviewsScreen
 import com.tripfair.app.ui.screens.explore.SearchHistoryScreen
@@ -43,6 +44,10 @@ import com.tripfair.app.ui.screens.profile.FavoritesScreen
 import com.tripfair.app.ui.screens.profile.ProfileScreen
 import com.tripfair.app.ui.screens.profile.SettingsScreen
 import com.tripfair.app.ui.screens.profile.SupportScreen
+import com.tripfair.app.ui.screens.sos.ContactFormScreen
+import com.tripfair.app.ui.screens.sos.EmergencyContactsScreen
+import com.tripfair.app.ui.screens.sos.SosScreen
+import com.tripfair.app.ui.screens.sos.rememberLocationPermission
 import com.tripfair.app.ui.screens.trip.CreateTripScreen
 import com.tripfair.app.ui.screens.trip.ItineraryEditorScreen
 import com.tripfair.app.ui.screens.trip.ItineraryScreen
@@ -61,8 +66,9 @@ import com.tripfair.app.ui.screens.vote.VoteListScreen
 fun TripFairNavDisplay() {
     val backStack = rememberNavBackStack(Login)
 
-    // The saved itinerary is shared by the itinerary screen and its editor until there is a backend.
+    // Data shared by several screens, kept here until there is a backend.
     var itinerary by remember { mutableStateOf(SampleItinerary.days) }
+    var sosContacts by remember { mutableStateOf(SampleSos.contacts) }
 
     // Shows the itinerary, going back to it if it is already open below.
     val showItinerary: () -> Unit = {
@@ -334,12 +340,61 @@ fun TripFairNavDisplay() {
                 )
             }
 
-            // Screens of later groups
-            entry<EmergencyContacts> {
-                PlaceholderScreen(stringResource(R.string.emergency_contacts_title), onBack = { backStack.goBack() })
+            // 06 Camera & SOS
+            entry<CameraScan> {
+                CameraScreen(
+                    onBack = { backStack.goBack() },
+                    onHelp = { backStack.add(Support) },
+                    onResult = { recognized -> backStack.add(RecognitionResult(recognized)) },
+                )
             }
-            entry<Sos> { PlaceholderScreen(stringResource(R.string.sos_title), onBack = { backStack.goBack() }) }
-            entry<CameraScan> { PlaceholderScreen(stringResource(R.string.camera_title), onBack = { backStack.goBack() }) }
+            entry<RecognitionResult> { route ->
+                RecognitionResultScreen(
+                    result = if (route.recognized) SampleCamera.recognized else SampleCamera.notRecognized,
+                    onBack = { backStack.goBack() },
+                    onRetake = { backStack.popUpTo(CameraScan) },
+                    onPlace = { backStack.add(PlaceDetail(it)) },
+                    onViewTrip = showItinerary,
+                    onSearchByName = { backStack.add(Search) },
+                )
+            }
+            entry<Sos> {
+                val location = rememberLocationPermission()
+                SosScreen(
+                    contacts = sosContacts,
+                    hasLocationPermission = location.granted,
+                    onRequestLocation = location.request,
+                    onBack = { backStack.goBack() },
+                    onContacts = { backStack.add(EmergencyContacts) },
+                )
+            }
+            entry<EmergencyContacts> {
+                EmergencyContactsScreen(
+                    contacts = sosContacts,
+                    onToggle = { id ->
+                        sosContacts = sosContacts.map { if (it.id == id) it.copy(receivesSos = !it.receivesSos) else it }
+                    },
+                    onSelectAll = { sosContacts = sosContacts.map { it.copy(receivesSos = true) } },
+                    onBack = { backStack.goBack() },
+                    onSave = { backStack.goBack() },
+                    onAdd = { backStack.add(ContactForm()) },
+                    onEdit = { backStack.add(ContactForm(it)) },
+                )
+            }
+            entry<ContactForm> { route ->
+                ContactFormScreen(
+                    contact = sosContacts.firstOrNull { it.id == route.contactId },
+                    onBack = { backStack.goBack() },
+                    onSave = { saved ->
+                        sosContacts = if (sosContacts.any { it.id == saved.id }) {
+                            sosContacts.map { if (it.id == saved.id) saved else it }
+                        } else {
+                            sosContacts + saved
+                        }
+                        backStack.goBack()
+                    },
+                )
+            }
         },
     )
 }

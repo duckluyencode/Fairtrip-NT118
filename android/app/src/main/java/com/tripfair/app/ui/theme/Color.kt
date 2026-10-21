@@ -139,10 +139,20 @@ data class ExtendedColors(
     val rating: Color,
     /** Avatar colors for group members, in member order. */
     val memberColors: List<Color>,
+    /** Camera screens stay dark in both modes: background, translucent pills and the mint accent. */
+    val cameraBackground: Color,
+    val cameraOverlay: Color,
+    val onCamera: Color,
+    val cameraAccent: Color,
 )
 
 // Member avatars are identity colors, so they stay the same in dark mode.
 private val MemberColors = listOf(Color(0xFFF06B4F), Color(0xFFF5B84B), Color(0xFF176B62), Color(0xFF6E75B5))
+
+// The camera viewfinder is dark in both modes.
+private val CameraBackground = Color(0xFF0B1211)
+private val CameraOverlay = Color(0xA80B1211)
+private val CameraAccent = Color(0xFF78DCC8)
 
 internal val LightExtendedColors = ExtendedColors(
     success = Color(0xFF2B7D5B),
@@ -154,6 +164,10 @@ internal val LightExtendedColors = ExtendedColors(
     imageScrim = Color(0x800A3930),
     rating = Color(0xFFF5B84B),
     memberColors = MemberColors,
+    cameraBackground = CameraBackground,
+    cameraOverlay = CameraOverlay,
+    onCamera = Color.White,
+    cameraAccent = CameraAccent,
 )
 
 internal val DarkExtendedColors = ExtendedColors(
@@ -166,6 +180,10 @@ internal val DarkExtendedColors = ExtendedColors(
     imageScrim = Color(0x800A3930),
     rating = Color(0xFFF7C66A),
     memberColors = MemberColors,
+    cameraBackground = CameraBackground,
+    cameraOverlay = CameraOverlay,
+    onCamera = Color.White,
+    cameraAccent = CameraAccent,
 )
 
 internal val LocalExtendedColors = staticCompositionLocalOf { LightExtendedColors }

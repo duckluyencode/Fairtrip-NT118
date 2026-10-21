@@ -31,7 +31,7 @@ object SampleLodging {
             rating = "8,6/10",
             distanceToRoute = "1,2 km",
             pricePerNight = 600_000,
-            image = R.drawable.sample_hotel_bien_xanh,
+            image = R.drawable.sample_my_khe,
         ),
         SampleHotel(
             id = "song-han",
@@ -41,7 +41,7 @@ object SampleLodging {
             rating = "7,9/10",
             distanceToRoute = "3,4 km",
             pricePerNight = 400_000,
-            image = R.drawable.sample_hotel_song_han,
+            image = R.drawable.sample_trip_da_nang,
         ),
         SampleHotel(
             id = "my-khe-view",
@@ -51,7 +51,7 @@ object SampleLodging {
             rating = "9,0/10",
             distanceToRoute = "0,3 km",
             pricePerNight = 900_000,
-            image = R.drawable.sample_hotel_my_khe_view,
+            image = R.drawable.sample_my_khe_sunset,
         ),
     )
 
