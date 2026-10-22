@@ -35,7 +35,6 @@ import com.tripfair.app.ui.components.PrimaryButton
 import com.tripfair.app.ui.components.TextWithLink
 import com.tripfair.app.ui.components.TripFairCheckbox
 import com.tripfair.app.ui.components.appendLink
-import com.tripfair.app.ui.sample.SampleData
 import com.tripfair.app.ui.theme.ThemePreviews
 import com.tripfair.app.ui.theme.TripFairTheme
 
@@ -112,7 +111,7 @@ fun RegisterScreen(
                         onValueChange = onFullNameChange,
                         label = stringResource(R.string.register_full_name_label),
                         leadingIcon = R.drawable.ic_user,
-                        placeholder = SampleData.USER_NAME,
+                        placeholder = stringResource(R.string.placeholder_name),
                         errorText = state.fullNameError?.let { stringResource(it) },
                     )
                     LabeledTextField(
@@ -120,7 +119,7 @@ fun RegisterScreen(
                         onValueChange = onContactChange,
                         label = stringResource(R.string.field_contact_label),
                         leadingIcon = R.drawable.ic_mail,
-                        placeholder = SampleData.USER_EMAIL,
+                        placeholder = stringResource(R.string.placeholder_contact),
                         helperText = stringResource(R.string.register_contact_helper),
                         errorText = state.contactError?.let { stringResource(it) },
                         keyboardType = KeyboardType.Email,
@@ -130,6 +129,7 @@ fun RegisterScreen(
                         onValueChange = onPasswordChange,
                         label = stringResource(R.string.field_password_label),
                         leadingIcon = R.drawable.ic_lock_keyhole,
+                        placeholder = stringResource(R.string.placeholder_password),
                         helperText = stringResource(R.string.password_rule_helper),
                         errorText = state.passwordError?.let { stringResource(it) },
                         isPassword = true,
@@ -139,7 +139,7 @@ fun RegisterScreen(
                         onValueChange = onConfirmPasswordChange,
                         label = stringResource(R.string.register_confirm_password_label),
                         leadingIcon = R.drawable.ic_shield_check,
-                        placeholder = stringResource(R.string.register_confirm_password_placeholder),
+                        placeholder = stringResource(R.string.placeholder_password),
                         errorText = state.confirmPasswordError?.let { stringResource(it) },
                         isPassword = true,
                     )

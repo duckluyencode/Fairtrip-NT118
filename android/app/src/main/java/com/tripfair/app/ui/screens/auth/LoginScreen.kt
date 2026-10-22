@@ -90,6 +90,7 @@ fun LoginScreen(
                     onValueChange = onContactChange,
                     label = stringResource(R.string.field_contact_label),
                     leadingIcon = R.drawable.ic_mail,
+                    placeholder = stringResource(R.string.placeholder_contact),
                     errorText = state.contactError?.let { stringResource(it) },
                     keyboardType = KeyboardType.Email,
                 )
@@ -98,6 +99,7 @@ fun LoginScreen(
                     onValueChange = onPasswordChange,
                     label = stringResource(R.string.field_password_label),
                     leadingIcon = R.drawable.ic_lock_keyhole,
+                    placeholder = stringResource(R.string.placeholder_password),
                     errorText = state.passwordError?.let { stringResource(it) },
                     isPassword = true,
                 )

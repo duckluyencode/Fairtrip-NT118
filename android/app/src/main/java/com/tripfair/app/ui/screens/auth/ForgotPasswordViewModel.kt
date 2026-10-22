@@ -7,11 +7,10 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tripfair.app.data.auth.AuthRepository
-import com.tripfair.app.ui.sample.SampleData
 import kotlinx.coroutines.launch
 
 data class ForgotPasswordUiState(
-    val contact: String = SampleData.USER_EMAIL,
+    val contact: String = "",
     @param:StringRes val contactError: Int? = null,
     val loading: Boolean = false,
     val codeSent: Boolean = false,

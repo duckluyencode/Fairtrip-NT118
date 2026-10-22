@@ -8,13 +8,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tripfair.app.R
 import com.tripfair.app.data.auth.AuthRepository
-import com.tripfair.app.ui.sample.SampleData
 import kotlinx.coroutines.launch
 
-/** The sample account is filled in so the app can be tried without typing. */
 data class LoginUiState(
-    val contact: String = SampleData.USER_EMAIL,
-    val password: String = SampleData.PASSWORD,
+    val contact: String = "",
+    val password: String = "",
     val rememberMe: Boolean = true,
     @param:StringRes val contactError: Int? = null,
     @param:StringRes val passwordError: Int? = null,

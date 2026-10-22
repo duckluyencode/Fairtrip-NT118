@@ -9,7 +9,6 @@ import androidx.lifecycle.viewModelScope
 import com.tripfair.app.R
 import com.tripfair.app.data.auth.AuthRepository
 import com.tripfair.app.data.auth.AuthValidation
-import com.tripfair.app.ui.sample.SampleData
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -20,8 +19,7 @@ private const val RESEND_SECONDS = 60
 data class OtpUiState(
     /** Email or phone number the code was sent to. */
     val destination: String = "",
-    /** The sample code is filled in so the flow can be tried without a real email or SMS. */
-    val code: String = SampleData.OTP_CODE,
+    val code: String = "",
     @param:StringRes val codeError: Int? = null,
     val resendInSeconds: Int = RESEND_SECONDS,
     val loading: Boolean = false,

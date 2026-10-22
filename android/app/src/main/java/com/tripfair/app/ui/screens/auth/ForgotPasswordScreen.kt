@@ -80,6 +80,7 @@ fun ForgotPasswordScreen(
                         onValueChange = onContactChange,
                         label = stringResource(R.string.forgot_contact_label),
                         leadingIcon = R.drawable.ic_mail,
+                        placeholder = stringResource(R.string.placeholder_contact),
                         helperText = stringResource(R.string.forgot_contact_helper),
                         errorText = state.contactError?.let { stringResource(it) },
                         keyboardType = KeyboardType.Email,

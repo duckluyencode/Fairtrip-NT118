@@ -11,6 +11,9 @@
     <string name="support_card">Cần hỗ trợ? Liên hệ đội ngũ TripFair</string>
     <string name="field_contact_label">Số điện thoại hoặc email</string>
     <string name="field_password_label">Mật khẩu</string>
+    <string name="placeholder_contact">VD: user@gmail.com hoặc 0901234567</string>
+    <string name="placeholder_name">VD: Nguyễn Văn A</string>
+    <string name="placeholder_password">VD: ••••••••</string>
     <string name="password_rule_helper">Tối thiểu 8 ký tự, gồm chữ và số.</string>
     <string name="terms_of_use">Điều khoản sử dụng</string>
     <string name="privacy_policy">Chính sách bảo mật</string>
@@ -31,7 +34,6 @@
     <string name="register_full_name_label">Họ và tên</string>
     <string name="register_contact_helper">Chúng tôi sẽ gửi mã 6 chữ số để xác minh.</string>
     <string name="register_confirm_password_label">Xác nhận mật khẩu</string>
-    <string name="register_confirm_password_placeholder">Nhập lại mật khẩu</string>
     <string name="register_terms_prefix">Tôi đồng ý với</string>
     <string name="register_terms_and">và</string>
     <string name="register_terms_suffix">của TripFair.</string>

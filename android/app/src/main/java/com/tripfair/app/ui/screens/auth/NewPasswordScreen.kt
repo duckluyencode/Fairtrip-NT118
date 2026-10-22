@@ -88,6 +88,7 @@ fun NewPasswordScreen(
                             onValueChange = onPasswordChange,
                             label = stringResource(R.string.new_password_label),
                             leadingIcon = R.drawable.ic_lock_keyhole,
+                            placeholder = stringResource(R.string.placeholder_password),
                             helperText = stringResource(R.string.password_rule_helper),
                             errorText = state.passwordError?.let { stringResource(it) },
                             isPassword = true,
@@ -97,6 +98,7 @@ fun NewPasswordScreen(
                             onValueChange = onConfirmPasswordChange,
                             label = stringResource(R.string.new_password_confirm_label),
                             leadingIcon = R.drawable.ic_shield_check,
+                            placeholder = stringResource(R.string.placeholder_password),
                             errorText = state.confirmPasswordError?.let { stringResource(it) },
                             isPassword = true,
                         )
