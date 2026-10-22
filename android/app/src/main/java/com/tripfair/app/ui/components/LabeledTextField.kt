@@ -27,6 +27,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.error
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -36,7 +38,8 @@ import com.tripfair.app.R
 
 /**
  * Text field with a label above and an optional helper line below ("Trường nhập liệu" in Figma).
- * Password fields get a show/hide button.
+ * Password fields get a show/hide button. [errorText] replaces the helper line and turns the
+ * border red.
  */
 @Composable
 fun LabeledTextField(
@@ -47,6 +50,7 @@ fun LabeledTextField(
     modifier: Modifier = Modifier,
     placeholder: String? = null,
     helperText: String? = null,
+    errorText: String? = null,
     isPassword: Boolean = false,
     keyboardType: KeyboardType = KeyboardType.Text,
 ) {
@@ -62,6 +66,8 @@ fun LabeledTextField(
         BasicTextField(
             value = value,
             onValueChange = onValueChange,
+            // Screen readers announce the error with the field.
+            modifier = if (errorText != null) Modifier.semantics { error(errorText) } else Modifier,
             singleLine = true,
             textStyle = textStyle,
             cursorBrush = SolidColor(colors.primary),
@@ -79,7 +85,7 @@ fun LabeledTextField(
                         .fillMaxWidth()
                         .height(54.dp)
                         .background(colors.surfaceContainerLow, MaterialTheme.shapes.small)
-                        .border(1.dp, colors.outline, MaterialTheme.shapes.small)
+                        .border(1.dp, if (errorText != null) colors.error else colors.outline, MaterialTheme.shapes.small)
                         .padding(start = 15.dp, end = if (isPassword) 4.dp else 15.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -112,7 +118,9 @@ fun LabeledTextField(
                 }
             },
         )
-        if (helperText != null) {
+        if (errorText != null) {
+            Text(text = errorText, style = MaterialTheme.typography.labelSmall, color = colors.error)
+        } else if (helperText != null) {
             Text(text = helperText, style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
         }
     }
