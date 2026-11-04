@@ -28,8 +28,120 @@ model User {
 
   otpCodes      OtpCode[]
   refreshTokens RefreshToken[]
+  searchHistory SearchHistory[]
+  favorites     Favorite[]
 
   @@map("users")
+}
+
+enum PlaceSource {
+  /// TripFair's own data (sample catalog until partner data arrives).
+  CATALOG
+  /// Found through Google Places; only the place ID is stored, details are fetched live.
+  GOOGLE
+}
+
+/// Filters in the app: Ăn uống, Vui chơi, Cảnh đẹp.
+enum PlaceCategory {
+  FOOD
+  FUN
+  SCENIC
+}
+
+enum PriceSource {
+  PARTNER_API
+  GOOGLE_API
+  ESTIMATED
+}
+
+/// A place. CATALOG rows hold all their data (a CHECK constraint requires it);
+/// GOOGLE rows hold only the Google place ID, as the Google Maps terms allow.
+model Place {
+  id             Int            @id @default(autoincrement())
+  source         PlaceSource    @default(CATALOG)
+  /// Stable key of catalog places, e.g. "golden-bridge".
+  slug           String?        @unique @db.VarChar(100)
+  googlePlaceId  String?        @unique @map("google_place_id") @db.VarChar(255)
+  name           String?        @db.VarChar(200)
+  /// Line under the name, e.g. "Bà Nà Hills · Hòa Vang".
+  area           String?        @db.VarChar(200)
+  city           String?        @db.VarChar(100)
+  /// Main category, shown as the label.
+  category       PlaceCategory?
+  lat            Float?
+  lng            Float?
+  rating         Float?
+  ratingCount    Int?           @map("rating_count")
+  /// Minutes after midnight; both null means open all day. close < open means after midnight.
+  openMinute     Int?           @map("open_minute")
+  closeMinute    Int?           @map("close_minute")
+  description    String?        @db.Text
+  imageUrl       String?        @map("image_url") @db.VarChar(2048)
+  visitMinutes   Int?           @map("visit_minutes")
+  /// VND per person; equal when the price is fixed, 0 when free. Null when included in the parent's ticket.
+  priceMin       Int?           @map("price_min")
+  priceMax       Int?           @map("price_max")
+  priceSource    PriceSource?   @map("price_source")
+  priceProvider  String?        @map("price_provider") @db.VarChar(100)
+  priceUpdatedAt DateTime?      @map("price_updated_at")
+  /// Ticketed area this place is inside, e.g. Cầu Vàng inside Bà Nà Hills.
+  parentId       Int?           @map("parent_id")
+  /// Name, area and city lowercased without diacritics, for search.
+  searchText     String?        @map("search_text") @db.VarChar(600)
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  parent     Place?              @relation("PlaceParent", fields: [parentId], references: [id], onDelete: SetNull)
+  children   Place[]             @relation("PlaceParent")
+  categories PlaceCategoryLink[]
+  favorites  Favorite[]
+
+  @@index([source, city])
+  @@map("places")
+}
+
+/// Every category a place belongs to (including its main one), for filtering.
+model PlaceCategoryLink {
+  placeId  Int           @map("place_id")
+  category PlaceCategory
+
+  place Place @relation(fields: [placeId], references: [id], onDelete: Cascade)
+
+  @@id([placeId, category])
+  @@index([category])
+  @@map("place_categories")
+}
+
+/// One row per distinct query of a user; searching again moves it to the top.
+model SearchHistory {
+  id              Int            @id @default(autoincrement())
+  userId          Int            @map("user_id")
+  /// As the user last typed it.
+  query           String         @db.VarChar(100)
+  /// Lowercased without diacritics; "Đà Nẵng" and "da nang" are the same entry.
+  normalizedQuery String         @map("normalized_query") @db.VarChar(100)
+  /// Category filter used with the query, if any.
+  category        PlaceCategory?
+  searchedAt      DateTime       @default(now()) @map("searched_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, normalizedQuery])
+  @@index([userId, searchedAt])
+  @@map("search_history")
+}
+
+model Favorite {
+  userId    Int      @map("user_id")
+  placeId   Int      @map("place_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  place Place @relation(fields: [placeId], references: [id], onDelete: Cascade)
+
+  @@id([userId, placeId])
+  @@index([placeId])
+  @@map("favorites")
 }
 
 enum OtpPurpose {

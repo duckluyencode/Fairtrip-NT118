@@ -17,7 +17,8 @@ NestJS 12 + TypeScript (ESM), chạy trên Node.js 24 LTS. Quy tắc chung của
 - `docker compose up -d`: chạy MySQL (container `tripfair-mysql`, dữ liệu nằm trong volume `mysql-data`).
 - `docker compose stop`: tắt MySQL, giữ dữ liệu. `docker compose down -v` xóa luôn dữ liệu: hỏi trước khi chạy.
 - `npm run db:generate`: sinh lại Prisma Client sau khi sửa `prisma/schema.prisma` (tự chạy sau `npm install`).
-- `npm run db:migrate -- --name <tên>`: tạo migration từ thay đổi trong `prisma/schema.prisma`, áp dụng vào database trên máy rồi sinh lại Prisma Client (Prisma 7 không tự sinh sau `migrate dev`).
+- `npm run db:migrate -- --name <tên>`: tạo migration từ thay đổi trong `prisma/schema.prisma`, áp dụng vào database trên máy rồi sinh lại Prisma Client (Prisma 7 không tự sinh sau `migrate dev`). Cần ràng buộc CHECK thì tạo bằng `npx prisma migrate dev --create-only`, thêm SQL vào migration rồi mới áp dụng.
+- `npm run db:seed`: nạp dữ liệu mẫu (danh mục địa điểm).
 - Script trong `docker/mysql-init/` tạo thêm `tripfair_shadow` (cho `migrate dev`, biến `SHADOW_DATABASE_URL`) và `tripfair_test` (cho e2e) khi volume được tạo lần đầu, user `tripfair` chỉ có quyền trên các database này. Volume có từ trước thì chạy một lần: `docker exec tripfair-mysql sh /docker-entrypoint-initdb.d/01-create-extra-databases.sh`.
 - `GET /health`: 200 khi backend kết nối được MySQL, 503 (`DATABASE_UNAVAILABLE`) khi không.
 
@@ -28,6 +29,15 @@ NestJS 12 + TypeScript (ESM), chạy trên Node.js 24 LTS. Quy tắc chung của
 - OTP 6 số: hiệu lực 15 phút, gửi lại sau 60 giây, khóa sau 5 lần sai. Route `auth/*` giới hạn 10 request/phút mỗi IP.
 - Gửi mã qua `OtpDelivery`: email bằng SMTP (`SMTP_*` trong `.env`; Gmail dùng App Password), SMS chưa có nhà cung cấp nên chỉ in log ngoài production. Để trống `SMTP_HOST` thì email cũng in ra log (chỉ khi development). E2e test thay `OtpDelivery` bằng `FakeOtpDelivery` để đọc mã.
 - Email/SĐT được chuẩn hóa như app Android (`src/auth/contact.ts`): email viết thường, SĐT lưu dạng `+84…`.
+
+## Địa điểm, lịch sử tìm kiếm, yêu thích (`src/places/`, `src/search-history/`, `src/favorites/`)
+- `npm run db:seed`: nạp danh mục mẫu Đà Nẵng (`prisma/seed/catalog.ts`), cập nhật theo `slug`, chạy lại nhiều lần được. Thêm điểm thì sửa file này; điểm nào cũng phải có giá hoặc nằm trong khu có giá (seed kiểm tra).
+- Tìm kiếm không dấu qua `places.search_text` (`normalizeText` trong `src/places/text.ts`, đ → d); mỗi chữ gõ vào phải là đầu một từ. Xếp hạng trong `src/places/ranking.ts`.
+- Danh sách (tìm kiếm, yêu thích) không trả giá; giá chỉ có ở `GET /places/:id` (quy tắc giá trong `src/places/pricing.ts`).
+- Google Places (New) qua `GooglePlacesClient`; không có `GOOGLE_MAPS_API_KEY` thì chỉ dùng danh mục. Chỉ lưu `place_id` của Google, mọi dữ liệu khác lấy trực tiếp và trả kèm `attribution: "Google Maps"`. Field mask quyết định giá tiền mỗi lượt gọi: chỉ xin trường màn hình cần. E2e test thay bằng `FakeGooglePlacesClient`, không gọi mạng.
+- Lịch sử được lưu khi `GET /places` có `q`; cùng từ khóa (không phân biệt hoa thường, dấu) chỉ một mục; giữ 50 mục mỗi người.
+- Lưu/bỏ yêu thích (`PUT`/`DELETE /me/favorites/:placeId`) gọi lặp lại không lỗi. Dữ liệu của người khác luôn lọc theo `userId`, xóa mục không phải của mình trả 404.
+- Plugin Swagger đọc class trong file `*.dto.ts`, `*.query.ts`, `*.response.ts`: đặt DTO vào các file này, không khai báo trong controller.
 ## Quy ước
 - Code là ESM: import file nội bộ phải có đuôi `.js` (vd. `import { AppService } from './app.service.js'`).
 - Test dùng Vitest (`describe`, `it`, `expect` là global), không dùng Jest.

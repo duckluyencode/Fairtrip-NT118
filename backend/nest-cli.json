@@ -7,7 +7,11 @@
     "plugins": [
       {
         "name": "@nestjs/swagger",
-        "options": { "classValidatorShim": true, "introspectComments": true }
+        "options": {
+          "classValidatorShim": true,
+          "introspectComments": true,
+          "dtoFileNameSuffix": [".dto.ts", ".query.ts", ".response.ts"]
+        }
       }
     ]
   }

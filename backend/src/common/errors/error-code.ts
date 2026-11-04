@@ -24,6 +24,10 @@ export const ErrorCode = {
   CodeDeliveryFailed: 'CODE_DELIVERY_FAILED',
   /** Refresh or password reset token is unknown, expired, revoked or already used. */
   InvalidToken: 'INVALID_TOKEN',
+
+  // Places
+  PlaceNotFound: 'PLACE_NOT_FOUND',
+  GooglePlacesUnavailable: 'GOOGLE_PLACES_UNAVAILABLE',
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

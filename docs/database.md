@@ -21,6 +21,8 @@ erDiagram
     users ||--o{ emergency_contacts : "lưu"
     users ||--o{ trips : "tạo"
     users ||--o{ trip_members : "tham gia"
+    places ||--o{ places : "nằm trong"
+    places ||--o{ place_categories : "thuộc nhóm"
     places ||--o{ place_interests : "phù hợp"
     places ||--o{ favorites : ""
     places ||--o{ trip_stops : ""
@@ -86,34 +88,63 @@ Mỗi lần làm mới, token cũ bị thu hồi và cấp token mới. Nếu m�
 
 ## Địa điểm
 
-### `places` · A7
+### `places` · tạo ở A7
+
+Hai loại dòng:
+
+- **CATALOG**: danh mục riêng của TripFair (hiện là dữ liệu mẫu Đà Nẵng nạp bằng `npm run db:seed`), lưu đủ mọi cột.
+- **GOOGLE**: điểm tìm thấy qua Google Places. Điều khoản Google chỉ cho lưu lâu dài `place_id`, nên dòng này chỉ có `google_place_id`; tên, tọa độ, rating, giờ mở cửa được lấy trực tiếp từ Google mỗi lần hiển thị. Dòng này cho điểm Google một id của TripFair để dùng trong chi tiết, yêu thích và lộ trình.
 
 | Cột | Kiểu | Ghi chú |
 | --- | --- | --- |
 | id | INT | |
-| google_place_id | VARCHAR, unique | Trống với dữ liệu mẫu chưa khớp Google |
-| name, address, city | VARCHAR | |
-| category | ENUM(FOOD, ATTRACTION, SCENIC) | Ăn uống, vui chơi, cảnh đẹp |
-| lat, lng | DOUBLE | Tọa độ, dùng tính khoảng cách giữa các điểm |
-| rating, rating_count | DOUBLE, INT | Từ Google Places |
-| opening_hours | JSON | Giờ mở cửa theo ngày trong tuần |
+| source | ENUM(CATALOG, GOOGLE) | |
+| slug | VARCHAR(100), unique | Khóa ổn định của điểm trong danh mục, vd. `golden-bridge`; seed cập nhật theo cột này |
+| google_place_id | VARCHAR(255), unique | Bắt buộc với dòng GOOGLE |
+| name, area, city | VARCHAR | `area` là dòng dưới tên, vd. "Bà Nà Hills · Hòa Vang" |
+| category | ENUM(FOOD, FUN, SCENIC) | Nhóm chính, dùng làm nhãn: Ăn uống, Vui chơi, Cảnh đẹp |
+| lat, lng | DOUBLE | Tọa độ, dùng tính khoảng cách |
+| rating, rating_count | DOUBLE, INT | |
+| open_minute, close_minute | INT | Giờ mở/đóng cửa tính bằng phút từ 0:00; cả hai trống là mở cả ngày; đóng nhỏ hơn mở là đóng sau nửa đêm |
 | description, image_url | TEXT, VARCHAR | |
 | visit_minutes | INT | Thời gian ghé thăm dự kiến |
-| price_min, price_max | INT | VND/người; bằng nhau khi là giá vé cố định; 0 là miễn phí |
+| price_min, price_max | INT | VND/người; bằng nhau khi là giá cố định; 0 là miễn phí; trống khi vé của khu bao ngoài đã gồm điểm này |
 | price_source | ENUM(PARTNER_API, GOOGLE_API, ESTIMATED) | Giá khác PARTNER_API hiển thị kèm dấu ~ |
-| price_provider | VARCHAR | Klook, GetYourGuide, Tiqets, Google… |
-| price_level | TINYINT | Mức 1–4 của Google, dùng khi phải ước tính |
+| price_provider | VARCHAR(100) | Klook, GetYourGuide, Tiqets, Google, TripFair (ước tính) |
 | price_updated_at | DATETIME | |
+| parent_id | INT → places | Khu có bán vé chứa điểm này, vd. Cầu Vàng nằm trong Bà Nà Hills |
+| search_text | VARCHAR(600) | Tên, khu vực, thành phố viết thường, bỏ dấu (đ → d), để tìm kiếm không dấu |
+| created_at, updated_at | DATETIME | |
+
+Ràng buộc `CHECK`: dòng GOOGLE phải có `google_place_id`; dòng CATALOG phải có slug, tên, thành phố, nhóm, tọa độ, thời gian ghé và `search_text`; khoảng giá hợp lệ (`0 ≤ min ≤ max`); giờ mở cửa trong khoảng 0–1439. MySQL không cho CHECK dùng cột có khóa ngoại kèm hành động (`parent_id`), nên quy tắc "có giá hoặc có khu cha có giá" do script seed kiểm tra.
+
+**Giá** (theo thứ tự):
+
+1. Điểm trong danh mục: giá riêng của điểm; nếu không có thì lấy giá vé của khu bao ngoài và ghi rõ "đã gồm trong vé …". Khi lập lộ trình (A8), điểm như vậy tính 0đ nếu vé khu đã có trong lộ trình.
+2. Điểm từ Google (không có vé đối tác): `priceRange` của Google → loại điểm thường miễn phí (bãi biển, công viên, chùa, nhà thờ, cầu…) = 0đ ước tính → bảng quy đổi `priceLevel` (mức 1: 20–50k, mức 2: 50–150k, mức 3: 150–500k, mức 4: 500k–1,5 triệu) → mức mặc định theo nhóm. Điểm nào cũng có giá.
 
 Thuật toán dùng `price_max` làm chi phí của điểm để không ai vượt ngân sách khi giá thật cao; giao diện hiện cả khoảng giá.
 
-### `place_interests` · A7
+### `place_categories` · tạo ở A7
+
+Khóa chính (place_id, category). Mọi nhóm của một điểm (gồm cả nhóm chính) để lọc, vd. Chợ đêm Sơn Trà thuộc cả Vui chơi và Ăn uống. Điểm GOOGLE không có dòng ở đây; nhóm của chúng được suy ra từ loại địa điểm Google trả về.
+
+### `place_interests` · A8
 
 Khóa chính (place_id, interest). `interest` là một trong 8 sở thích của app: FOOD (ẩm thực), BEACH (biển), SCENERY (cảnh đẹp), RELAX (thư giãn), FUN (vui chơi), PHOTO (chụp ảnh), CULTURE (văn hóa), EXPLORE (khám phá). Thuật toán so sở thích của thành viên với sở thích của điểm để tính mức hài lòng.
 
-### `search_history` · A7
+### `search_history` · tạo ở A7
 
-id, user_id → users, query, created_at.
+| Cột | Kiểu | Ghi chú |
+| --- | --- | --- |
+| id | INT | |
+| user_id | INT → users | Xóa user thì xóa luôn lịch sử |
+| query | VARCHAR(100) | Từ khóa theo cách gõ gần nhất |
+| normalized_query | VARCHAR(100) | Viết thường, bỏ dấu; unique theo (user_id, normalized_query) nên "Đà Nẵng" và "da nang" là một mục |
+| category | ENUM, trống được | Bộ lọc dùng kèm từ khóa |
+| searched_at | DATETIME | Tìm lại cùng từ khóa thì cập nhật thời điểm, mục đó lên đầu |
+
+Lịch sử được lưu khi gọi `GET /places?q=…` có từ khóa (gợi ý khi đang gõ thì không lưu); mỗi người giữ 50 mục gần nhất.
 
 ## Chuyến đi
 
@@ -200,9 +231,9 @@ Khóa chính (stop_id, member_id). Ai đi điểm nào; phần chi của một n
 
 ## Cá nhân
 
-### `favorites` · A10
+### `favorites` · tạo ở A7
 
-Khóa chính (user_id, place_id), created_at.
+Khóa chính (user_id, place_id), created_at; chỉ mục place_id. Lưu lại một điểm đã lưu hoặc bỏ lưu điểm chưa lưu đều không lỗi. Xóa user hoặc điểm thì xóa luôn dòng yêu thích. Điểm GOOGLE trong danh sách yêu thích được lấy chi tiết trực tiếp từ Google khi hiển thị.
 
 ### `emergency_contacts` · A10
 

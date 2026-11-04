@@ -5,8 +5,11 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AuthGuard } from './auth/auth.guard.js';
 import { AuthModule } from './auth/auth.module.js';
 import { validateEnv } from './config/env.validation.js';
+import { FavoritesModule } from './favorites/favorites.module.js';
 import { HealthModule } from './health/health.module.js';
+import { PlacesModule } from './places/places.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
+import { SearchHistoryModule } from './search-history/search-history.module.js';
 import { UsersModule } from './users/users.module.js';
 
 @Module({
@@ -25,6 +28,9 @@ import { UsersModule } from './users/users.module.js';
     HealthModule,
     AuthModule,
     UsersModule,
+    PlacesModule,
+    SearchHistoryModule,
+    FavoritesModule,
   ],
   // Guards run in this order: rate limit first, then the access token check.
   providers: [

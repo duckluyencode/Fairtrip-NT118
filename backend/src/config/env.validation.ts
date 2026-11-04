@@ -67,6 +67,11 @@ class EnvironmentVariables {
   @IsString()
   @IsNotEmpty()
   SMTP_PASSWORD?: string;
+
+  /** Optional: without it, search uses the TripFair catalog only. */
+  @IsOptional()
+  @IsString()
+  GOOGLE_MAPS_API_KEY?: string;
 }
 
 function smtpRequired(env: EnvironmentVariables): boolean {

@@ -13,12 +13,16 @@ REST API for the TripFair Android app, built with NestJS and TypeScript.
 ## Getting started
 
 1. Copy `.env.example` to `.env`, set the passwords and a random `JWT_SECRET`. To send sign-up codes by email, fill in the `SMTP_*` values (for Gmail, use an App Password); without them, codes are printed in the server log.
-2. Start MySQL 8.4 and install dependencies:
+2. Start MySQL 8.4, install dependencies, create the tables and load the sample place catalog:
 
    ```bash
    docker compose up -d
    npm install
+   npx prisma migrate deploy
+   npm run db:seed
    ```
+
+   Place search uses the sample catalog; set `GOOGLE_MAPS_API_KEY` to add Google Places results.
 
 3. Start the API:
 
@@ -47,3 +51,4 @@ Errors always use the same shape:
 | `npm run format` | Format with Prettier |
 | `npm run db:generate` | Regenerate the Prisma Client after schema changes |
 | `npm run db:migrate` | Create and apply a database migration |
+| `npm run db:seed` | Load the sample place catalog |

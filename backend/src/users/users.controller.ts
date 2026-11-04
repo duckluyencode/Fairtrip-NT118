@@ -1,18 +1,9 @@
 import { Body, Controller, Get, Patch } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, MaxLength } from 'class-validator';
 import { CurrentUser, type AuthUser } from '../auth/auth.decorators.js';
-import { TrimSpaces } from '../auth/dto/auth.dto.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { UpdateProfileDto } from './user.dto.js';
 import { UserResponse } from './user.response.js';
-
-export class UpdateProfileDto {
-  @TrimSpaces()
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(100)
-  fullName: string;
-}
 
 /** The signed-in user's own profile. Changing email or phone needs a code and comes later. */
 @ApiTags('me')
