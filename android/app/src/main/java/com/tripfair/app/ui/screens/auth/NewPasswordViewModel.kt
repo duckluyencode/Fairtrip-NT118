@@ -10,8 +10,6 @@ import com.tripfair.app.data.auth.AuthRepository
 import kotlinx.coroutines.launch
 
 data class NewPasswordUiState(
-    /** The verified email or phone number, shown under "Tài khoản đã được xác thực". */
-    val contact: String = "",
     val password: String = "",
     val confirmPassword: String = "",
     @param:StringRes val passwordError: Int? = null,
@@ -23,7 +21,7 @@ data class NewPasswordUiState(
 /** Saves the new password of the account whose reset code was verified. */
 class NewPasswordViewModel(private val auth: AuthRepository) : ViewModel() {
     // Compose state, not a Flow: Compose recommends synchronous state for text fields so typing is never applied to a stale value.
-    var state by mutableStateOf(NewPasswordUiState(contact = auth.pendingCode.value?.contact.orEmpty()))
+    var state by mutableStateOf(NewPasswordUiState())
         private set
 
     private var showErrors = false

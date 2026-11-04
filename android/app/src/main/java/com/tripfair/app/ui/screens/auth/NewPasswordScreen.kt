@@ -20,10 +20,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tripfair.app.R
 import com.tripfair.app.ui.AppViewModelProvider
 import com.tripfair.app.ui.components.FillHeightScrollColumn
-import com.tripfair.app.ui.components.InfoNote
 import com.tripfair.app.ui.components.LabeledTextField
 import com.tripfair.app.ui.components.PrimaryButton
-import com.tripfair.app.ui.sample.SampleData
 import com.tripfair.app.ui.theme.ThemePreviews
 import com.tripfair.app.ui.theme.TripFairTheme
 
@@ -76,33 +74,26 @@ fun NewPasswordScreen(
                         subtitle = stringResource(R.string.new_password_subtitle),
                     )
                 }
-                Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
-                    InfoNote(
-                        icon = R.drawable.ic_shield_check,
-                        title = stringResource(R.string.new_password_verified),
-                        text = state.contact,
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    LabeledTextField(
+                        value = state.password,
+                        onValueChange = onPasswordChange,
+                        label = stringResource(R.string.new_password_label),
+                        leadingIcon = R.drawable.ic_lock_keyhole,
+                        placeholder = stringResource(R.string.placeholder_password),
+                        helperText = stringResource(R.string.password_rule_helper),
+                        errorText = state.passwordError?.let { stringResource(it) },
+                        isPassword = true,
                     )
-                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        LabeledTextField(
-                            value = state.password,
-                            onValueChange = onPasswordChange,
-                            label = stringResource(R.string.new_password_label),
-                            leadingIcon = R.drawable.ic_lock_keyhole,
-                            placeholder = stringResource(R.string.placeholder_password),
-                            helperText = stringResource(R.string.password_rule_helper),
-                            errorText = state.passwordError?.let { stringResource(it) },
-                            isPassword = true,
-                        )
-                        LabeledTextField(
-                            value = state.confirmPassword,
-                            onValueChange = onConfirmPasswordChange,
-                            label = stringResource(R.string.new_password_confirm_label),
-                            leadingIcon = R.drawable.ic_shield_check,
-                            placeholder = stringResource(R.string.placeholder_password),
-                            errorText = state.confirmPasswordError?.let { stringResource(it) },
-                            isPassword = true,
-                        )
-                    }
+                    LabeledTextField(
+                        value = state.confirmPassword,
+                        onValueChange = onConfirmPasswordChange,
+                        label = stringResource(R.string.new_password_confirm_label),
+                        leadingIcon = R.drawable.ic_shield_check,
+                        placeholder = stringResource(R.string.placeholder_password),
+                        errorText = state.confirmPasswordError?.let { stringResource(it) },
+                        isPassword = true,
+                    )
                 }
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     PrimaryButton(
@@ -132,7 +123,7 @@ fun NewPasswordScreen(
 private fun NewPasswordScreenPreview() {
     TripFairTheme {
         NewPasswordScreen(
-            state = NewPasswordUiState(contact = SampleData.USER_EMAIL),
+            state = NewPasswordUiState(),
             onPasswordChange = {},
             onConfirmPasswordChange = {},
             onBack = {},

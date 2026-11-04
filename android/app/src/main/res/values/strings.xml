@@ -66,7 +66,6 @@
     <string name="new_password_top_title">Mật khẩu mới</string>
     <string name="new_password_title">Đặt mật khẩu mới</string>
     <string name="new_password_subtitle">Tạo mật khẩu mới để tiếp tục hành trình cùng TripFair.</string>
-    <string name="new_password_verified">Tài khoản đã được xác thực</string>
     <string name="new_password_label">Mật khẩu mới</string>
     <string name="new_password_confirm_label">Xác nhận mật khẩu mới</string>
     <string name="new_password_submit">Lưu mật khẩu mới</string>
