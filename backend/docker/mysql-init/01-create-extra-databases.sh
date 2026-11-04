@@ -1,10 +1,13 @@
 #!/bin/sh
 # Runs once, when the mysql-data volume is first created.
-# Creates the shadow database used by `prisma migrate dev` and grants the app user
-# access to that database only, so it never needs a global CREATE DATABASE privilege.
+# Creates the shadow database used by `prisma migrate dev` and the database used by the
+# e2e tests, and grants the app user access to those databases only, so it never needs
+# a global CREATE DATABASE privilege.
 set -e
 
 mysql --user=root --password="$MYSQL_ROOT_PASSWORD" <<SQL
 CREATE DATABASE IF NOT EXISTS \`${MYSQL_DATABASE}_shadow\`;
 GRANT ALL PRIVILEGES ON \`${MYSQL_DATABASE}_shadow\`.* TO '${MYSQL_USER}'@'%';
+CREATE DATABASE IF NOT EXISTS \`${MYSQL_DATABASE}_test\`;
+GRANT ALL PRIVILEGES ON \`${MYSQL_DATABASE}_test\`.* TO '${MYSQL_USER}'@'%';
 SQL
