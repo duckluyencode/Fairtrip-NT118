@@ -1,4 +1,7 @@
-import { Controller, Get, ServiceUnavailableException } from '@nestjs/common';
+import { Controller, Get, HttpStatus } from '@nestjs/common';
+import { Public } from '../auth/auth.decorators.js';
+import { AppError } from '../common/errors/app-error.js';
+import { ErrorCode } from '../common/errors/error-code.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 export interface HealthStatus {
@@ -6,6 +9,7 @@ export interface HealthStatus {
   database: 'up';
 }
 
+@Public()
 @Controller('health')
 export class HealthController {
   constructor(private readonly prisma: PrismaService) {}
@@ -15,10 +19,11 @@ export class HealthController {
     try {
       await this.prisma.$queryRaw`SELECT 1`;
     } catch {
-      throw new ServiceUnavailableException({
-        status: 'error',
-        database: 'down',
-      });
+      throw new AppError(
+        HttpStatus.SERVICE_UNAVAILABLE,
+        ErrorCode.DatabaseUnavailable,
+        'The database cannot be reached',
+      );
     }
     return { status: 'ok', database: 'up' };
   }

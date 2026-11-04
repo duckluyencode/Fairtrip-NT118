@@ -1,4 +1,4 @@
-import { ServiceUnavailableException } from '@nestjs/common';
+import { HttpStatus } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { HealthController } from './health.controller.js';
@@ -29,8 +29,9 @@ describe('HealthController', () => {
   it('returns 503 when the database cannot be reached', async () => {
     prisma.$queryRaw.mockRejectedValue(new Error('connect ECONNREFUSED'));
 
-    await expect(controller.check()).rejects.toBeInstanceOf(
-      ServiceUnavailableException,
-    );
+    await expect(controller.check()).rejects.toMatchObject({
+      code: 'DATABASE_UNAVAILABLE',
+      status: HttpStatus.SERVICE_UNAVAILABLE,
+    });
   });
 });
