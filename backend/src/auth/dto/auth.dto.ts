@@ -1,4 +1,3 @@
-import { Transform } from 'class-transformer';
 import {
   IsIn,
   IsNotEmpty,
@@ -6,15 +5,10 @@ import {
   Matches,
   MaxLength,
 } from 'class-validator';
+import { TrimSpaces } from '../../common/validation/trim-spaces.js';
 import { OtpPurpose } from '../../generated/prisma/enums.js';
 import { IsContact } from '../contact.js';
 import { IsPassword } from '../password.js';
-
-/** Trims and collapses inner spaces, e.g. "  Duy   Đức " -> "Duy Đức". */
-export const TrimSpaces = () =>
-  Transform(({ value }: { value: unknown }) =>
-    typeof value === 'string' ? value.trim().replace(/\s+/g, ' ') : value,
-  );
 
 export class RegisterDto {
   @TrimSpaces()
