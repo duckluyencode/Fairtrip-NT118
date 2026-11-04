@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lucide "mountain" icon exported from the TripFair Figma file. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="18dp"
+    android:height="18dp"
+    android:viewportWidth="18"
+    android:viewportHeight="18">
+    <path
+        android:pathData="M5.99976 2.25L9 8.25L12.7503 4.5L16.5006 15.75H1.4994L5.99976 2.25Z"
+        android:strokeColor="#66726F"
+        android:strokeWidth="1.6"
+        android:strokeLineCap="round" />
+</vector>

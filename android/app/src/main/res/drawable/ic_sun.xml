@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lucide "sun" icon exported from the TripFair Figma file. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="15dp"
+    android:height="15dp"
+    android:viewportWidth="15"
+    android:viewportHeight="15">
+    <path
+        android:pathData="M7.5 1.2495V2.4996M7.5 12.5004V13.7505M3.0807 3.0807L3.96202 3.96202M11.0379 11.0379L11.9192 11.9192M1.2495 7.5H2.4996M12.5004 7.5H13.7505M3.96202 11.0379L3.0807 11.9192M11.9192 3.0807L11.0379 3.96202M10.0002 7.5C10.0002 8.88082 8.88082 10.0002 7.5 10.0002C6.11918 10.0002 4.9998 8.88082 4.9998 7.5C4.9998 6.11918 6.11918 4.9998 7.5 4.9998C8.88082 4.9998 10.0002 6.11918 10.0002 7.5Z"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round" />
+</vector>

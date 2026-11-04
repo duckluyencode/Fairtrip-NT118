@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lucide "landmark" icon exported from the TripFair Figma file. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="18dp"
+    android:height="18dp"
+    android:viewportWidth="18"
+    android:viewportHeight="18">
+    <path
+        android:pathData="M7.49981 13.5004V8.25016M10.4997 13.5004V8.25016M13.4996 13.5004V8.25016M2.24997 16.5006H15.7495M4.4999 13.5004V8.25016M8.33986 1.64837C8.54565 1.5484 8.77158 1.49683 9.00036 1.49761C9.22914 1.49839 9.45471 1.5515 9.65982 1.65287L15.5591 4.53828C15.9161 4.71304 15.7916 5.25006 15.3941 5.25006H2.60554C2.20805 5.25006 2.08431 4.71304 2.44055 4.53828L8.33986 1.64837Z"
+        android:strokeColor="#66726F"
+        android:strokeWidth="1.6"
+        android:strokeLineCap="round" />
+</vector>

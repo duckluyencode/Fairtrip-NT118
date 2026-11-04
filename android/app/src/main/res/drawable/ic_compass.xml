@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lucide "compass" icon exported from the TripFair Figma file. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="18dp"
+    android:height="18dp"
+    android:viewportWidth="18"
+    android:viewportHeight="18">
+    <path
+        android:pathData="M16.5006 9C16.5006 13.1425 13.1425 16.5006 9 16.5006C4.85753 16.5006 1.4994 13.1425 1.4994 9C1.4994 4.85753 4.85753 1.4994 9 1.4994C13.1425 1.4994 16.5006 4.85753 16.5006 9ZM12.1801 5.81957L10.827 9.87814C10.7533 10.0991 10.6292 10.2999 10.4646 10.4646C10.2999 10.6292 10.0991 10.7533 9.87814 10.827L5.81957 12.1801L7.17268 8.1215C7.24632 7.90055 7.3704 7.69978 7.53509 7.53509C7.69978 7.3704 7.90055 7.24632 8.1215 7.17268L12.1801 5.81957Z"
+        android:strokeColor="#66726F"
+        android:strokeWidth="1.6"
+        android:strokeLineCap="round" />
+</vector>

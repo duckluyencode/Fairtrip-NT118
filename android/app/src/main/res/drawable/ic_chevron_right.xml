@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lucide "chevron-right" icon exported from the TripFair Figma file. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="17dp"
+    android:height="17dp"
+    android:viewportWidth="17"
+    android:viewportHeight="17">
+    <path
+        android:pathData="M6.375 12.75L10.625 8.5L6.375 4.25"
+        android:strokeColor="#66726F"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round" />
+</vector>

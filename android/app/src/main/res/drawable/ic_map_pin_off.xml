@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lucide "map-pin-off" icon exported from the TripFair Figma file. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="36dp"
+    android:height="36dp"
+    android:viewportWidth="36"
+    android:viewportHeight="36">
+    <path
+        android:pathData="M18 33C18 33 7.5 23.7 7.5 15C7.48907 12.9963 8.05167 11.0314 9.12138 9.33711C9.14918 9.29308 9.17729 9.24928 9.20571 9.20571M9.20571 9.20571C10.2709 7.57287 11.7704 6.2679 13.5369 5.43838C15.3506 4.58673 17.3701 4.27181 19.357 4.5308C21.3439 4.78979 23.2152 5.61188 24.75 6.9M9.20571 9.20571L4.5 4.5M9.20571 9.20571L14.25 14.25M27.9 11.25C28.35 12.45 28.5 13.65 28.5 15C28.5 18.4466 26.8599 21.8932 24.8221 24.8221M24.8221 24.8221C24.554 25.2074 24.279 25.5838 24 25.95M24.8221 24.8221L20.25 20.25M24.8221 24.8221L31.5 31.5M14.25 14.25C13.849 15.0897 13.7181 16.0331 13.8755 16.9503C14.0328 17.8675 14.4707 18.7133 15.1287 19.3713C15.7867 20.0293 16.6325 20.4672 17.5497 20.6245C18.4669 20.7819 19.4103 20.651 20.25 20.25M14.25 14.25L20.25 20.25"
+        android:strokeColor="#D64534"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+</vector>
