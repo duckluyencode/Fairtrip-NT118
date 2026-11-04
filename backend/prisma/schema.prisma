@@ -1,5 +1,5 @@
 // Prisma schema for the TripFair backend.
-// Models are added in step A4 after the database design is approved.
+// Tables are added module by module; the full design is in docs/database.md.
 
 generator client {
   provider = "prisma-client"
@@ -8,4 +8,21 @@ generator client {
 
 datasource db {
   provider = "mysql"
+}
+
+/// A TripFair account. Signs in with email or phone; the database requires at least one.
+model User {
+  id           Int       @id @default(autoincrement())
+  email        String?   @unique @db.VarChar(254)
+  /// E.164 format, e.g. +84905128846.
+  phone        String?   @unique @db.VarChar(16)
+  passwordHash String    @map("password_hash") @db.VarChar(255)
+  fullName     String    @map("full_name") @db.VarChar(100)
+  avatarUrl    String?   @map("avatar_url") @db.VarChar(2048)
+  /// Set when the sign-up code is confirmed; null means the account cannot sign in yet.
+  verifiedAt   DateTime? @map("verified_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  @@map("users")
 }

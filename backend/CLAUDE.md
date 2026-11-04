@@ -17,7 +17,8 @@ NestJS 12 + TypeScript (ESM), chạy trên Node.js 24 LTS. Quy tắc chung của
 - `docker compose up -d`: chạy MySQL (container `tripfair-mysql`, dữ liệu nằm trong volume `mysql-data`).
 - `docker compose stop`: tắt MySQL, giữ dữ liệu. `docker compose down -v` xóa luôn dữ liệu: hỏi trước khi chạy.
 - `npm run db:generate`: sinh lại Prisma Client sau khi sửa `prisma/schema.prisma` (tự chạy sau `npm install`).
-- `npm run db:migrate`: tạo và áp dụng migration (dùng từ bước A4).
+- `npm run db:migrate -- --name <tên>`: tạo migration từ thay đổi trong `prisma/schema.prisma` và áp dụng vào database trên máy.
+- Shadow database `tripfair_shadow` (biến `SHADOW_DATABASE_URL`) để `migrate dev` kiểm tra migration; script trong `docker/mysql-init/` tạo nó khi volume được tạo lần đầu. Volume có từ trước thì chạy một lần: `docker exec tripfair-mysql sh /docker-entrypoint-initdb.d/01-create-shadow-db.sh`.
 - `GET /health`: 200 khi backend kết nối được MySQL, 503 khi không.
 
 ## Quy ước
@@ -26,5 +27,6 @@ NestJS 12 + TypeScript (ESM), chạy trên Node.js 24 LTS. Quy tắc chung của
 - Cổng mặc định 3000, đổi bằng biến môi trường `PORT`.
 - Prisma ghim đúng 7.10.1 cho `prisma`, `@prisma/client`, `@prisma/adapter-mariadb`; không nâng lên Prisma 8 khi chưa thống nhất.
 - Truy cập database qua `PrismaService` (`src/prisma/`), dùng chung một PrismaClient cho cả app.
+- Thiết kế bảng nằm ở [docs/database.md](../docs/database.md): thêm hoặc sửa bảng thì cập nhật tài liệu đó trong cùng thay đổi. Migration đã commit không sửa lại; cần đổi thì tạo migration mới.
 - Prisma Client sinh vào `src/generated/prisma/`: không commit, không sửa tay.
 - `MYSQL_ALLOW_PUBLIC_KEY_RETRIEVAL=true` chỉ dùng cho MySQL trên máy; kết nối RDS dùng TLS.
