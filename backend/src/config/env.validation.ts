@@ -6,6 +6,8 @@ import {
   IsOptional,
   IsPort,
   IsString,
+  MinLength,
+  ValidateIf,
   validateSync,
 } from 'class-validator';
 
@@ -41,6 +43,34 @@ class EnvironmentVariables {
   @IsOptional()
   @IsBooleanString()
   MYSQL_ALLOW_PUBLIC_KEY_RETRIEVAL?: string;
+
+  @IsString()
+  @MinLength(32)
+  JWT_SECRET: string;
+
+  // SMTP is optional in development (codes are logged) but required in production.
+  @ValidateIf((env: EnvironmentVariables) => smtpRequired(env))
+  @IsString()
+  @IsNotEmpty()
+  SMTP_HOST?: string;
+
+  @ValidateIf((env: EnvironmentVariables) => smtpRequired(env))
+  @IsPort()
+  SMTP_PORT?: string;
+
+  @ValidateIf((env: EnvironmentVariables) => smtpRequired(env))
+  @IsString()
+  @IsNotEmpty()
+  SMTP_USER?: string;
+
+  @ValidateIf((env: EnvironmentVariables) => smtpRequired(env))
+  @IsString()
+  @IsNotEmpty()
+  SMTP_PASSWORD?: string;
+}
+
+function smtpRequired(env: EnvironmentVariables): boolean {
+  return env.NODE_ENV === 'production' || Boolean(env.SMTP_HOST);
 }
 
 /** Fails startup with every missing or invalid variable listed, instead of failing on first use. */

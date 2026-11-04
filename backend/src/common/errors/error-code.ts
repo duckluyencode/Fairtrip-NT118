@@ -9,6 +9,21 @@ export const ErrorCode = {
   Conflict: 'CONFLICT',
   TooManyRequests: 'TOO_MANY_REQUESTS',
   Internal: 'INTERNAL_ERROR',
+  DatabaseUnavailable: 'DATABASE_UNAVAILABLE',
+
+  // Accounts and codes; mirror AuthError in the Android app.
+  WrongCredentials: 'WRONG_CREDENTIALS',
+  AccountExists: 'ACCOUNT_EXISTS',
+  AccountNotFound: 'ACCOUNT_NOT_FOUND',
+  WrongCode: 'WRONG_CODE',
+  CodeExpired: 'CODE_EXPIRED',
+  /** Too many wrong guesses; a new code must be requested. */
+  CodeLocked: 'CODE_LOCKED',
+  NoPendingCode: 'NO_PENDING_CODE',
+  ResendTooSoon: 'RESEND_TOO_SOON',
+  CodeDeliveryFailed: 'CODE_DELIVERY_FAILED',
+  /** Refresh or password reset token is unknown, expired, revoked or already used. */
+  InvalidToken: 'INVALID_TOKEN',
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

@@ -12,17 +12,64 @@ datasource db {
 
 /// A TripFair account. Signs in with email or phone; the database requires at least one.
 model User {
-  id           Int       @id @default(autoincrement())
-  email        String?   @unique @db.VarChar(254)
+  id                Int       @id @default(autoincrement())
+  email             String?   @unique @db.VarChar(254)
   /// E.164 format, e.g. +84905128846.
-  phone        String?   @unique @db.VarChar(16)
-  passwordHash String    @map("password_hash") @db.VarChar(255)
-  fullName     String    @map("full_name") @db.VarChar(100)
-  avatarUrl    String?   @map("avatar_url") @db.VarChar(2048)
+  phone             String?   @unique @db.VarChar(16)
+  passwordHash      String    @map("password_hash") @db.VarChar(255)
+  fullName          String    @map("full_name") @db.VarChar(100)
+  avatarUrl         String?   @map("avatar_url") @db.VarChar(2048)
   /// Set when the sign-up code is confirmed; null means the account cannot sign in yet.
-  verifiedAt   DateTime? @map("verified_at")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
+  verifiedAt        DateTime? @map("verified_at")
+  /// Password reset tokens issued before this time are no longer accepted.
+  passwordChangedAt DateTime? @map("password_changed_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  otpCodes      OtpCode[]
+  refreshTokens RefreshToken[]
 
   @@map("users")
+}
+
+enum OtpPurpose {
+  REGISTER
+  RESET_PASSWORD
+}
+
+/// A 6-digit code sent by email or SMS. Only the latest unused code of a purpose is valid.
+model OtpCode {
+  id          Int        @id @default(autoincrement())
+  userId      Int        @map("user_id")
+  purpose     OtpPurpose
+  /// Normalized email or E.164 phone the code was sent to.
+  destination String     @db.VarChar(254)
+  /// HMAC-SHA256 of the code, hex.
+  codeHash    String     @map("code_hash") @db.Char(64)
+  expiresAt   DateTime   @map("expires_at")
+  /// Wrong guesses so far; the code is locked once the limit is reached.
+  attempts    Int        @default(0)
+  usedAt      DateTime?  @map("used_at")
+  createdAt   DateTime   @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose, createdAt])
+  @@map("otp_codes")
+}
+
+/// Long-lived sign-in token; rotated on every refresh and revoked on logout.
+model RefreshToken {
+  id        Int       @id @default(autoincrement())
+  userId    Int       @map("user_id")
+  /// SHA-256 of the token, hex. The token itself is only ever sent to the client.
+  tokenHash String    @unique @map("token_hash") @db.Char(64)
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
 }
