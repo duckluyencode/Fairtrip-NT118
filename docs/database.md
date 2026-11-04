@@ -50,6 +50,7 @@ erDiagram
 | full_name | VARCHAR(100) | |
 | avatar_url | VARCHAR(2048) | Ảnh trên S3 (giai đoạn B) |
 | verified_at | DATETIME | Trống khi chưa nhập đúng mã OTP đăng ký; chưa xác thực thì chưa đăng nhập được |
+| password_changed_at | DATETIME | Lần đổi mật khẩu gần nhất; token đặt lại mật khẩu cấp trước thời điểm này hết hiệu lực (mỗi token chỉ dùng một lần). Thêm ở A6 |
 | created_at, updated_at | DATETIME | |
 
 Ràng buộc `CHECK`: phải có ít nhất một trong `email`, `phone`.
@@ -59,25 +60,29 @@ Ràng buộc `CHECK`: phải có ít nhất một trong `email`, `phone`.
 | Cột | Kiểu | Ghi chú |
 | --- | --- | --- |
 | id | INT | |
-| user_id | INT → users | |
+| user_id | INT → users | Xóa user thì xóa luôn mã |
 | purpose | ENUM(REGISTER, RESET_PASSWORD) | |
-| destination | VARCHAR | Email hoặc số điện thoại đã gửi mã |
-| code_hash | VARCHAR | Mã 6 số đã hash |
+| destination | VARCHAR(254) | Email hoặc số điện thoại (E.164) đã gửi mã |
+| code_hash | CHAR(64) | HMAC-SHA256 của mã 6 số với khóa bí mật của server, để database bị lộ cũng không dò ra mã |
 | expires_at | DATETIME | 15 phút sau khi gửi |
-| attempts | INT | Số lần nhập sai, khóa mã khi vượt giới hạn |
+| attempts | INT | Số lần đã thử; tới 5 lần thì khóa mã, phải xin mã mới |
 | used_at | DATETIME | Trống khi chưa dùng |
-| created_at | DATETIME | Dùng để giới hạn số lần gửi lại |
+| created_at | DATETIME | Gửi lại được sau 60 giây kể từ mã gần nhất |
+
+Chỉ mã mới nhất của một user và một mục đích có hiệu lực. Chỉ mục (user_id, purpose, created_at).
 
 ### `refresh_tokens` · A6
 
 | Cột | Kiểu | Ghi chú |
 | --- | --- | --- |
 | id | INT | |
-| user_id | INT → users | |
-| token_hash | VARCHAR, unique | Token đã hash |
-| expires_at | DATETIME | |
-| revoked_at | DATETIME | Đăng xuất hoặc đổi mật khẩu thì thu hồi |
+| user_id | INT → users | Xóa user thì xóa luôn token |
+| token_hash | CHAR(64), unique | SHA-256 của token ngẫu nhiên 32 byte; token gốc chỉ gửi cho app |
+| expires_at | DATETIME | 30 ngày sau khi cấp |
+| revoked_at | DATETIME | Đổi token, đăng xuất hoặc đặt lại mật khẩu thì thu hồi |
 | created_at | DATETIME | |
+
+Mỗi lần làm mới, token cũ bị thu hồi và cấp token mới. Nếu một token đã thu hồi bị dùng lại (dấu hiệu bị lộ), mọi token của user đó bị thu hồi.
 
 ## Địa điểm
 

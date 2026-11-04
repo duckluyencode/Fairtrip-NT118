@@ -80,12 +80,13 @@ README.md
 - 2026-10-20: Điều hướng Android dùng Navigation 3 (1.2.0) + kotlinx-serialization. Icon lấy từ Figma (bộ Lucide) chuyển sang VectorDrawable, không dùng thư viện icon. Màn hình làm theo Figma với dữ liệu mẫu trước, nối backend sau.
 - 2026-11-04: Thiết kế database ở [docs/database.md](docs/database.md); bảng được tạo dần theo từng module backend. Tiền lưu bằng số nguyên VND theo người; thuật toán dùng price_max khi điểm có khoảng giá. Đánh giá địa điểm lấy từ Google Places (không có bảng reviews). Liên hệ khẩn cấp lưu trên server, Android giữ bản sao để SOS chạy khi mất mạng.
 - 2026-11-04: API backend nằm dưới `/api/v1`; lỗi trả dạng `{ statusCode, code, message, details? }` với `code` ổn định để Android xử lý; tài liệu Swagger ở `/docs`. GitHub Actions chạy lint, build, unit test và e2e test cho mọi PR chạm `backend/`.
+- 2026-11-04: OTP email gửi qua SMTP (Gmail App Password khi chạy trên máy; đổi nhà cung cấp, vd. Amazon SES, chỉ cần sửa `.env`). Đăng nhập trả access token JWT 15 phút và refresh token 30 ngày (đổi mới mỗi lần dùng); mật khẩu hash bằng scrypt.
 
 ## Câu hỏi mở
 Mỗi mục ghi rõ cần chốt trước khi làm phần nào. Chưa tới phần đó thì để nguyên.
 - [Giá] Điểm tham quan không có trên Klook/GetYourGuide/Tiqets (chùa, công viên, bãi biển…) thì lấy giá theo chuỗi nào?
 - [Giá] Địa điểm nằm trong khu đã bán vé (vd. vườn hoa Le Jardin trong Bà Nà Hills) tính giá thế nào?
-- [User] Chọn dịch vụ gửi OTP qua SMS và email. Chốt khi làm backend.
+- [User] Chọn dịch vụ gửi OTP qua SMS (eSMS/SpeedSMS cần đăng ký brandname và nạp tiền; Firebase Phone Auth cần gói Blaze và đổi luồng Android). Hiện SMS chỉ in ra log. Chốt khi có ngân sách hoặc trước khi chạy thật.
 - [Trip] Lộ trình cá nhân dùng chung pipeline với nhóm (n = 1) hay thuật toán riêng? "Thời gian giữa các lần đi chơi" nghĩa là gì?
 - [Trip] Thời gian và quãng đường giữa các điểm lấy bằng ước tính đường chim bay hay Google Routes API? Cần cho ràng buộc tổng thời gian ≤ T.
 - [Rủi ro] Kiểm tra sớm điều kiện cấp Partner API của Klook, GetYourGuide, Tiqets, Agoda và độ phủ ở Việt Nam. Tất cả đều cần duyệt đối tác; đồ án sinh viên có thể không được duyệt.

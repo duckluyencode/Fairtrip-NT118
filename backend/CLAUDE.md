@@ -17,10 +17,17 @@ NestJS 12 + TypeScript (ESM), chạy trên Node.js 24 LTS. Quy tắc chung của
 - `docker compose up -d`: chạy MySQL (container `tripfair-mysql`, dữ liệu nằm trong volume `mysql-data`).
 - `docker compose stop`: tắt MySQL, giữ dữ liệu. `docker compose down -v` xóa luôn dữ liệu: hỏi trước khi chạy.
 - `npm run db:generate`: sinh lại Prisma Client sau khi sửa `prisma/schema.prisma` (tự chạy sau `npm install`).
-- `npm run db:migrate -- --name <tên>`: tạo migration từ thay đổi trong `prisma/schema.prisma` và áp dụng vào database trên máy.
+- `npm run db:migrate -- --name <tên>`: tạo migration từ thay đổi trong `prisma/schema.prisma`, áp dụng vào database trên máy rồi sinh lại Prisma Client (Prisma 7 không tự sinh sau `migrate dev`).
 - Script trong `docker/mysql-init/` tạo thêm `tripfair_shadow` (cho `migrate dev`, biến `SHADOW_DATABASE_URL`) và `tripfair_test` (cho e2e) khi volume được tạo lần đầu, user `tripfair` chỉ có quyền trên các database này. Volume có từ trước thì chạy một lần: `docker exec tripfair-mysql sh /docker-entrypoint-initdb.d/01-create-extra-databases.sh`.
-- `GET /health`: 200 khi backend kết nối được MySQL, 503 khi không.
+- `GET /health`: 200 khi backend kết nối được MySQL, 503 (`DATABASE_UNAVAILABLE`) khi không.
 
+## Xác thực (`src/auth/`, `src/users/`)
+- Mọi route cần `Authorization: Bearer <accessToken>`, trừ route gắn `@Public()` (`AuthGuard` toàn cục); lấy người dùng hiện tại bằng `@CurrentUser()`.
+- Access token là JWT HS256 sống 15 phút; refresh token là chuỗi ngẫu nhiên lưu dạng SHA-256, sống 30 ngày, đổi mới mỗi lần dùng; token reset mật khẩu là JWT 10 phút, mỗi token dùng một lần. `JWT_SECRET` (≥ 32 ký tự) ký JWT và làm khóa HMAC cho mã OTP.
+- Mật khẩu hash bằng `scrypt` của Node (N = 2^17, r = 8, p = 1), không thêm thư viện hash.
+- OTP 6 số: hiệu lực 15 phút, gửi lại sau 60 giây, khóa sau 5 lần sai. Route `auth/*` giới hạn 10 request/phút mỗi IP.
+- Gửi mã qua `OtpDelivery`: email bằng SMTP (`SMTP_*` trong `.env`; Gmail dùng App Password), SMS chưa có nhà cung cấp nên chỉ in log ngoài production. Để trống `SMTP_HOST` thì email cũng in ra log (chỉ khi development). E2e test thay `OtpDelivery` bằng `FakeOtpDelivery` để đọc mã.
+- Email/SĐT được chuẩn hóa như app Android (`src/auth/contact.ts`): email viết thường, SĐT lưu dạng `+84…`.
 ## Quy ước
 - Code là ESM: import file nội bộ phải có đuôi `.js` (vd. `import { AppService } from './app.service.js'`).
 - Test dùng Vitest (`describe`, `it`, `expect` là global), không dùng Jest.
