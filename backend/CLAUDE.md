@@ -7,8 +7,8 @@ NestJS 12 + TypeScript (ESM), chạy trên Node.js 24 LTS. Quy tắc chung của
 - `npm install`: cài dependency
 - `npm run start:dev`: chạy server có tự reload, mặc định ở http://localhost:3000
 - `npm run build`: build ra `dist/`
-- `npm test`: unit test (Vitest, file `*.spec.ts` đặt cạnh code)
-- `npm run test:e2e`: e2e test (Vitest + supertest, thư mục `test/`)
+- `npm test`: unit test (Vitest, file `*.spec.ts` đặt cạnh code), không cần database
+- `npm run test:e2e`: e2e test (Vitest + supertest, thư mục `test/`) chạy cả app trên database `tripfair_test` (cần MySQL đang chạy); tự áp dụng migration trước khi chạy, mỗi test tự xóa dữ liệu bằng `resetDatabase`
 - `npm run lint`: kiểm tra code bằng oxlint
 - `npm run format`: định dạng code bằng Prettier
 
@@ -18,13 +18,19 @@ NestJS 12 + TypeScript (ESM), chạy trên Node.js 24 LTS. Quy tắc chung của
 - `docker compose stop`: tắt MySQL, giữ dữ liệu. `docker compose down -v` xóa luôn dữ liệu: hỏi trước khi chạy.
 - `npm run db:generate`: sinh lại Prisma Client sau khi sửa `prisma/schema.prisma` (tự chạy sau `npm install`).
 - `npm run db:migrate -- --name <tên>`: tạo migration từ thay đổi trong `prisma/schema.prisma` và áp dụng vào database trên máy.
-- Shadow database `tripfair_shadow` (biến `SHADOW_DATABASE_URL`) để `migrate dev` kiểm tra migration; script trong `docker/mysql-init/` tạo nó khi volume được tạo lần đầu. Volume có từ trước thì chạy một lần: `docker exec tripfair-mysql sh /docker-entrypoint-initdb.d/01-create-shadow-db.sh`.
+- Script trong `docker/mysql-init/` tạo thêm `tripfair_shadow` (cho `migrate dev`, biến `SHADOW_DATABASE_URL`) và `tripfair_test` (cho e2e) khi volume được tạo lần đầu, user `tripfair` chỉ có quyền trên các database này. Volume có từ trước thì chạy một lần: `docker exec tripfair-mysql sh /docker-entrypoint-initdb.d/01-create-extra-databases.sh`.
 - `GET /health`: 200 khi backend kết nối được MySQL, 503 khi không.
 
 ## Quy ước
 - Code là ESM: import file nội bộ phải có đuôi `.js` (vd. `import { AppService } from './app.service.js'`).
 - Test dùng Vitest (`describe`, `it`, `expect` là global), không dùng Jest.
-- Cổng mặc định 3000, đổi bằng biến môi trường `PORT`.
+- Cổng mặc định 3000, đổi bằng biến môi trường `PORT`. Biến môi trường được kiểm tra lúc khởi động trong `src/config/env.validation.ts`; thêm biến mới thì khai báo ở đó và trong `.env.example`.
+- Mọi route nằm dưới `/api/v1` (trừ `/health`). Cấu hình HTTP chung (prefix, pipe, filter) ở `src/app.setup.ts`, dùng cho cả `main.ts` và e2e test.
+- Input nhận qua DTO có decorator class-validator; field không khai báo trong DTO bị từ chối.
+- Lỗi luôn có dạng `{ statusCode, code, message, details? }`. Lỗi nghiệp vụ ném `AppError` với `code` ổn định (app Android dựa vào `code`, không đổi tên code đã dùng); lỗi không lường trước trả 500 và không lộ chi tiết.
+- Tài liệu API (Swagger) ở `/docs` khi không chạy production; plugin Swagger tự đọc DTO lúc `nest build`.
+- Giới hạn 120 request/phút mỗi IP (`@nestjs/throttler`), tắt khi `NODE_ENV=test`.
+- CI: `.github/workflows/backend-ci.yml` chạy lint, build, unit test và e2e test (MySQL trong service container) cho mọi PR chạm `backend/`.
 - Prisma ghim đúng 7.10.1 cho `prisma`, `@prisma/client`, `@prisma/adapter-mariadb`; không nâng lên Prisma 8 khi chưa thống nhất.
 - Truy cập database qua `PrismaService` (`src/prisma/`), dùng chung một PrismaClient cho cả app.
 - Thiết kế bảng nằm ở [docs/database.md](../docs/database.md): thêm hoặc sửa bảng thì cập nhật tài liệu đó trong cùng thay đổi. Migration đã commit không sửa lại; cần đổi thì tạo migration mới.

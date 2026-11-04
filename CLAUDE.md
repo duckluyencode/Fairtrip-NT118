@@ -18,6 +18,7 @@ Khi đề xuất tạo thư mục hoặc module mới: giải thích vai trò c�
 Khi có `android/` và `backend/`: lệnh build/test và quy ước riêng của từng phần đặt trong `android/CLAUDE.md` và `backend/CLAUDE.md`; file này chỉ giữ phần dùng chung.
 
 ```
+.github/     GitHub Actions (CI backend)
 android/     App Android Kotlin + Jetpack Compose, xem android/CLAUDE.md
 backend/     API server NestJS (TypeScript), xem backend/CLAUDE.md
 docs/        Tài liệu dự án (mô tả tổng quan, thiết kế database)
@@ -28,7 +29,7 @@ README.md
 ## Lệnh thường dùng
 - Android: xem [android/CLAUDE.md](android/CLAUDE.md).
 - Backend: xem [backend/CLAUDE.md](backend/CLAUDE.md).
-- [Điền khi đã thiết lập: docker compose]
+- Database trên máy: `docker compose up -d` trong `backend/` (MySQL 8.4), chi tiết trong backend/CLAUDE.md.
 
 ## Cách làm việc với tôi
 - Tôi muốn hiểu mọi thứ được tạo ra. Trước khi viết code cho một task: nêu kế hoạch ngắn (file sẽ tạo/sửa, cách tiếp cận) và chờ tôi đồng ý.
@@ -78,6 +79,7 @@ README.md
 - 2026-10-19: Giao diện có chế độ sáng (theo Figma) và tối (tự thiết kế từ màu Figma, đạt WCAG AA), theo cài đặt của điện thoại; không dùng màu động Material You. Font Inter đóng gói trong app (file biến thiên, giấy phép OFL).
 - 2026-10-20: Điều hướng Android dùng Navigation 3 (1.2.0) + kotlinx-serialization. Icon lấy từ Figma (bộ Lucide) chuyển sang VectorDrawable, không dùng thư viện icon. Màn hình làm theo Figma với dữ liệu mẫu trước, nối backend sau.
 - 2026-11-04: Thiết kế database ở [docs/database.md](docs/database.md); bảng được tạo dần theo từng module backend. Tiền lưu bằng số nguyên VND theo người; thuật toán dùng price_max khi điểm có khoảng giá. Đánh giá địa điểm lấy từ Google Places (không có bảng reviews). Liên hệ khẩn cấp lưu trên server, Android giữ bản sao để SOS chạy khi mất mạng.
+- 2026-11-04: API backend nằm dưới `/api/v1`; lỗi trả dạng `{ statusCode, code, message, details? }` với `code` ổn định để Android xử lý; tài liệu Swagger ở `/docs`. GitHub Actions chạy lint, build, unit test và e2e test cho mọi PR chạm `backend/`.
 
 ## Câu hỏi mở
 Mỗi mục ghi rõ cần chốt trước khi làm phần nào. Chưa tới phần đó thì để nguyên.
