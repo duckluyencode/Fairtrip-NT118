@@ -15,10 +15,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -28,7 +25,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tripfair.app.R
+import com.tripfair.app.ui.AppViewModelProvider
 import com.tripfair.app.ui.components.BrandMark
 import com.tripfair.app.ui.components.FillHeightScrollColumn
 import com.tripfair.app.ui.components.LabeledTextField
@@ -36,23 +35,52 @@ import com.tripfair.app.ui.components.PrimaryButton
 import com.tripfair.app.ui.components.TextWithLink
 import com.tripfair.app.ui.components.TripFairCheckbox
 import com.tripfair.app.ui.components.appendLink
-import com.tripfair.app.ui.sample.SampleData
 import com.tripfair.app.ui.theme.ThemePreviews
 import com.tripfair.app.ui.theme.TripFairTheme
 
+/** Connects [RegisterScreen] to its [RegisterViewModel]; [onCodeSent] opens the code screen. */
+@Composable
+fun RegisterRoute(
+    onCodeSent: () -> Unit,
+    onLogin: () -> Unit,
+    onTermsClick: () -> Unit,
+    onPrivacyClick: () -> Unit,
+    viewModel: RegisterViewModel = viewModel(factory = AppViewModelProvider.Factory),
+) {
+    val state = viewModel.state
+    LaunchedEffect(state.codeSent) {
+        if (state.codeSent) {
+            viewModel.onCodeSentHandled()
+            onCodeSent()
+        }
+    }
+    RegisterScreen(
+        state = state,
+        onFullNameChange = viewModel::onFullNameChange,
+        onContactChange = viewModel::onContactChange,
+        onPasswordChange = viewModel::onPasswordChange,
+        onConfirmPasswordChange = viewModel::onConfirmPasswordChange,
+        onAcceptedTermsChange = viewModel::onAcceptedTermsChange,
+        onCreateAccount = viewModel::submit,
+        onLogin = onLogin,
+        onTermsClick = onTermsClick,
+        onPrivacyClick = onPrivacyClick,
+    )
+}
+
 @Composable
 fun RegisterScreen(
+    state: RegisterUiState,
+    onFullNameChange: (String) -> Unit,
+    onContactChange: (String) -> Unit,
+    onPasswordChange: (String) -> Unit,
+    onConfirmPasswordChange: (String) -> Unit,
+    onAcceptedTermsChange: (Boolean) -> Unit,
     onCreateAccount: () -> Unit,
     onLogin: () -> Unit,
     onTermsClick: () -> Unit,
     onPrivacyClick: () -> Unit,
 ) {
-    var fullName by rememberSaveable { mutableStateOf("") }
-    var contact by rememberSaveable { mutableStateOf("") }
-    var password by rememberSaveable { mutableStateOf(SampleData.PASSWORD) }
-    var confirmPassword by rememberSaveable { mutableStateOf("") }
-    var acceptedTerms by rememberSaveable { mutableStateOf(true) }
-
     Scaffold { innerPadding ->
         FillHeightScrollColumn(
             modifier = Modifier
@@ -79,35 +107,40 @@ fun RegisterScreen(
                 }
                 Column(verticalArrangement = Arrangement.spacedBy(11.dp)) {
                     LabeledTextField(
-                        value = fullName,
-                        onValueChange = { fullName = it },
+                        value = state.fullName,
+                        onValueChange = onFullNameChange,
                         label = stringResource(R.string.register_full_name_label),
                         leadingIcon = R.drawable.ic_user,
-                        placeholder = SampleData.USER_NAME,
+                        placeholder = stringResource(R.string.placeholder_name),
+                        errorText = state.fullNameError?.let { stringResource(it) },
                     )
                     LabeledTextField(
-                        value = contact,
-                        onValueChange = { contact = it },
+                        value = state.contact,
+                        onValueChange = onContactChange,
                         label = stringResource(R.string.field_contact_label),
                         leadingIcon = R.drawable.ic_mail,
-                        placeholder = SampleData.USER_EMAIL,
+                        placeholder = stringResource(R.string.placeholder_contact),
                         helperText = stringResource(R.string.register_contact_helper),
+                        errorText = state.contactError?.let { stringResource(it) },
                         keyboardType = KeyboardType.Email,
                     )
                     LabeledTextField(
-                        value = password,
-                        onValueChange = { password = it },
+                        value = state.password,
+                        onValueChange = onPasswordChange,
                         label = stringResource(R.string.field_password_label),
                         leadingIcon = R.drawable.ic_lock_keyhole,
+                        placeholder = stringResource(R.string.placeholder_password),
                         helperText = stringResource(R.string.password_rule_helper),
+                        errorText = state.passwordError?.let { stringResource(it) },
                         isPassword = true,
                     )
                     LabeledTextField(
-                        value = confirmPassword,
-                        onValueChange = { confirmPassword = it },
+                        value = state.confirmPassword,
+                        onValueChange = onConfirmPasswordChange,
                         label = stringResource(R.string.register_confirm_password_label),
                         leadingIcon = R.drawable.ic_shield_check,
-                        placeholder = stringResource(R.string.register_confirm_password_placeholder),
+                        placeholder = stringResource(R.string.placeholder_password),
+                        errorText = state.confirmPasswordError?.let { stringResource(it) },
                         isPassword = true,
                     )
                 }
@@ -116,24 +149,34 @@ fun RegisterScreen(
                 modifier = Modifier.padding(top = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Row(
-                    modifier = Modifier.toggleable(
-                        value = acceptedTerms,
-                        role = Role.Checkbox,
-                        onValueChange = { acceptedTerms = it },
-                    ),
-                ) {
-                    TripFairCheckbox(checked = acceptedTerms)
-                    TermsText(
-                        onTermsClick = onTermsClick,
-                        onPrivacyClick = onPrivacyClick,
-                        modifier = Modifier.padding(start = 10.dp),
-                    )
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(
+                        modifier = Modifier.toggleable(
+                            value = state.acceptedTerms,
+                            role = Role.Checkbox,
+                            onValueChange = onAcceptedTermsChange,
+                        ),
+                    ) {
+                        TripFairCheckbox(checked = state.acceptedTerms)
+                        TermsText(
+                            onTermsClick = onTermsClick,
+                            onPrivacyClick = onPrivacyClick,
+                            modifier = Modifier.padding(start = 10.dp),
+                        )
+                    }
+                    state.termsError?.let { error ->
+                        Text(
+                            text = stringResource(error),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
                 }
                 PrimaryButton(
                     text = stringResource(R.string.register_submit),
                     onClick = onCreateAccount,
                     trailingIcon = R.drawable.ic_arrow_right,
+                    enabled = !state.loading,
                 )
                 TextWithLink(
                     prefix = stringResource(R.string.register_have_account),
@@ -186,6 +229,17 @@ private fun TermsText(onTermsClick: () -> Unit, onPrivacyClick: () -> Unit, modi
 @Composable
 private fun RegisterScreenPreview() {
     TripFairTheme {
-        RegisterScreen(onCreateAccount = {}, onLogin = {}, onTermsClick = {}, onPrivacyClick = {})
+        RegisterScreen(
+            state = RegisterUiState(acceptedTerms = true),
+            onFullNameChange = {},
+            onContactChange = {},
+            onPasswordChange = {},
+            onConfirmPasswordChange = {},
+            onAcceptedTermsChange = {},
+            onCreateAccount = {},
+            onLogin = {},
+            onTermsClick = {},
+            onPrivacyClick = {},
+        )
     }
 }

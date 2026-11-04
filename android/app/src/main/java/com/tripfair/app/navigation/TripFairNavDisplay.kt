@@ -5,22 +5,24 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
+import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import com.tripfair.app.data.AppContainer
 import com.tripfair.app.ui.components.MainTab
-import com.tripfair.app.ui.sample.SampleData
 import com.tripfair.app.ui.sample.SampleCamera
 import com.tripfair.app.ui.sample.SampleItinerary
 import com.tripfair.app.ui.sample.SamplePlaces
 import com.tripfair.app.ui.sample.SampleSearch
 import com.tripfair.app.ui.sample.SampleSos
-import com.tripfair.app.ui.screens.auth.ForgotPasswordScreen
-import com.tripfair.app.ui.screens.auth.LoginScreen
-import com.tripfair.app.ui.screens.auth.NewPasswordScreen
-import com.tripfair.app.ui.screens.auth.OtpVerificationScreen
-import com.tripfair.app.ui.screens.auth.RegisterScreen
+import com.tripfair.app.ui.screens.auth.ForgotPasswordRoute
+import com.tripfair.app.ui.screens.auth.LoginRoute
+import com.tripfair.app.ui.screens.auth.NewPasswordRoute
+import com.tripfair.app.ui.screens.auth.OtpRoute
+import com.tripfair.app.ui.screens.auth.RegisterRoute
 import com.tripfair.app.ui.screens.camera.CameraScreen
 import com.tripfair.app.ui.screens.camera.RecognitionResultScreen
 import com.tripfair.app.ui.screens.explore.PlaceDetailScreen
@@ -63,8 +65,14 @@ import com.tripfair.app.ui.screens.vote.VoteListScreen
  * The back stack is a plain list: navigating adds a route, going back removes the last one.
  */
 @Composable
-fun TripFairNavDisplay() {
+fun TripFairNavDisplay(container: AppContainer) {
     val backStack = rememberNavBackStack(Login)
+
+    // Signing out ends the session, then starts a new history at the login screen.
+    val logout: () -> Unit = {
+        container.authRepository.logout()
+        backStack.replaceAll(Login)
+    }
 
     // Data shared by several screens, kept here until there is a backend.
     var itinerary by remember { mutableStateOf(SampleItinerary.days) }
@@ -90,34 +98,38 @@ fun TripFairNavDisplay() {
     NavDisplay(
         backStack = backStack,
         onBack = { backStack.goBack() },
+        // Each screen keeps its saved UI state and its own ViewModels, both cleared when it is removed.
+        entryDecorators = listOf(
+            rememberSaveableStateHolderNavEntryDecorator(),
+            rememberViewModelStoreNavEntryDecorator(),
+        ),
         entryProvider = entryProvider {
             // 01 Authentication
             entry<Login> {
-                LoginScreen(
-                    onLogin = { backStack.replaceAll(Home) },
+                LoginRoute(
+                    onLoggedIn = { backStack.replaceAll(Home) },
                     onRegister = { backStack.add(Register) },
                     onForgotPassword = { backStack.add(ForgotPassword) },
                 )
             }
             entry<Register> {
-                RegisterScreen(
-                    onCreateAccount = { backStack.add(OtpVerification(OtpPurpose.Register)) },
+                RegisterRoute(
+                    onCodeSent = { backStack.add(OtpVerification(OtpPurpose.Register)) },
                     onLogin = { backStack.popUpTo(Login) },
                     onTermsClick = { backStack.add(TermsPage) },
                     onPrivacyClick = { backStack.add(PrivacyPolicyPage) },
                 )
             }
             entry<ForgotPassword> {
-                ForgotPasswordScreen(
+                ForgotPasswordRoute(
                     onBack = { backStack.goBack() },
-                    onSendCode = { backStack.add(OtpVerification(OtpPurpose.ResetPassword)) },
+                    onCodeSent = { backStack.add(OtpVerification(OtpPurpose.ResetPassword)) },
                     onBackToLogin = { backStack.popUpTo(Login) },
                     onSupport = { backStack.add(Support) },
                 )
             }
             entry<OtpVerification> { route ->
-                OtpVerificationScreen(
-                    destination = SampleData.USER_EMAIL,
+                OtpRoute(
                     onBack = { backStack.goBack() },
                     onVerified = {
                         when (route.purpose) {
@@ -131,10 +143,9 @@ fun TripFairNavDisplay() {
                 )
             }
             entry<NewPassword> {
-                NewPasswordScreen(
-                    email = SampleData.USER_EMAIL,
+                NewPasswordRoute(
                     onBack = { backStack.goBack() },
-                    onSave = { backStack.popUpTo(Login) },
+                    onSaved = { backStack.popUpTo(Login) },
                     onSupport = { backStack.add(Support) },
                 )
             }
@@ -180,7 +191,7 @@ fun TripFairNavDisplay() {
                     onEmergencyContacts = { backStack.add(EmergencyContacts) },
                     onSettings = { backStack.add(Settings) },
                     onHelp = { backStack.add(Support) },
-                    onLogout = { backStack.replaceAll(Login) },
+                    onLogout = logout,
                     onTabSelect = selectTab,
                 )
             }
@@ -235,7 +246,7 @@ fun TripFairNavDisplay() {
                     onPrivacy = { backStack.add(PrivacyPolicyPage) },
                     onSupport = { backStack.add(Support) },
                     onTerms = { backStack.add(TermsPage) },
-                    onLogout = { backStack.replaceAll(Login) },
+                    onLogout = logout,
                 )
             }
             entry<Support> { SupportScreen(onBack = { backStack.goBack() }) }

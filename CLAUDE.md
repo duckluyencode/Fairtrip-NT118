@@ -77,6 +77,7 @@ README.md
 - 2026-10-19: App Android: package com.tripfair.app, minSdk 26, compileSdk/targetSdk 37; AGP 9.4.1 (Kotlin tích hợp, 2.2.10), Gradle 9.6.0, Compose BOM 2026.09.00 (Material 3).
 - 2026-10-19: Giao diện có chế độ sáng (theo Figma) và tối (tự thiết kế từ màu Figma, đạt WCAG AA), theo cài đặt của điện thoại; không dùng màu động Material You. Font Inter đóng gói trong app (file biến thiên, giấy phép OFL).
 - 2026-10-20: Điều hướng Android dùng Navigation 3 (1.2.0) + kotlinx-serialization. Icon lấy từ Figma (bộ Lucide) chuyển sang VectorDrawable, không dùng thư viện icon. Màn hình làm theo Figma với dữ liệu mẫu trước, nối backend sau.
+- 2026-10-21: Android dùng ViewModel (lifecycle 2.11.0) và repository; dữ liệu mẫu qua repository giả lập trong bộ nhớ cho tới khi nối backend; unit test bằng JUnit 4.
 
 ## Câu hỏi mở
 Mỗi mục ghi rõ cần chốt trước khi làm phần nào. Chưa tới phần đó thì để nguyên.
