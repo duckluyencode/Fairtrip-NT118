@@ -26,7 +26,13 @@ REST API for the TripFair Android app, built with NestJS and TypeScript.
    npm run start:dev
    ```
 
-The server runs at http://localhost:3000. `GET /health` returns `200` when the database is reachable and `503` when it is not.
+The server runs at http://localhost:3000. API routes live under `/api/v1`, and the interactive API docs are at http://localhost:3000/docs. `GET /health` returns `200` when the database is reachable and `503` when it is not.
+
+Errors always use the same shape:
+
+```json
+{ "statusCode": 400, "code": "VALIDATION_FAILED", "message": "Request validation failed", "details": [] }
+```
 
 ## Scripts
 
@@ -36,7 +42,7 @@ The server runs at http://localhost:3000. `GET /health` returns `200` when the d
 | `npm run build` | Compile to `dist/` |
 | `npm run start:prod` | Run the compiled build |
 | `npm test` | Run unit tests (Vitest) |
-| `npm run test:e2e` | Run end-to-end tests |
+| `npm run test:e2e` | Run end-to-end tests against the `tripfair_test` database |
 | `npm run lint` | Lint with oxlint |
 | `npm run format` | Format with Prettier |
 | `npm run db:generate` | Regenerate the Prisma Client after schema changes |
