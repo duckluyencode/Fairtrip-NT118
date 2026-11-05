@@ -21,7 +21,7 @@ Khi có `android/` và `backend/`: lệnh build/test và quy ước riêng của
 .github/     GitHub Actions (CI backend)
 android/     App Android Kotlin + Jetpack Compose, xem android/CLAUDE.md
 backend/     API server NestJS (TypeScript), xem backend/CLAUDE.md
-docs/        Tài liệu dự án (mô tả tổng quan, thiết kế database)
+docs/        Tài liệu dự án (mô tả tổng quan, thiết kế database, lộ trình và tiến độ)
 CLAUDE.md
 README.md
 ```
@@ -32,6 +32,7 @@ README.md
 - Database trên máy: `docker compose up -d` trong `backend/` (MySQL 8.4), chi tiết trong backend/CLAUDE.md.
 
 ## Cách làm việc với tôi
+- Kế hoạch và tiến độ theo dõi ở [docs/roadmap.md](docs/roadmap.md). Đầu mỗi task, nói rõ task thuộc bước nào trong roadmap. PR của bước nào thì cập nhật luôn trạng thái, ngày xong, việc còn lại và nhật ký của bước đó trong cùng PR. Kế hoạch thay đổi thì sửa roadmap trước rồi mới làm.
 - Tôi muốn hiểu mọi thứ được tạo ra. Trước khi viết code cho một task: nêu kế hoạch ngắn (file sẽ tạo/sửa, cách tiếp cận) và chờ tôi đồng ý.
 - Làm theo bước nhỏ, mỗi bước là một thay đổi kiểm tra được; sau mỗi bước giải thích ngắn đã làm gì và vì sao.
 - Chỉ làm đúng phạm vi task; không tự refactor hoặc thêm tính năng ngoài yêu cầu. Thấy vấn đề ngoài phạm vi thì ghi chú để tôi quyết định.
