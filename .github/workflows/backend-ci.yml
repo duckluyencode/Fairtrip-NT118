@@ -61,3 +61,15 @@ jobs:
       - run: npm run build
       - run: npm test
       - run: npm run test:e2e
+
+  # The images can break without any test failing (e.g. files missing from the build
+  # context), so every PR builds both.
+  docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build the API image
+        run: docker build -t tripfair-api backend
+      - name: Build the migration image
+        run: docker build --target migrate -t tripfair-migrate backend
