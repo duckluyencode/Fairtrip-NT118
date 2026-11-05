@@ -2,7 +2,7 @@
 
 Nơi duy nhất theo dõi kế hoạch của TripFair. Mỗi PR cập nhật trạng thái bước của nó; kế hoạch thay đổi thì sửa file này trước rồi mới làm.
 
-Cập nhật lần cuối: 2026-11-05.
+Cập nhật lần cuối: 2026-11-05 (đưa B1–B4 lên trước A8).
 
 Trạng thái: ✅ Xong · 🔄 Đang làm · ⏳ Chưa làm · ⛔ Bị chặn (chờ quyết định hoặc tài khoản)
 
@@ -13,18 +13,23 @@ Trạng thái: ✅ Xong · 🔄 Đang làm · ⏳ Chưa làm · ⛔ Bị chặn 
 | Thiết kế UI (Figma) | ✅ | Đã rà soát và bổ sung các màn còn thiếu; còn vài mục "nên có" |
 | Android | 🔄 | Đủ màn hình theo Figma với dữ liệu mẫu; logic form tài khoản ở PR #7; chưa nối backend |
 | Backend | 🔄 | A1–A6 xong; tìm kiếm, giá, lịch sử, yêu thích xong; tiếp theo A8 (lộ trình) |
-| Hạ tầng AWS | ⏳ | Chưa bắt đầu (giai đoạn B) |
+| Hạ tầng AWS | 🔄 | B2 (Docker) xong; B1 chờ tài khoản AWS |
 
 ## Bước tiếp theo
 
-1. **Backend A8: lộ trình cá nhân và lưu trú.** Cần chốt hai câu hỏi [Trip] trước khi viết code.
-2. **Android: merge PR #7, rồi nối backend** cho đăng nhập, tìm kiếm, lịch sử và yêu thích. Các API này đã có trên `main`, có thể làm song song với A8.
+Dữ liệu người dùng phải nằm trên cloud chứ không trên máy phát triển, nên B1–B4 được làm trước A8. Database trên máy chỉ còn dùng để phát triển và chạy test.
+
+1. **B1–B4: đưa backend lên AWS** (Docker, RDS, EC2, HTTPS). B1 cần tài khoản AWS.
+2. **Android AN5: nối backend trên EC2** cho đăng nhập, tìm kiếm, lịch sử và yêu thích. Merge PR #7 trước.
+3. **Backend A8: lộ trình cá nhân và lưu trú.** Cần chốt hai câu hỏi [Trip] trước khi viết code.
 
 ## Việc đang chờ
 
 | Việc | Cần cho | Ghi chú |
 | --- | --- | --- |
-| Gmail App Password điền vào `backend/.env` (`SMTP_*`) | Gửi OTP qua email thật | Chưa có thì mã OTP in ra log server |
+| Tài khoản AWS (B1) | B3, B4 | Cần thẻ; bật MFA, tạo user IAM, đặt cảnh báo chi phí |
+| Gmail App Password điền vào `backend/.env` (`SMTP_*`) | Gửi OTP qua email thật | Chưa có thì mã OTP in ra log server; trên AWS sẽ chuyển vào SSM Parameter Store |
+| Chọn API tìm kiếm toàn cầu (Google Places hay API dựa trên OpenStreetMap) | A7 | Danh mục mẫu chỉ dùng cho phát triển và test, không đủ cho người dùng thật |
 | Google Maps API key (`GOOGLE_MAPS_API_KEY`) | Kết quả Google trong tìm kiếm | Cần bật thanh toán, giới hạn key cho Places API (New), đặt quota theo ngày; không có key vẫn chạy bằng danh mục mẫu |
 | Review và merge PR #7 | Android AN3 | Khi merge sẽ phải gộp tay một dòng trong "Quyết định đã chốt" của CLAUDE.md |
 | Quyết định chạy `npm audit fix` | Bảo mật backend | 4 lỗ hổng (3 high) trong body-parser, multer, fast-uri; sửa được trong phạm vi phiên bản hiện tại |
@@ -75,8 +80,8 @@ Việc còn lại của các bước đang làm:
 
 | Bước | Mục tiêu | Trạng thái |
 | --- | --- | --- |
-| B1 Tài khoản AWS | MFA cho root, IAM quyền tối thiểu, cảnh báo chi phí, region Singapore | ⏳ |
-| B2 Đóng gói Docker | Dockerfile multi-stage, chạy thử bằng Compose | ⏳ |
+| B1 Tài khoản AWS | MFA cho root, IAM quyền tối thiểu, cảnh báo chi phí, region Singapore | ⛔ chờ tài khoản |
+| B2 Đóng gói Docker | Dockerfile multi-stage (image chạy API và image chạy migration), chạy thử trên máy, CI build cả hai image | ✅ |
 | B3 RDS MySQL | Subnet riêng, chỉ nhận kết nối từ EC2, TLS, backup tự động | ⏳ |
 | B4 EC2 chạy backend | Docker, IAM role, secrets trong SSM Parameter Store, HTTPS | ⏳ |
 | B5 S3 cho ảnh | Bucket private, upload bằng pre-signed URL | ⏳ |
@@ -103,4 +108,4 @@ Nội dung đầy đủ ở mục "Câu hỏi mở" của [CLAUDE.md](../CLAUDE.
 - **2026-10-19:** Backend kết nối MySQL bằng Prisma, có `/health` (#5).
 - **2026-10-21:** Android có đủ màn hình theo Figma (#6) và logic form tài khoản (#7).
 - **2026-11-04:** Backend xong A4–A6, tìm kiếm, giá, lịch sử và yêu thích (#8–#11); CI chạy cho mọi PR backend.
-- **2026-11-05:** Thêm file lộ trình này.
+- **2026-11-05:** Thêm file lộ trình này (#12). Đưa B1–B4 lên trước A8 để dữ liệu người dùng nằm trên AWS. B2: image Docker cho API và migration, chạy thử được với MySQL trên máy.

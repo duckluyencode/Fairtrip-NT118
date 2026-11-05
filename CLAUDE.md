@@ -84,6 +84,7 @@ README.md
 - 2026-11-04: OTP email gửi qua SMTP (Gmail App Password khi chạy trên máy; đổi nhà cung cấp, vd. Amazon SES, chỉ cần sửa `.env`). Đăng nhập trả access token JWT 15 phút và refresh token 30 ngày (đổi mới mỗi lần dùng); mật khẩu hash bằng scrypt.
 - 2026-11-04: Địa điểm kết hợp danh mục riêng của TripFair (dữ liệu mẫu Đà Nẵng, có thời gian ghé và giá) với Google Places (New): tìm kiếm bổ sung kết quả Google khi có `GOOGLE_MAPS_API_KEY`; điểm từ Google chỉ lưu `place_id` (theo điều khoản Google), chi tiết lấy trực tiếp và ghi nguồn "Google Maps".
 - 2026-11-04: Giá điểm không có vé đối tác: `priceRange` của Google → loại điểm thường miễn phí (bãi biển, công viên, chùa, cầu…) = 0đ ước tính → bảng quy đổi theo price_level → mức mặc định theo nhóm. Điểm nằm trong khu có bán vé (vd. Le Jardin trong Bà Nà Hills) dùng giá vé của khu; trong lộ trình tính 0đ nếu vé khu đã có trong lộ trình.
+- 2026-11-05: Dữ liệu người dùng thật chỉ nằm trên AWS (RDS); database trên máy chỉ dùng để phát triển và chạy test. Làm B1–B4 trước A8. Backend đóng gói thành hai image Docker: API và migration (`backend/Dockerfile`).
 
 ## Câu hỏi mở
 Mỗi mục ghi rõ cần chốt trước khi làm phần nào. Chưa tới phần đó thì để nguyên.

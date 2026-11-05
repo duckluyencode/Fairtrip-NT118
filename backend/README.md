@@ -38,6 +38,15 @@ Errors always use the same shape:
 { "statusCode": 400, "code": "VALIDATION_FAILED", "message": "Request validation failed", "details": [] }
 ```
 
+## Docker
+
+```bash
+docker build -t tripfair-api .                           # the API
+docker build --target migrate -t tripfair-migrate .      # applies migrations, then exits
+```
+
+The API image runs as a non-root user and reports its health from `GET /health`. The migration image needs `DATABASE_URL`.
+
 ## Scripts
 
 | Command | Description |

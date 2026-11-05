@@ -22,6 +22,13 @@ NestJS 12 + TypeScript (ESM), chạy trên Node.js 24 LTS. Quy tắc chung của
 - Script trong `docker/mysql-init/` tạo thêm `tripfair_shadow` (cho `migrate dev`, biến `SHADOW_DATABASE_URL`) và `tripfair_test` (cho e2e) khi volume được tạo lần đầu, user `tripfair` chỉ có quyền trên các database này. Volume có từ trước thì chạy một lần: `docker exec tripfair-mysql sh /docker-entrypoint-initdb.d/01-create-extra-databases.sh`.
 - `GET /health`: 200 khi backend kết nối được MySQL, 503 (`DATABASE_UNAVAILABLE`) khi không.
 
+## Docker image (`Dockerfile`)
+- `docker build -t tripfair-api .`: image chạy API (`NODE_ENV=production`, chỉ `dist/` và dependency production, chạy bằng user `node`, healthcheck gọi `/health`).
+- `docker build --target migrate -t tripfair-migrate .`: image chạy `prisma migrate deploy` rồi thoát, cần `DATABASE_URL`. Nạp danh mục mẫu: chạy image này với lệnh `npx prisma db seed` (cần `MYSQL_*`).
+- Chạy thử trên máy: `docker run --rm --env-file .env -e MYSQL_HOST=host.docker.internal -e NODE_ENV=development -p 127.0.0.1:3100:3000 tripfair-api`. Ở production, thiếu biến bắt buộc (vd. SMTP) thì server dừng ngay lúc khởi động.
+- Generator Prisma ghi rõ `moduleFormat` và `importFileExtension`; không bỏ đi, vì khi `npm ci` chạy trong Docker chưa có `tsconfig.json` và Prisma sẽ đoán sai đuôi import (`.ts`).
+- CI build cả hai image cho mọi PR chạm `backend/`.
+
 ## Xác thực (`src/auth/`, `src/users/`)
 - Mọi route cần `Authorization: Bearer <accessToken>`, trừ route gắn `@Public()` (`AuthGuard` toàn cục); lấy người dùng hiện tại bằng `@CurrentUser()`.
 - Access token là JWT HS256 sống 15 phút; refresh token là chuỗi ngẫu nhiên lưu dạng SHA-256, sống 30 ngày, đổi mới mỗi lần dùng; token reset mật khẩu là JWT 10 phút, mỗi token dùng một lần. `JWT_SECRET` (≥ 32 ký tự) ký JWT và làm khóa HMAC cho mã OTP.
