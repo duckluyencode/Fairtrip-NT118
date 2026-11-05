@@ -3,6 +3,7 @@ import {
   IsBooleanString,
   IsIn,
   IsNotEmpty,
+  IsNumberString,
   IsOptional,
   IsPort,
   IsString,
@@ -43,6 +44,17 @@ class EnvironmentVariables {
   @IsOptional()
   @IsBooleanString()
   MYSQL_ALLOW_PUBLIC_KEY_RETRIEVAL?: string;
+
+  /** Path to the RDS CA bundle; turns on verified TLS. Required in production. */
+  @ValidateIf((env: EnvironmentVariables) => env.NODE_ENV === 'production')
+  @IsString()
+  @IsNotEmpty()
+  MYSQL_SSL_CA?: string;
+
+  /** Number of reverse proxies in front of the API (1 behind Caddy), so client IPs are right. */
+  @IsOptional()
+  @IsNumberString({ no_symbols: true })
+  TRUST_PROXY?: string;
 
   @IsString()
   @MinLength(32)

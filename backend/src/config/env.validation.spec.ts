@@ -36,6 +36,33 @@ describe('validateEnv', () => {
     );
   });
 
+  it('requires TLS to the database in production', () => {
+    const smtp = {
+      SMTP_HOST: 'smtp.gmail.com',
+      SMTP_PORT: '465',
+      SMTP_USER: 'tripfair.app@gmail.com',
+      SMTP_PASSWORD: 'app-password',
+    };
+    expect(() =>
+      validateEnv({ ...valid, ...smtp, NODE_ENV: 'production' }),
+    ).toThrow(/MYSQL_SSL_CA/);
+    expect(() =>
+      validateEnv({
+        ...valid,
+        ...smtp,
+        NODE_ENV: 'production',
+        MYSQL_SSL_CA: '/certs/rds-ca.pem',
+      }),
+    ).not.toThrow();
+  });
+
+  it('accepts only a whole number of proxies', () => {
+    expect(() => validateEnv({ ...valid, TRUST_PROXY: '1' })).not.toThrow();
+    expect(() => validateEnv({ ...valid, TRUST_PROXY: 'yes' })).toThrow(
+      /TRUST_PROXY/,
+    );
+  });
+
   it('requires the rest of SMTP once a host is set', () => {
     expect(() =>
       validateEnv({ ...valid, SMTP_HOST: 'smtp.gmail.com', SMTP_PORT: '465' }),
