@@ -2,8 +2,12 @@
 // Tables are added module by module; the full design is in docs/database.md.
 
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  // Explicit, so the output does not depend on whether tsconfig.json is present
+  // (it is not yet when `npm ci` runs `prisma generate` in the Docker build).
+  moduleFormat        = "esm"
+  importFileExtension = "js"
 }
 
 datasource db {
