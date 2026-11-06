@@ -30,12 +30,13 @@ model User {
   createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @updatedAt @map("updated_at")
 
-  otpCodes      OtpCode[]
-  refreshTokens RefreshToken[]
-  searchHistory SearchHistory[]
-  favorites     Favorite[]
-  ownedTrips    Trip[]
-  memberships   TripMember[]
+  otpCodes          OtpCode[]
+  refreshTokens     RefreshToken[]
+  searchHistory     SearchHistory[]
+  favorites         Favorite[]
+  ownedTrips        Trip[]
+  memberships       TripMember[]
+  emergencyContacts EmergencyContact[]
 
   @@map("users")
 }
@@ -405,4 +406,25 @@ model Vote {
   @@id([optionId, memberId])
   @@index([memberId])
   @@map("votes")
+}
+
+/// People to alert with the SOS button. Kept on the server so they survive a phone change;
+/// the Android app keeps a copy so SOS works offline.
+model EmergencyContact {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @map("user_id")
+  name        String   @db.VarChar(100)
+  /// e.g. "Mẹ", "Bạn thân".
+  relation    String?  @db.VarChar(50)
+  /// E.164, e.g. +84905128846.
+  phone       String   @db.VarChar(16)
+  /// Whether the SOS message goes to this person.
+  receivesSos Boolean  @default(true) @map("receives_sos")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, phone])
+  @@map("emergency_contacts")
 }

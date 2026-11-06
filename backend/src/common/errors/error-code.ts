@@ -8,6 +8,7 @@ export const ErrorCode = {
   NotFound: 'NOT_FOUND',
   Conflict: 'CONFLICT',
   TooManyRequests: 'TOO_MANY_REQUESTS',
+  PayloadTooLarge: 'PAYLOAD_TOO_LARGE',
   Internal: 'INTERNAL_ERROR',
   DatabaseUnavailable: 'DATABASE_UNAVAILABLE',
 
@@ -55,6 +56,17 @@ export const ErrorCode = {
   InvalidItinerary: 'INVALID_ITINERARY',
   /** The trip has no itinerary yet (or its inputs changed since it was planned). */
   ItineraryNotReady: 'ITINERARY_NOT_READY',
+
+  // Emergency contacts
+  ContactNotFound: 'CONTACT_NOT_FOUND',
+  ContactExists: 'CONTACT_EXISTS',
+  ContactLimitReached: 'CONTACT_LIMIT_REACHED',
+
+  // Photo recognition
+  /** No photo, or not a JPEG, PNG or WebP image. */
+  InvalidImage: 'INVALID_IMAGE',
+  /** Cloud Vision is not configured or cannot answer right now. */
+  RecognitionUnavailable: 'RECOGNITION_UNAVAILABLE',
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

@@ -237,13 +237,23 @@ Khóa chính (stop_id, member_id), cost. Ai đi điểm nào và trả bao nhiê
 
 Khóa chính (user_id, place_id), created_at; chỉ mục place_id. Lưu lại một điểm đã lưu hoặc bỏ lưu điểm chưa lưu đều không lỗi. Xóa user hoặc điểm thì xóa luôn dòng yêu thích. Điểm GOOGLE trong danh sách yêu thích được lấy chi tiết trực tiếp từ Google khi hiển thị.
 
-### `emergency_contacts` · A10
+### `emergency_contacts` · tạo ở A10
 
-id, user_id → users, name, relation, phone (E.164), receives_sos (nhận tin SOS hay không), created_at. Lưu trên server để giữ được khi đổi điện thoại; app Android giữ bản sao để SOS vẫn chạy khi mất mạng.
+| Cột | Kiểu | Ghi chú |
+| --- | --- | --- |
+| id | INT | |
+| user_id | INT → users | Xóa user thì xóa luôn liên hệ |
+| name | VARCHAR(100) | |
+| relation | VARCHAR(50), trống được | vd. "Mẹ" |
+| phone | VARCHAR(16) | E.164; unique theo (user_id, phone) |
+| receives_sos | BOOLEAN | Có nhận tin SOS không, mặc định có |
+| created_at, updated_at | DATETIME | |
+
+Mỗi người tối đa 5 liên hệ (mỗi lần SOS gửi một SMS cho từng người). Lưu trên server để giữ được khi đổi điện thoại; app Android giữ bản sao để SOS vẫn chạy khi mất mạng, và tự gửi SMS bằng SmsManager.
 
 ## Không lưu trong database
 
 - **Đánh giá địa điểm**: lấy từ Google Places API (New), không có bảng `reviews`.
-- **Kết quả nhận diện ảnh**: Cloud Vision trả kết quả theo từng lần chụp, không cần lưu.
+- **Ảnh và kết quả nhận diện**: ảnh chỉ được gửi tới Cloud Vision rồi bỏ, không lưu; địa điểm tìm được lưu như mọi điểm Google (chỉ place ID).
 - **Gợi ý khách sạn**: tìm trên Google Places lúc gọi API; chỉ khách sạn đã chọn mới được lưu (place ID và giá chụp lại).
 - **Tổng dồn, số tiền còn lại, cảnh báo của lộ trình**: tính khi trả lộ trình.

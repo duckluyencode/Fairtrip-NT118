@@ -56,6 +56,11 @@ NestJS 12 + TypeScript (ESM), chạy trên Node.js 24 LTS. Quy tắc chung của
 - Mọi thay đổi đầu vào (thành viên, ngân sách, sở thích, phiếu, chỗ ở) gọi `TripAccess.resetPlan`: xóa lộ trình, trip về DRAFT, phải lập lại.
 - Ngân sách của người khác không bao giờ trả về; cả nhóm chỉ thấy phần chi (`spent`). Cảnh báo `MEMBER_OVER_BUDGET` không nói là ai.
 
+## Liên hệ khẩn cấp, nhận diện ảnh (`src/emergency-contacts/`, `src/recognition/`)
+- `GET/POST/PATCH/DELETE /me/emergency-contacts`: tối đa 5 người, SĐT lưu E.164 (số Việt Nam gõ kiểu `0905…` được, số nước ngoài cần `+mã nước`). App Android tự gửi SMS SOS; server chỉ giữ danh sách.
+- `POST /places/recognize` (multipart, field `image`, JPEG/PNG/WebP, tối đa 4 MB, 10 lần/phút): Cloud Vision `LANDMARK_DETECTION` qua `VisionClient`, rồi tìm địa danh trên Google Places quanh tọa độ Vision trả về. Kiểu ảnh kiểm tra bằng byte đầu file, không tin `Content-Type`. Không lưu ảnh. Không có key thì trả 503 `RECOGNITION_UNAVAILABLE`; e2e test dùng `FakeVisionClient`.
+- Một key Google Cloud (`GOOGLE_MAPS_API_KEY`) dùng chung cho Places, Routes và Vision; giới hạn key chỉ cho ba API này.
+
 ## Quy ước
 - Code là ESM: import file nội bộ phải có đuôi `.js` (vd. `import { AppService } from './app.service.js'`).
 - Test dùng Vitest (`describe`, `it`, `expect` là global), không dùng Jest.

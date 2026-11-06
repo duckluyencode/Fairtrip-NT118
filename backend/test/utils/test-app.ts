@@ -18,6 +18,10 @@ import {
 } from '../../src/places/google/google-places.client.js';
 import { RoutesClient } from '../../src/places/google/routes.client.js';
 import { PrismaService } from '../../src/prisma/prisma.service.js';
+import {
+  VisionClient,
+  type Landmark,
+} from '../../src/recognition/vision.client.js';
 
 /** Keeps sent codes in memory so tests can read them instead of an inbox. */
 export class FakeOtpDelivery extends OtpDelivery {
@@ -112,22 +116,46 @@ export class FakeRoutesClient extends RoutesClient {
   }
 }
 
+/** Cloud Vision stand-in: off by default, or returns `found` for any photo. */
+export class FakeVisionClient extends VisionClient {
+  enabled = false;
+  found: Landmark[] = [];
+  /** Sizes of the images sent, to check what reached Vision. */
+  readonly received: number[] = [];
+
+  landmarks(image: Buffer): Promise<Landmark[]> {
+    if (!this.enabled) {
+      return Promise.reject(new Error('Vision is disabled in this test'));
+    }
+    this.received.push(image.length);
+    return Promise.resolve(this.found);
+  }
+
+  reset(): void {
+    this.enabled = false;
+    this.found = [];
+    this.received.length = 0;
+  }
+}
+
 export interface TestApp {
   app: INestApplication<App>;
   prisma: PrismaService;
   otp: FakeOtpDelivery;
   google: FakeGooglePlacesClient;
   routes: FakeRoutesClient;
+  vision: FakeVisionClient;
 }
 
 /**
  * Starts the whole app with the same HTTP setup as main.ts, with fakes for sending
- * codes, Google Places and Google Routes so tests never reach the network.
+ * codes, Google Places, Routes and Cloud Vision so tests never reach the network.
  */
 export async function createTestApp(): Promise<TestApp> {
   const otp = new FakeOtpDelivery();
   const google = new FakeGooglePlacesClient();
   const routes = new FakeRoutesClient();
+  const vision = new FakeVisionClient();
   const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(OtpDelivery)
     .useValue(otp)
@@ -135,11 +163,20 @@ export async function createTestApp(): Promise<TestApp> {
     .useValue(google)
     .overrideProvider(RoutesClient)
     .useValue(routes)
+    .overrideProvider(VisionClient)
+    .useValue(vision)
     .compile();
   const app = moduleRef.createNestApplication<INestApplication<App>>();
   configureApp(app);
   await app.init();
-  return { app, prisma: app.get(PrismaService), otp, google, routes };
+  return {
+    app,
+    prisma: app.get(PrismaService),
+    otp,
+    google,
+    routes,
+    vision,
+  };
 }
 
 /** Signs up and verifies an account; returns its access token. */
