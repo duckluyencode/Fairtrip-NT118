@@ -11,6 +11,7 @@ NestJS 12 + TypeScript (ESM), chạy trên Node.js 24 LTS. Quy tắc chung của
 - `npm run test:e2e`: e2e test (Vitest + supertest, thư mục `test/`) chạy cả app trên database `tripfair_test` (cần MySQL đang chạy); tự áp dụng migration trước khi chạy, mỗi test tự xóa dữ liệu bằng `resetDatabase`
 - `npm run lint`: kiểm tra code bằng oxlint
 - `npm run format`: định dạng code bằng Prettier
+- `npm run bench:planner`: đánh giá thuật toán lập lộ trình (Greedy thuần, bản đầy đủ, lời giải tối ưu) trên dữ liệu ngẫu nhiên theo seed, in bảng Markdown; kết quả và cách đọc ở [docs/algorithm.md](../docs/algorithm.md). Script phát triển nằm trong `scripts/`, chạy bằng `tsx`, không nằm trong bản build.
 
 ## Database trên máy (MySQL 8.4 qua Docker)
 - Lần đầu: copy `.env.example` thành `.env` và đặt mật khẩu.
@@ -50,7 +51,7 @@ NestJS 12 + TypeScript (ESM), chạy trên Node.js 24 LTS. Quy tắc chung của
 - Plugin Swagger đọc class trong file `*.dto.ts`, `*.query.ts`, `*.response.ts`: đặt DTO vào các file này, không khai báo trong controller.
 
 ## Chuyến đi, nhóm, lộ trình (`src/trips/`, `src/planner/`)
-- `src/planner/` là thuật toán thuần TypeScript (không NestJS, không database): Greedy theo tỉ lệ giá trị/chi phí (điểm miễn phí trước) → 2-opt từng ngày → Greedy lần hai → Fairness check. Ngân sách là giới hạn cứng. Chuyến một mình là nhóm một người. Test bằng `npm test`, dữ liệu mẫu trong `planner.fixtures.ts`.
+- `src/planner/` là thuật toán thuần TypeScript (không NestJS, không database): Greedy theo tỉ lệ giá trị/chi phí (điểm miễn phí trước) → Local search (2-opt từng ngày, đổi điểm 1-swap, Greedy lấp chỗ trống) → Fairness check (đổi phần tham gia của từng người, thêm điểm cho người kém hài lòng). Ngân sách là giới hạn cứng. Chuyến một mình là nhóm một người. `exact.ts` là lời giải tối ưu bằng vét cạn (≤ 12 điểm) chỉ dùng để đánh giá. Mô tả đầy đủ: [docs/algorithm.md](../docs/algorithm.md). Test bằng `npm test`, dữ liệu mẫu trong `planner.fixtures.ts`.
 - `src/trips/` nối thuật toán với dữ liệu: `TripPlacesService` đọc điểm (danh mục hoặc Google, kèm giá, giờ mở cửa theo ngày), `LodgingService` gợi ý 3 khách sạn thật từ Google (loại `lodging`, giá ước tính theo price level tới khi có Agoda), `PlanningService` lập lộ trình rồi tính lại giờ bằng Google Routes, `ItineraryService` trả lộ trình kèm tổng dồn, số tiền còn lại và cảnh báo, `VotesService` lo bình chọn.
 - Ứng viên khi lập lộ trình: các điểm đã chọn hoặc bình chọn (`vote_options`); chưa có thì tìm điểm nổi tiếng và quán ăn của thành phố trên Google (2 lượt Text Search), không có key thì lấy danh mục mẫu cùng thành phố.
 - Mọi thay đổi đầu vào (thành viên, ngân sách, sở thích, phiếu, chỗ ở) gọi `TripAccess.resetPlan`: xóa lộ trình, trip về DRAFT, phải lập lại.

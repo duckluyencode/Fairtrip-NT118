@@ -1,8 +1,9 @@
 import { distanceKm } from '../places/geo.js';
 import type { LatLng } from './types.js';
 
-// Straight-line distance times a detour factor, at an average city speed. Google Routes
-// would be more accurate but is billed per request; see the roadmap's provisional decisions.
+// Straight-line distance times a detour factor, at an average city speed. The planner
+// calls this thousands of times, so it stays an estimate; the saved itinerary is timed
+// again with Google Routes (PlanningService), one billed request per day.
 export const DETOUR_FACTOR = 1.4;
 export const CITY_SPEED_KMH = 25;
 

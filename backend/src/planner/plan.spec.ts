@@ -144,6 +144,68 @@ describe('planTrip', () => {
     expect(result.stops.map((s) => s.placeId)).toEqual([b.id]);
   });
 
+  it('lets a member spend their money on the stop they like instead', () => {
+    // Greedy plans the restaurant first (higher value for the two together), and the
+    // second member's 100.000đ goes there; the fairness pass moves it to the museum.
+    const restaurant = place(1, {
+      cost: 100_000,
+      interests: ['FOOD'],
+      rating: 5,
+    });
+    const museum = place(2, {
+      lng: 108.225,
+      cost: 100_000,
+      interests: ['CULTURE'],
+      rating: 3.5,
+    });
+    const trip = input({
+      days: 1,
+      places: [restaurant, museum],
+      members: [
+        { id: 1, available: 1_000_000, interests: ['FOOD'] },
+        { id: 2, available: 100_000, interests: ['CULTURE'] },
+      ],
+    });
+    const going = (result: ReturnType<typeof planTrip>, placeId: number) =>
+      result.stops.find((s) => s.placeId === placeId)?.participants;
+
+    const greedyOnly = planTrip(trip, { localSearch: false, fairness: false });
+    expect(going(greedyOnly, restaurant.id)).toEqual([1, 2]);
+
+    const full = planTrip(trip);
+    expectValidPlan(trip, full);
+    expect(going(full, restaurant.id)).toEqual([1]);
+    expect(going(full, museum.id)).toEqual([1, 2]);
+    expect(full.totalValue).toBeGreaterThan(greedyOnly.totalValue);
+    expect(full.fairness).toBeGreaterThan(greedyOnly.fairness);
+  });
+
+  it('swaps an early pick for a place worth more', () => {
+    // Only one long visit fits the day. Greedy takes the free place first; local
+    // search replaces it with the paid one the member likes far more.
+    const free = place(1, { visitMinutes: 400, interests: [], rating: 3.5 });
+    const beach = place(2, {
+      visitMinutes: 400,
+      cost: 100_000,
+      interests: ['BEACH'],
+    });
+    const trip = input({
+      days: 1,
+      dayEndMinute: 1000,
+      base: { lat: 16.06, lng: 108.22 },
+      places: [free, beach],
+      members: [{ id: 1, available: 500_000, interests: ['BEACH'] }],
+    });
+
+    const greedyOnly = planTrip(trip, { localSearch: false, fairness: false });
+    expect(greedyOnly.stops.map((s) => s.placeId)).toEqual([free.id]);
+
+    const full = planTrip(trip);
+    expectValidPlan(trip, full);
+    expect(full.stops.map((s) => s.placeId)).toEqual([beach.id]);
+    expect(full.totalValue).toBeGreaterThan(greedyOnly.totalValue);
+  });
+
   it('local search does not make a plan worse', () => {
     const trip = input({
       members: [
@@ -157,7 +219,7 @@ describe('planTrip', () => {
 
     expectValidPlan(trip, greedyOnly);
     expectValidPlan(trip, full);
-    expect(full.stops.length).toBeGreaterThanOrEqual(greedyOnly.stops.length);
+    expect(full.totalValue).toBeGreaterThanOrEqual(greedyOnly.totalValue);
   });
 
   it('never puts a place on a day it is closed', () => {

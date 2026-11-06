@@ -81,6 +81,9 @@ export interface MemberResult {
 export interface PlannerResult {
   stops: PlannedStop[];
   members: MemberResult[];
+  /** Sum over members of the value of the places they visit (the objective of an ILP). */
+  totalValue: number;
+  /** Sum of the members' satisfaction (each 0–1). */
   totalSatisfaction: number;
   /** Jain's fairness index of the members' satisfaction, 1 = perfectly even. */
   fairness: number;

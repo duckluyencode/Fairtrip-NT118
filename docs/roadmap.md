@@ -2,7 +2,7 @@
 
 Nơi duy nhất theo dõi kế hoạch của TripFair. Mỗi PR cập nhật trạng thái bước của nó; kế hoạch thay đổi thì sửa file này trước rồi mới làm.
 
-Cập nhật lần cuối: 2026-11-07 (xong A10: liên hệ khẩn cấp, nhận diện ảnh bằng Cloud Vision).
+Cập nhật lần cuối: 2026-11-07 (xong A10, A11).
 
 Trạng thái: ✅ Xong · 🔄 Đang làm · ⏳ Chưa làm · ⛔ Bị chặn (chờ quyết định hoặc tài khoản)
 
@@ -12,7 +12,7 @@ Trạng thái: ✅ Xong · 🔄 Đang làm · ⏳ Chưa làm · ⛔ Bị chặn 
 | --- | --- | --- |
 | Thiết kế UI (Figma) | ✅ | Đã rà soát và bổ sung các màn còn thiếu; còn vài mục "nên có" |
 | Android | 🔄 | Đủ màn hình theo Figma với dữ liệu mẫu; logic form tài khoản ở PR #7; chưa nối backend |
-| Backend | 🔄 | A1–A10 xong (dữ liệu thật từ Google Places, Routes, Vision); tiếp theo A11 (đánh giá thuật toán) |
+| Backend | 🔄 | A1–A11 xong (dữ liệu thật từ Google Places, Routes, Vision); còn deploy lên AWS (B3, B4) |
 | Hạ tầng AWS | 🔄 | B2 (Docker) xong; B3, B4 đã tạo tài nguyên (RDS, EC2 đang tắt), chờ deploy |
 
 ## Bước tiếp theo
@@ -24,7 +24,7 @@ Thứ tự làm hết phần backend, theo cách tốn ít tiền AWS nhất: vi
 1. ~~**A8, A9:** lộ trình cá nhân, lưu trú, nhóm, bình chọn, chia chi phí.~~ Xong 2026-11-06.
 2. ~~**A7:** tìm kiếm toàn cầu lấy Google Places làm nguồn chính, gợi ý khi gõ bằng Autocomplete.~~ Xong 2026-11-06.
 3. ~~**A10:** liên hệ khẩn cấp, nhận diện ảnh bằng Cloud Vision.~~ Xong 2026-11-07.
-4. **A11:** chương trình đánh giá thuật toán.
+4. ~~**A11:** chương trình đánh giá thuật toán.~~ Xong 2026-11-07, kết quả ở [algorithm.md](algorithm.md).
 5. **B3, B4:** deploy lên RDS và EC2, kiểm tra HTTPS, rồi tắt máy.
 6. **Android AN5:** nối backend trên EC2.
 
@@ -87,7 +87,7 @@ Các bước AN4–AN6 là đề xuất, chỉnh lại khi tới.
 | A8 Lộ trình cá nhân và lưu trú | Tạo chuyến, gợi ý 3 khách sạn, Greedy + Local search, chi phí từng điểm, ngân sách 0đ, tự thiết kế lộ trình | ✅ | | 2026-11-06 |
 | A9 Nhóm, bình chọn, chia chi phí | Mã mời, ngân sách ẩn, bình chọn, Fairness check, chia tiền phòng | ✅ | | 2026-11-06 |
 | A10 Yêu thích, SOS, nhận diện ảnh | Yêu thích; liên hệ khẩn cấp; Cloud Vision nhận diện địa danh | ✅ | #11 | 2026-11-07 |
-| A11 Đánh giá thuật toán | So Greedy, Greedy + Local search + Fairness, ILP (OR-Tools) | ⏳ | | |
+| A11 Đánh giá thuật toán | So Greedy, Greedy + Local search + Fairness, lời giải tối ưu (thay ILP OR-Tools) | ✅ | | 2026-11-07 |
 
 Việc còn lại của các bước đang làm:
 
@@ -131,3 +131,4 @@ Nội dung đầy đủ ở mục "Câu hỏi mở" của [CLAUDE.md](../CLAUDE.
 - **2026-11-05:** Thêm file lộ trình này (#12). Đưa B1–B4 lên trước A8 để dữ liệu người dùng nằm trên AWS. B2: image Docker cho API và migration, chạy thử được với MySQL trên máy.
 - **2026-11-06:** Chuyển sang dữ liệu thật: tìm kiếm, gợi ý, chi tiết lấy từ Google Places; danh mục mẫu chỉ còn cho phát triển và test, không nạp vào production. Xong A8, A9: tạo chuyến, nhóm và mã mời, bình chọn, gợi ý 3 khách sạn thật từ Google, lập lộ trình (Greedy → 2-opt → Fairness) rồi tính lại giờ bằng Google Routes, tự thiết kế lộ trình kèm cảnh báo.
 - **2026-11-07:** Xong A10: liên hệ khẩn cấp (tối đa 5, SĐT E.164) và nhận diện địa danh từ ảnh bằng Cloud Vision, khớp với địa điểm thật trên Google Places; ảnh không được lưu.
+- **2026-11-07:** Xong A11: lời giải tối ưu bằng vét cạn và chương trình đánh giá (`npm run bench:planner`). Đánh giá cho thấy Local search và Fairness ban đầu không cải thiện gì so với Greedy, nên thêm đổi điểm (1-swap) và đổi phần tham gia; bản đầy đủ đạt 97–99% tối ưu trong dưới 2 ms ([algorithm.md](algorithm.md)).

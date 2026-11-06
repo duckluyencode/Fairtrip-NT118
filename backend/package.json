@@ -22,7 +22,8 @@
     "postinstall": "prisma generate",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev && prisma generate",
-    "db:seed": "prisma db seed"
+    "db:seed": "prisma db seed",
+    "bench:planner": "tsx scripts/benchmark-planner.ts"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.1",

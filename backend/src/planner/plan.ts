@@ -14,6 +14,8 @@ import type {
 } from './types.js';
 
 const FAIRNESS_ROUNDS = 20;
+const SWAP_ROUNDS = 50;
+const EPSILON = 1e-9;
 
 /** Working state: places per day in visiting order, and who joins each place. */
 class Plan {
@@ -113,6 +115,26 @@ class Plan {
     this.days[day].splice(this.days[day].indexOf(place), 1);
     this.participants.delete(place.id);
   }
+
+  goes(member: PlannerMember, place: PlannerPlace): boolean {
+    return this.participants.get(place.id)?.has(member.id) ?? false;
+  }
+
+  /** Sum over members of the value of the places they go to. */
+  totalValue(): number {
+    return this.input.members.reduce(
+      (sum, member) =>
+        sum +
+        this.selected
+          .filter((p) => this.goes(member, p))
+          .reduce((s, p) => s + placeValue(member, p), 0),
+      0,
+    );
+  }
+
+  withinBudgets(): boolean {
+    return this.input.members.every((m) => this.spent(m) <= m.available);
+  }
 }
 
 /**
@@ -198,12 +220,47 @@ function improveRoutes(plan: Plan): void {
 }
 
 /**
- * Fairness check. Budgets are a hard limit throughout; here members first join the
- * stops they can now afford (a visited parent area may have made a stop free), then
- * the least satisfied member gets the best extra place they can afford, as long as
- * that raises the lowest satisfaction.
+ * Local search, 1-swap: replace a planned place with one that is not planned when the
+ * group's total value goes up and every budget still holds. Greedy picks by value per
+ * cost one place at a time, so an early cheap pick can block a better use of the money
+ * or the time; this undoes such picks.
  */
-function fairness(plan: Plan): void {
+function swapPlaces(plan: Plan): void {
+  for (let round = 0; round < SWAP_ROUNDS; round++) {
+    const before = plan.totalValue();
+    let improved = false;
+    for (const [day, order] of plan.days.entries()) {
+      // A copy: the day changes while a swap is tried.
+      for (const out of order.slice()) {
+        const position = order.indexOf(out);
+        const going = plan.participants.get(out.id) ?? new Set<number>();
+        plan.remove(out, day);
+        for (const candidate of plan.input.places) {
+          if (candidate === out || plan.isSelected(candidate)) continue;
+          const members = plan.joiners(candidate);
+          const insertion =
+            members.length > 0 ? plan.insertion(candidate) : null;
+          if (!insertion) continue;
+          plan.add(candidate, insertion.day, insertion.position, members);
+          if (plan.withinBudgets() && plan.totalValue() > before + EPSILON) {
+            improved = true;
+            break;
+          }
+          plan.remove(candidate, insertion.day);
+        }
+        if (improved) break;
+        // No better place: put this one back where it was.
+        plan.days[day].splice(position, 0, out);
+        plan.participants.set(out.id, going);
+      }
+      if (improved) break;
+    }
+    if (!improved) return;
+  }
+}
+
+/** Members join every planned stop they can afford (a ticket bought may cover it). */
+function joinAffordable(plan: Plan): void {
   let joined = true;
   while (joined) {
     joined = false;
@@ -218,6 +275,64 @@ function fairness(plan: Plan): void {
       }
     }
   }
+}
+
+/**
+ * A member leaves a stop they like less to afford one they like more, starting with the
+ * least satisfied member. Costs are per person, so nobody else's spending changes. A
+ * stop is never left empty (the others still go there).
+ */
+function swapParticipation(plan: Plan): void {
+  for (
+    let round = 0;
+    round < FAIRNESS_ROUNDS * plan.input.members.length;
+    round++
+  ) {
+    let improved = false;
+    const members = [...plan.input.members].sort(
+      (a, b) => plan.satisfactionOf(a) - plan.satisfactionOf(b),
+    );
+    for (const member of members) {
+      const value = (p: PlannerPlace) => placeValue(member, p);
+      const joined = plan.selected
+        .filter((p) => plan.goes(member, p))
+        .sort((a, b) => value(a) - value(b));
+      const others = plan.selected
+        .filter((p) => !plan.goes(member, p))
+        .sort((a, b) => value(b) - value(a));
+      for (const into of others) {
+        for (const out of joined) {
+          if (value(out) >= value(into) - EPSILON) break;
+          const outGoing = plan.participants.get(out.id);
+          const intoGoing = plan.participants.get(into.id);
+          if (!outGoing || !intoGoing || outGoing.size <= 1) continue;
+          outGoing.delete(member.id);
+          intoGoing.add(member.id);
+          if (plan.spent(member) <= member.available) {
+            improved = true;
+            break;
+          }
+          outGoing.add(member.id);
+          intoGoing.delete(member.id);
+        }
+        if (improved) break;
+      }
+      if (improved) break;
+    }
+    if (!improved) return;
+  }
+}
+
+/**
+ * Fairness check. Budgets are a hard limit throughout. Members join the stops they can
+ * now afford, then reallocate their own money towards the stops they like (least
+ * satisfied first), and finally the least satisfied member gets the best extra place
+ * they can afford, as long as that raises the lowest satisfaction.
+ */
+function fairness(plan: Plan): void {
+  joinAffordable(plan);
+  swapParticipation(plan);
+  joinAffordable(plan);
 
   for (let round = 0; round < FAIRNESS_ROUNDS; round++) {
     const lowest = lowestMember(plan);
@@ -305,16 +420,17 @@ function toResult(plan: Plan): PlannerResult {
   return {
     stops,
     members,
+    totalValue: plan.totalValue(),
     totalSatisfaction: values.reduce((a, b) => a + b, 0),
     fairness: jainIndex(values),
   };
 }
 
 /**
- * Plans a trip for one or more members: Greedy, then Local search (2-opt and another
- * greedy pass for the time it frees), then the Fairness check. A solo trip is a group
- * of one. Every member stays within their available money and every day fits its
- * time window and the places' opening hours.
+ * Plans a trip for one or more members: Greedy, then Local search (2-opt on each day's
+ * route, place swaps, and greedy passes for the time and money they free), then the
+ * Fairness check. A solo trip is a group of one. Every member stays within their
+ * available money and every day fits its time window and the places' opening hours.
  */
 export function planTrip(
   input: PlannerInput,
@@ -324,6 +440,9 @@ export function planTrip(
   if (input.days > 0) {
     greedy(plan);
     if (options.localSearch ?? true) {
+      improveRoutes(plan);
+      greedy(plan);
+      swapPlaces(plan);
       improveRoutes(plan);
       greedy(plan);
     }
