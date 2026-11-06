@@ -10,6 +10,7 @@ import { HealthModule } from './health/health.module.js';
 import { PlacesModule } from './places/places.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { SearchHistoryModule } from './search-history/search-history.module.js';
+import { TripsModule } from './trips/trips.module.js';
 import { UsersModule } from './users/users.module.js';
 
 @Module({
@@ -31,6 +32,7 @@ import { UsersModule } from './users/users.module.js';
     PlacesModule,
     SearchHistoryModule,
     FavoritesModule,
+    TripsModule,
   ],
   // Guards run in this order: rate limit first, then the access token check.
   providers: [

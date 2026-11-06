@@ -8,10 +8,15 @@ import {
   OtpDelivery,
   type OtpMessage,
 } from '../../src/auth/otp/otp-delivery.js';
+import type { LatLng } from '../../src/places/geo.js';
 import {
   GooglePlacesClient,
+  type AutocompleteSuggestion,
   type GooglePlace,
+  type TextSearchRequest,
+  type TextSearchResult,
 } from '../../src/places/google/google-places.client.js';
+import { RoutesClient } from '../../src/places/google/routes.client.js';
 import { PrismaService } from '../../src/prisma/prisma.service.js';
 
 /** Keeps sent codes in memory so tests can read them instead of an inbox. */
@@ -33,13 +38,42 @@ export class FakeOtpDelivery extends OtpDelivery {
   }
 }
 
-/** Google Places stand-in; disabled until a test turns it on and adds places. */
+/**
+ * Google Places stand-in; disabled until a test turns it on and adds places. Text Search
+ * returns every place (of the included type) in the order given, so tests decide what
+ * Google "found".
+ */
 export class FakeGooglePlacesClient extends GooglePlacesClient {
   enabled = false;
   places: GooglePlace[] = [];
+  /** Every Text Search request, to check what was asked. */
+  readonly searches: TextSearchRequest[] = [];
 
-  searchText(): Promise<GooglePlace[]> {
-    return Promise.resolve(this.enabled ? this.places : []);
+  search(request: TextSearchRequest): Promise<TextSearchResult> {
+    if (!this.enabled) {
+      return Promise.reject(new Error('Google is disabled in this test'));
+    }
+    this.searches.push(request);
+    const found = this.places.filter(
+      (p) => !request.includedType || p.types.includes(request.includedType),
+    );
+    return Promise.resolve({
+      places: found.slice(0, request.pageSize),
+      nextPageToken: found.length > request.pageSize ? 'next-page' : null,
+    });
+  }
+
+  autocomplete(input: string): Promise<AutocompleteSuggestion[]> {
+    const text = input.toLowerCase();
+    return Promise.resolve(
+      this.places
+        .filter((p) => p.name.toLowerCase().includes(text))
+        .map((p) => ({
+          placeId: p.id,
+          mainText: p.name,
+          secondaryText: p.address,
+        })),
+    );
   }
 
   getPlace(placeId: string): Promise<GooglePlace | null> {
@@ -48,6 +82,34 @@ export class FakeGooglePlacesClient extends GooglePlacesClient {
     }
     return Promise.resolve(this.places.find((p) => p.id === placeId) ?? null);
   }
+
+  reset(): void {
+    this.enabled = false;
+    this.places = [];
+    this.searches.length = 0;
+  }
+}
+
+/** Google Routes stand-in: off by default, or every leg takes `minutesPerLeg`. */
+export class FakeRoutesClient extends RoutesClient {
+  enabled = false;
+  minutesPerLeg = 20;
+  /** The points of every request. */
+  readonly requests: LatLng[][] = [];
+
+  legMinutes(points: LatLng[]): Promise<number[] | null> {
+    if (!this.enabled) {
+      return Promise.resolve(null);
+    }
+    this.requests.push(points);
+    return Promise.resolve(points.slice(1).map(() => this.minutesPerLeg));
+  }
+
+  reset(): void {
+    this.enabled = false;
+    this.minutesPerLeg = 20;
+    this.requests.length = 0;
+  }
 }
 
 export interface TestApp {
@@ -55,25 +117,29 @@ export interface TestApp {
   prisma: PrismaService;
   otp: FakeOtpDelivery;
   google: FakeGooglePlacesClient;
+  routes: FakeRoutesClient;
 }
 
 /**
  * Starts the whole app with the same HTTP setup as main.ts, with fakes for sending
- * codes and for Google Places so tests never reach the network.
+ * codes, Google Places and Google Routes so tests never reach the network.
  */
 export async function createTestApp(): Promise<TestApp> {
   const otp = new FakeOtpDelivery();
   const google = new FakeGooglePlacesClient();
+  const routes = new FakeRoutesClient();
   const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(OtpDelivery)
     .useValue(otp)
     .overrideProvider(GooglePlacesClient)
     .useValue(google)
+    .overrideProvider(RoutesClient)
+    .useValue(routes)
     .compile();
   const app = moduleRef.createNestApplication<INestApplication<App>>();
   configureApp(app);
   await app.init();
-  return { app, prisma: app.get(PrismaService), otp, google };
+  return { app, prisma: app.get(PrismaService), otp, google, routes };
 }
 
 /** Signs up and verifies an account; returns its access token. */

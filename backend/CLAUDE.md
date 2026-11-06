@@ -18,13 +18,13 @@ NestJS 12 + TypeScript (ESM), chạy trên Node.js 24 LTS. Quy tắc chung của
 - `docker compose stop`: tắt MySQL, giữ dữ liệu. `docker compose down -v` xóa luôn dữ liệu: hỏi trước khi chạy.
 - `npm run db:generate`: sinh lại Prisma Client sau khi sửa `prisma/schema.prisma` (tự chạy sau `npm install`).
 - `npm run db:migrate -- --name <tên>`: tạo migration từ thay đổi trong `prisma/schema.prisma`, áp dụng vào database trên máy rồi sinh lại Prisma Client (Prisma 7 không tự sinh sau `migrate dev`). Cần ràng buộc CHECK thì tạo bằng `npx prisma migrate dev --create-only`, thêm SQL vào migration rồi mới áp dụng.
-- `npm run db:seed`: nạp dữ liệu mẫu (danh mục địa điểm).
+- `npm run db:seed`: nạp dữ liệu mẫu (danh mục địa điểm Đà Nẵng) cho database trên máy; không chạy ở production.
 - Script trong `docker/mysql-init/` tạo thêm `tripfair_shadow` (cho `migrate dev`, biến `SHADOW_DATABASE_URL`) và `tripfair_test` (cho e2e) khi volume được tạo lần đầu, user `tripfair` chỉ có quyền trên các database này. Volume có từ trước thì chạy một lần: `docker exec tripfair-mysql sh /docker-entrypoint-initdb.d/01-create-extra-databases.sh`.
 - `GET /health`: 200 khi backend kết nối được MySQL, 503 (`DATABASE_UNAVAILABLE`) khi không.
 
 ## Docker image (`Dockerfile`)
 - `docker build -t tripfair-api .`: image chạy API (`NODE_ENV=production`, chỉ `dist/` và dependency production, chạy bằng user `node`, healthcheck gọi `/health`).
-- `docker build --target migrate -t tripfair-migrate .`: image chạy `prisma migrate deploy` rồi thoát, cần `DATABASE_URL`. Nạp danh mục mẫu: chạy image này với lệnh `npx prisma db seed` (cần `MYSQL_*`).
+- `docker build --target migrate -t tripfair-migrate .`: image chạy `prisma migrate deploy` rồi thoát, cần `DATABASE_URL`. Không nạp danh mục mẫu ở production: `prisma/seed.ts` từ chối chạy khi `NODE_ENV=production`.
 - Chạy thử trên máy: `docker run --rm --env-file .env -e MYSQL_HOST=host.docker.internal -e NODE_ENV=development -p 127.0.0.1:3100:3000 tripfair-api`. Ở production, thiếu biến bắt buộc (vd. `MYSQL_SSL_CA`) thì server dừng ngay lúc khởi động.
 - Generator Prisma ghi rõ `moduleFormat` và `importFileExtension`; không bỏ đi, vì khi `npm ci` chạy trong Docker chưa có `tsconfig.json` và Prisma sẽ đoán sai đuôi import (`.ts`).
 - CI build cả hai image cho mọi PR chạm `backend/`.
@@ -38,13 +38,24 @@ NestJS 12 + TypeScript (ESM), chạy trên Node.js 24 LTS. Quy tắc chung của
 - Email/SĐT được chuẩn hóa như app Android (`src/auth/contact.ts`): email viết thường, SĐT lưu dạng `+84…`.
 
 ## Địa điểm, lịch sử tìm kiếm, yêu thích (`src/places/`, `src/search-history/`, `src/favorites/`)
-- `npm run db:seed`: nạp danh mục mẫu Đà Nẵng (`prisma/seed/catalog.ts`), cập nhật theo `slug`, chạy lại nhiều lần được. Thêm điểm thì sửa file này; điểm nào cũng phải có giá hoặc nằm trong khu có giá (seed kiểm tra).
-- Tìm kiếm không dấu qua `places.search_text` (`normalizeText` trong `src/places/text.ts`, đ → d); mỗi chữ gõ vào phải là đầu một từ. Xếp hạng trong `src/places/ranking.ts`.
+- Dữ liệu thật lấy từ Google Places (New) qua `GooglePlacesClient`: có `GOOGLE_MAPS_API_KEY` thì tìm kiếm (Text Search, phân trang bằng `nextPageToken`, ưu tiên quanh vị trí người dùng), gợi ý khi gõ (Autocomplete, gửi cùng `sessionToken` tới lúc mở chi tiết) và chi tiết đều lấy từ Google. Không có key (phát triển, test) thì dùng danh mục mẫu.
+- Chỉ lưu `place_id` của Google (`places.source = GOOGLE`), mọi dữ liệu khác lấy trực tiếp và trả kèm `attribution: "Google Maps"`. Field mask quyết định giá tiền mỗi lượt gọi: chỉ xin trường màn hình cần (`LIST_FIELDS`, `PLANNING_FIELDS`, `DETAIL_FIELDS` trong `http-google-places.client.ts`). Google lỗi thì trả 503 `GOOGLE_PLACES_UNAVAILABLE`.
+- Google Routes (`RoutesClient`, `computeRoutes`): một request mỗi ngày của lộ trình để lấy thời gian lái xe thật giữa các điểm; không có key hoặc Google lỗi thì giữ ước tính đường chim bay.
+- E2e test thay Google bằng `FakeGooglePlacesClient` và `FakeRoutesClient` (`test/utils/test-app.ts`), không gọi mạng.
+- `npm run db:seed`: nạp danh mục mẫu Đà Nẵng (`prisma/seed/catalog.ts`), cập nhật theo `slug`, chạy lại nhiều lần được. Thêm điểm thì sửa file này; điểm nào cũng phải có giá (hoặc nằm trong khu có giá) và sở thích (seed kiểm tra).
+- Tìm trong danh mục: không dấu qua `places.search_text` (`normalizeText` trong `src/places/text.ts`, đ → d); mỗi chữ gõ vào phải là đầu một từ. Xếp hạng trong `src/places/ranking.ts`.
 - Danh sách (tìm kiếm, yêu thích) không trả giá; giá chỉ có ở `GET /places/:id` (quy tắc giá trong `src/places/pricing.ts`).
-- Google Places (New) qua `GooglePlacesClient`; không có `GOOGLE_MAPS_API_KEY` thì chỉ dùng danh mục. Chỉ lưu `place_id` của Google, mọi dữ liệu khác lấy trực tiếp và trả kèm `attribution: "Google Maps"`. Field mask quyết định giá tiền mỗi lượt gọi: chỉ xin trường màn hình cần. E2e test thay bằng `FakeGooglePlacesClient`, không gọi mạng.
 - Lịch sử được lưu khi `GET /places` có `q`; cùng từ khóa (không phân biệt hoa thường, dấu) chỉ một mục; giữ 50 mục mỗi người.
 - Lưu/bỏ yêu thích (`PUT`/`DELETE /me/favorites/:placeId`) gọi lặp lại không lỗi. Dữ liệu của người khác luôn lọc theo `userId`, xóa mục không phải của mình trả 404.
 - Plugin Swagger đọc class trong file `*.dto.ts`, `*.query.ts`, `*.response.ts`: đặt DTO vào các file này, không khai báo trong controller.
+
+## Chuyến đi, nhóm, lộ trình (`src/trips/`, `src/planner/`)
+- `src/planner/` là thuật toán thuần TypeScript (không NestJS, không database): Greedy theo tỉ lệ giá trị/chi phí (điểm miễn phí trước) → 2-opt từng ngày → Greedy lần hai → Fairness check. Ngân sách là giới hạn cứng. Chuyến một mình là nhóm một người. Test bằng `npm test`, dữ liệu mẫu trong `planner.fixtures.ts`.
+- `src/trips/` nối thuật toán với dữ liệu: `TripPlacesService` đọc điểm (danh mục hoặc Google, kèm giá, giờ mở cửa theo ngày), `LodgingService` gợi ý 3 khách sạn thật từ Google (loại `lodging`, giá ước tính theo price level tới khi có Agoda), `PlanningService` lập lộ trình rồi tính lại giờ bằng Google Routes, `ItineraryService` trả lộ trình kèm tổng dồn, số tiền còn lại và cảnh báo, `VotesService` lo bình chọn.
+- Ứng viên khi lập lộ trình: các điểm đã chọn hoặc bình chọn (`vote_options`); chưa có thì tìm điểm nổi tiếng và quán ăn của thành phố trên Google (2 lượt Text Search), không có key thì lấy danh mục mẫu cùng thành phố.
+- Mọi thay đổi đầu vào (thành viên, ngân sách, sở thích, phiếu, chỗ ở) gọi `TripAccess.resetPlan`: xóa lộ trình, trip về DRAFT, phải lập lại.
+- Ngân sách của người khác không bao giờ trả về; cả nhóm chỉ thấy phần chi (`spent`). Cảnh báo `MEMBER_OVER_BUDGET` không nói là ai.
+
 ## Quy ước
 - Code là ESM: import file nội bộ phải có đuôi `.js` (vd. `import { AppService } from './app.service.js'`).
 - Test dùng Vitest (`describe`, `it`, `expect` là global), không dùng Jest.
