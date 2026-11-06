@@ -2,7 +2,7 @@
 
 Nơi duy nhất theo dõi kế hoạch của TripFair. Mỗi PR cập nhật trạng thái bước của nó; kế hoạch thay đổi thì sửa file này trước rồi mới làm.
 
-Cập nhật lần cuối: 2026-11-05 (đưa B1–B4 lên trước A8).
+Cập nhật lần cuối: 2026-11-06 (làm hết phần backend còn lại; các câu hỏi mở đang chặn được tạm chốt, xem mục "Quyết định tạm chốt").
 
 Trạng thái: ✅ Xong · 🔄 Đang làm · ⏳ Chưa làm · ⛔ Bị chặn (chờ quyết định hoặc tài khoản)
 
@@ -19,9 +19,28 @@ Trạng thái: ✅ Xong · 🔄 Đang làm · ⏳ Chưa làm · ⛔ Bị chặn 
 
 Dữ liệu người dùng phải nằm trên cloud chứ không trên máy phát triển, nên B1–B4 được làm trước A8. Database trên máy chỉ còn dùng để phát triển và chạy test.
 
-1. **B1–B4: đưa backend lên AWS** (Docker, RDS, EC2, HTTPS). B1 cần tài khoản AWS.
-2. **Android AN5: nối backend trên EC2** cho đăng nhập, tìm kiếm, lịch sử và yêu thích. Merge PR #7 trước.
-3. **Backend A8: lộ trình cá nhân và lưu trú.** Cần chốt hai câu hỏi [Trip] trước khi viết code.
+Thứ tự làm hết phần backend, theo cách tốn ít tiền AWS nhất: viết và test toàn bộ logic trên máy trước, rồi mới bật EC2/RDS một lần để deploy và kiểm tra, xong thì tắt ngay.
+
+1. **A8, A9:** lộ trình cá nhân, lưu trú, nhóm, bình chọn, chia chi phí (thuật toán Greedy → Local search → Fairness).
+2. **A10:** liên hệ khẩn cấp, nhận diện ảnh bằng Cloud Vision.
+3. **A7:** tìm kiếm toàn cầu lấy Google Places làm nguồn chính, gợi ý khi gõ bằng Autocomplete.
+4. **A11:** chương trình đánh giá thuật toán.
+5. **B3, B4:** deploy lên RDS và EC2, kiểm tra HTTPS, rồi tắt máy.
+6. **Android AN5:** nối backend trên EC2.
+
+## Quyết định tạm chốt (chờ xác nhận)
+
+Các câu hỏi mở dưới đây đang chặn việc làm backend, nên được tạm chốt theo phương án ít rủi ro nhất. Mỗi phương án tách thành cấu hình hoặc module riêng để đổi lại dễ.
+
+| Câu hỏi | Tạm chốt | Đổi lại ở đâu |
+| --- | --- | --- |
+| [Trip] Lộ trình cá nhân dùng chung pipeline với nhóm? | Dùng chung: chuyến một mình là nhóm có 1 người | `src/planner/` |
+| [Trip] "Thời gian giữa các lần đi chơi" là gì? | Khoảng nghỉ tối thiểu giữa hai điểm, mặc định 30 phút, mỗi chuyến tự chỉnh (`gapMinutes`) | Cột `trips.gap_minutes` |
+| [Trip] Thời gian, quãng đường giữa các điểm | Ước tính từ đường chim bay × 1,4 với tốc độ 25 km/h, chưa dùng Google Routes API (tốn phí) | `src/planner/travel.ts` |
+| Tìm kiếm toàn cầu dùng API nào? | Google Places (New), đúng tech stack; không có key thì dùng danh mục mẫu | `GooglePlacesClient` |
+| Lưu trú khi chưa có Agoda API | Danh mục khách sạn mẫu ở Đà Nẵng, giá ghi nguồn "Agoda (mẫu)" | `prisma/seed/hotels.ts` |
+| A11: ILP bằng OR-Tools cần Python | Dùng lời giải tối ưu bằng tìm kiếm vét cạn trên bộ dữ liệu nhỏ (cùng kết quả với ILP), viết bằng TypeScript, không thêm Python | `src/planner/exact.ts` |
+| Production chưa có SMTP | API vẫn khởi động; đăng ký bằng email báo `CODE_DELIVERY_FAILED` cho tới khi có SMTP, giống SMS. Mã OTP không bao giờ in ra log ở production | `DefaultOtpDelivery` |
 
 ## Việc đang chờ
 
