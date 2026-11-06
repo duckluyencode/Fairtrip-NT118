@@ -10,3 +10,6 @@ test
 docker
 **/*.spec.ts
 *.log
+# Development and host scripts are not part of the image.
+scripts
+deploy

@@ -29,6 +29,7 @@ NestJS 12 + TypeScript (ESM), chạy trên Node.js 24 LTS. Quy tắc chung của
 - Chạy thử trên máy: `docker run --rm --env-file .env -e MYSQL_HOST=host.docker.internal -e NODE_ENV=development -p 127.0.0.1:3100:3000 tripfair-api`. Ở production, thiếu biến bắt buộc (vd. `MYSQL_SSL_CA`) thì server dừng ngay lúc khởi động.
 - Generator Prisma ghi rõ `moduleFormat` và `importFileExtension`; không bỏ đi, vì khi `npm ci` chạy trong Docker chưa có `tsconfig.json` và Prisma sẽ đoán sai đuôi import (`.ts`).
 - CI build cả hai image cho mọi PR chạm `backend/`.
+- Deploy lên AWS: script trong `deploy/` (`push-images.sh` build và đẩy image lên ECR với tag là mã commit, `deploy.sh` chạy trên EC2 qua SSM, `ssm-run.ps1` gửi lệnh lên máy, `create-app-user.sh` tạo user MySQL trên RDS). Các bước đầy đủ ở [docs/deploy.md](../docs/deploy.md).
 
 ## Xác thực (`src/auth/`, `src/users/`)
 - Mọi route cần `Authorization: Bearer <accessToken>`, trừ route gắn `@Public()` (`AuthGuard` toàn cục); lấy người dùng hiện tại bằng `@CurrentUser()`.

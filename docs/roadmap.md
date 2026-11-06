@@ -1,6 +1,6 @@
 # Lộ trình và tiến độ
 
-Nơi duy nhất theo dõi kế hoạch của TripFair. Mỗi PR cập nhật trạng thái bước của nó; kế hoạch thay đổi thì sửa file này trước rồi mới làm.
+Nơi duy nhất theo dõi kế hoạch của TripFair. Tài liệu kỹ thuật: [backend-guide.md](backend-guide.md) (xây backend từng bước), [database.md](database.md), [algorithm.md](algorithm.md), [deploy.md](deploy.md), [google-cloud.md](google-cloud.md). Mỗi PR cập nhật trạng thái bước của nó; kế hoạch thay đổi thì sửa file này trước rồi mới làm.
 
 Cập nhật lần cuối: 2026-11-07 (xong A10, A11).
 
@@ -48,8 +48,9 @@ Các câu hỏi mở dưới đây đang chặn việc làm backend, nên đư�
 
 | Việc | Cần cho | Ghi chú |
 | --- | --- | --- |
-| Gmail App Password điền vào `backend/.env` (`SMTP_*`) | Gửi OTP qua email thật | Chưa có thì mã OTP in ra log server; trên AWS sẽ chuyển vào SSM Parameter Store |
-| Google Maps API key (`GOOGLE_MAPS_API_KEY`) | Dữ liệu thật: tìm kiếm, lộ trình, khách sạn, nhận diện ảnh | Cần bật thanh toán, bật Places API (New), Routes API, Cloud Vision API; giới hạn key theo API và đặt quota theo ngày. Không có key thì chạy bằng danh mục mẫu |
+| Gmail App Password (`SMTP_*`) trong `backend/.env` và SSM | Gửi OTP qua email thật | Hướng dẫn ở [google-cloud.md](google-cloud.md), mục 5. Chưa có thì trên máy mã in ra log, trên AWS đăng ký bằng email báo `CODE_DELIVERY_FAILED` |
+| Google Cloud API key (`GOOGLE_MAPS_API_KEY`) | Dữ liệu thật: tìm kiếm, lộ trình, khách sạn, nhận diện ảnh | Hướng dẫn ở [google-cloud.md](google-cloud.md). Không có key thì trên máy chạy bằng danh mục mẫu, trên AWS tìm kiếm trả rỗng |
+| Đăng nhập lại AWS CLI (`aws login`) | Deploy B3, B4 | Phiên đăng nhập hết hạn; các bước còn lại ở [deploy.md](deploy.md), mục 10 |
 | Review và merge PR #7 | Android AN3 | Khi merge sẽ phải gộp tay một dòng trong "Quyết định đã chốt" của CLAUDE.md |
 | Quyết định chạy `npm audit fix` | Bảo mật backend | 4 lỗ hổng (3 high) trong body-parser, multer, fast-uri; sửa được trong phạm vi phiên bản hiện tại |
 
