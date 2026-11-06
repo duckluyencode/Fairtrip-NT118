@@ -60,7 +60,8 @@ class EnvironmentVariables {
   @MinLength(32)
   JWT_SECRET: string;
 
-  // SMTP is optional in development (codes are logged) but required in production.
+  // SMTP is optional: without it, email codes are logged in development and fail
+  // in production. Once SMTP_HOST is set, the rest of the SMTP settings are required.
   @ValidateIf((env: EnvironmentVariables) => smtpRequired(env))
   @IsString()
   @IsNotEmpty()
@@ -87,7 +88,7 @@ class EnvironmentVariables {
 }
 
 function smtpRequired(env: EnvironmentVariables): boolean {
-  return env.NODE_ENV === 'production' || Boolean(env.SMTP_HOST);
+  return Boolean(env.SMTP_HOST);
 }
 
 /** Fails startup with every missing or invalid variable listed, instead of failing on first use. */
