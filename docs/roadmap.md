@@ -52,7 +52,6 @@ Các câu hỏi mở dưới đây đang chặn việc làm backend, nên đư�
 | Google Cloud API key (`GOOGLE_MAPS_API_KEY`) | Dữ liệu thật: tìm kiếm, lộ trình, khách sạn, nhận diện ảnh | Hướng dẫn ở [google-cloud.md](google-cloud.md). Không có key thì trên máy chạy bằng danh mục mẫu, trên AWS tìm kiếm trả rỗng |
 | Đăng nhập lại AWS CLI (`aws login`) | Deploy B3, B4 | Phiên đăng nhập hết hạn; các bước còn lại ở [deploy.md](deploy.md), mục 10 |
 | Review và merge PR #7 | Android AN3 | Khi merge sẽ phải gộp tay một dòng trong "Quyết định đã chốt" của CLAUDE.md |
-| Quyết định chạy `npm audit fix` | Bảo mật backend | 4 lỗ hổng (3 high) trong body-parser, multer, fast-uri; sửa được trong phạm vi phiên bản hiện tại |
 
 ## Thiết kế UI
 
@@ -89,6 +88,9 @@ Các bước AN4–AN6 là đề xuất, chỉnh lại khi tới.
 | A9 Nhóm, bình chọn, chia chi phí | Mã mời, ngân sách ẩn, bình chọn, Fairness check, chia tiền phòng | ✅ | | 2026-11-06 |
 | A10 Yêu thích, SOS, nhận diện ảnh | Yêu thích; liên hệ khẩn cấp; Cloud Vision nhận diện địa danh | ✅ | #11 | 2026-11-07 |
 | A11 Đánh giá thuật toán | So Greedy, Greedy + Local search + Fairness, lời giải tối ưu (thay ILP OR-Tools) | ✅ | | 2026-11-07 |
+| A12 Chuẩn bị đưa vào sử dụng | Xóa tài khoản (yêu cầu của Google Play); chủ nhóm mời ra, chuyển quyền, đổi mã mời; quán ăn đúng giờ ăn, thời gian ghé theo loại điểm; giờ mở cửa theo giờ địa phương; chọn số người mỗi phòng; giới hạn route tốn phí Google; vá lỗ hổng dependency; bản nháp chính sách quyền riêng tư | 🔄 | | |
+
+Việc còn lại của A12: đổi email/số điện thoại bằng OTP (cần thêm một loại mã vào schema, chờ bạn đồng ý); chính sách quyền riêng tư cần bạn xem lại, điền thông tin liên hệ và đăng lên web; giá ở nước ngoài vẫn dùng bảng quy đổi VND của Việt Nam (chờ quyết định: giới hạn ở Việt Nam hay thêm tỉ giá và bảng giá theo nước).
 
 Việc còn lại của các bước đang làm:
 
@@ -133,3 +135,4 @@ Nội dung đầy đủ ở mục "Câu hỏi mở" của [CLAUDE.md](../CLAUDE.
 - **2026-11-06:** Chuyển sang dữ liệu thật: tìm kiếm, gợi ý, chi tiết lấy từ Google Places; danh mục mẫu chỉ còn cho phát triển và test, không nạp vào production. Xong A8, A9: tạo chuyến, nhóm và mã mời, bình chọn, gợi ý 3 khách sạn thật từ Google, lập lộ trình (Greedy → 2-opt → Fairness) rồi tính lại giờ bằng Google Routes, tự thiết kế lộ trình kèm cảnh báo.
 - **2026-11-07:** Xong A10: liên hệ khẩn cấp (tối đa 5, SĐT E.164) và nhận diện địa danh từ ảnh bằng Cloud Vision, khớp với địa điểm thật trên Google Places; ảnh không được lưu.
 - **2026-11-07:** Xong A11: lời giải tối ưu bằng vét cạn và chương trình đánh giá (`npm run bench:planner`). Đánh giá cho thấy Local search và Fairness ban đầu không cải thiện gì so với Greedy, nên thêm đổi điểm (1-swap) và đổi phần tham gia; bản đầy đủ đạt 97–99% tối ưu trong dưới 2 ms ([algorithm.md](algorithm.md)).
+- **2026-11-07:** A12 (chuẩn bị đưa vào sử dụng): xóa tài khoản, quản lý nhóm, quán ăn đúng giờ ăn, thời gian ghé theo loại điểm, giờ mở cửa theo giờ địa phương, chọn số người mỗi phòng, giới hạn route tốn phí Google, `npm audit fix` (0 lỗ hổng), bản nháp chính sách quyền riêng tư.

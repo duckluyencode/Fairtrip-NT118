@@ -340,6 +340,78 @@ describe('Trips, groups, voting, lodging and itineraries (e2e)', () => {
     });
   });
 
+  describe('managing a group', () => {
+    it('lets the owner remove a member, hand over the group and renew the code', async () => {
+      const group = await createGroup();
+      const detail = (await as(owner).get(`/trips/${group.id}`).expect(200))
+        .body as { members: { memberId: number; isMe: boolean }[] };
+      const mine = detail.members.find((m) => m.isMe)!.memberId;
+      const theirs = detail.members.find((m) => !m.isMe)!.memberId;
+
+      await as(friend)
+        .post(`/trips/${group.id}/invite-code`)
+        .expect(403)
+        .expect((res) => expect(res.body.code).toBe('NOT_TRIP_OWNER'));
+      const renewed = await as(owner)
+        .post(`/trips/${group.id}/invite-code`)
+        .expect(200);
+      expect(renewed.body.inviteCode).not.toBe(group.inviteCode);
+      await as(friend)
+        .post('/trips/join', {
+          inviteCode: group.inviteCode,
+          budget: 0,
+          interests: [],
+        })
+        .expect(404);
+
+      await as(owner)
+        .delete(`/trips/${group.id}/members/${mine}`)
+        .expect(409)
+        .expect((res) => expect(res.body.code).toBe('OWNER_CANNOT_LEAVE'));
+      await as(owner)
+        .put(`/trips/${group.id}/owner`, { memberId: 999999 })
+        .expect(404)
+        .expect((res) => expect(res.body.code).toBe('MEMBER_NOT_FOUND'));
+
+      const handed = await as(owner)
+        .put(`/trips/${group.id}/owner`, { memberId: theirs })
+        .expect(200);
+      expect(handed.body.myRole).toBe('MEMBER');
+      await as(owner)
+        .delete(`/trips/${group.id}/members/${theirs}`)
+        .expect(403);
+
+      // The new owner takes the old one out of the group.
+      await as(friend).delete(`/trips/${group.id}/members/${mine}`).expect(204);
+      await as(owner).get(`/trips/${group.id}`).expect(404);
+      const solo = await createTrip(owner);
+      await as(owner)
+        .post(`/trips/${solo.id}/invite-code`)
+        .expect(400)
+        .expect((res) => expect(res.body.code).toBe('NOT_A_GROUP'));
+    });
+
+    it('hands a group over to the next member when its owner deletes their account', async () => {
+      const group = await createGroup();
+      const solo = await createTrip(owner);
+      await as(owner).post(`/trips/${group.id}/plan`).expect(200);
+
+      await as(owner)
+        .delete('/me')
+        .send({ password: 'matkhau123' })
+        .expect(204);
+
+      // The owner's solo trip is gone; the group lives on with the friend as owner.
+      expect(await t.prisma.trip.count({ where: { id: solo.id } })).toBe(0);
+      const left = await as(friend).get(`/trips/${group.id}`).expect(200);
+      expect(left.body).toMatchObject({
+        myRole: 'OWNER',
+        memberCount: 1,
+        status: 'DRAFT',
+      });
+    });
+  });
+
   describe('voting', () => {
     it('proposes places, counts votes and locks a sent ballot', async () => {
       const group = await createGroup();
@@ -687,6 +759,39 @@ describe('Trips, groups, voting, lodging and itineraries (e2e)', () => {
       ).body as Itinerary;
       expectConsistent(friendView);
       expect(friendView.me.total).toBeLessThanOrEqual(600_000);
+    });
+
+    it('prices rooms for the chosen number of people per room', async () => {
+      const group = await createGroup({ lodging: 'HOTEL' });
+
+      // Alone in a room, each pays the whole room: only the 500.000đ one fits 600.000đ.
+      const single = await as(friend)
+        .get(`/trips/${group.id}/lodging/options?guestsPerRoom=1`)
+        .expect(200);
+      expect(single.body.map((o: { name: string }) => o.name)).toEqual([
+        'Nhà nghỉ An',
+      ]);
+      expect(single.body[0]).toMatchObject({
+        rooms: 2,
+        guestsPerRoom: 1,
+        myShare: 500_000,
+      });
+      await as(friend)
+        .get(`/trips/${group.id}/lodging/options?guestsPerRoom=5`)
+        .expect(400);
+
+      const chosen = await as(owner)
+        .put(`/trips/${group.id}/lodging`, {
+          mode: 'HOTEL',
+          placeId: single.body[0].placeId,
+          guestsPerRoom: 1,
+        })
+        .expect(200);
+      expect(chosen.body.lodging).toMatchObject({
+        rooms: 2,
+        guestsPerRoom: 1,
+        myShare: 500_000,
+      });
     });
 
     it('drops late stops when real driving times no longer fit the day', async () => {

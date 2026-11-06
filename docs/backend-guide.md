@@ -75,6 +75,7 @@ Lệnh này tạo migration từ thay đổi trong `schema.prisma`, áp dụng v
 
 - Đăng ký → gửi OTP 6 số (HMAC-SHA256 với `JWT_SECRET`, chỉ lưu hash) → xác minh → đăng nhập. Mã sống 15 phút, gửi lại sau 60 giây, khóa sau 5 lần sai (đếm bằng một câu `UPDATE` nguyên tử để hai request song song không vượt giới hạn).
 - Mật khẩu hash bằng `scrypt` có sẵn trong Node (N = 2^17), không thêm thư viện.
+- Xóa tài khoản (`DELETE /me`, nhập lại mật khẩu): chuyển quyền các nhóm còn người khác, xóa phần còn lại; `AuthGuard` từ chối token của tài khoản đã xóa.
 - Access token JWT HS256 15 phút; refresh token là chuỗi ngẫu nhiên, lưu SHA-256, đổi mới mỗi lần dùng; dùng lại token cũ thì thu hồi mọi phiên của người đó (dấu hiệu bị lộ).
 - `AuthGuard` toàn cục: route nào cũng cần `Authorization: Bearer`, trừ route gắn `@Public()`; `@CurrentUser()` lấy người dùng.
 - Giới hạn 120 request/phút mỗi IP, route `auth/*` 10 request/phút.
@@ -91,7 +92,7 @@ Lệnh này tạo migration từ thay đổi trong `schema.prisma`, áp dụng v
 ## A8, A9. Chuyến đi, nhóm, lộ trình
 
 - Thuật toán viết riêng trong `src/planner/` (thuần TypeScript, test bằng dữ liệu nhỏ, không cần database) rồi mới nối vào API; xem [algorithm.md](algorithm.md).
-- `TripsService`: tạo chuyến (một mình hoặc nhóm với mã mời 6 ký tự không có 0/O/1/I), tham gia, sửa ngân sách và sở thích của mình, rời nhóm, xóa chuyến. `TripAccess` chỉ cho thành viên đọc chuyến (người ngoài nhận `TRIP_NOT_FOUND` để không dò được id) và chỉ chủ chuyến lập lộ trình, chọn chỗ ở.
+- `TripsService`: tạo chuyến (một mình hoặc nhóm với mã mời 6 ký tự không có 0/O/1/I), tham gia, sửa ngân sách và sở thích của mình, rời nhóm, xóa chuyến; chủ nhóm mời thành viên ra, chuyển quyền, đổi mã mời. `TripAccess` chỉ cho thành viên đọc chuyến (người ngoài nhận `TRIP_NOT_FOUND` để không dò được id) và chỉ chủ chuyến lập lộ trình, chọn chỗ ở.
 - Mọi thay đổi đầu vào gọi `TripAccess.resetPlan`: xóa lộ trình, chuyến về `DRAFT`.
 - `VotesService`: đề xuất điểm, tick/bỏ tick (gọi lặp lại không lỗi), gửi phiếu (sau đó không đổi được), hạn bình chọn.
 - `LodgingService`: tìm khách sạn thật trên Google (`includedType: lodging`), giá một đêm ước tính theo `priceLevel` cho tới khi có Agoda, chỉ gợi ý khách sạn mọi người đủ tiền, chọn 3 cái rẻ nhất / cân bằng / gần nhất; chọn thì chụp lại giá vào `trip_lodgings`.
@@ -145,12 +146,13 @@ Mọi route dưới `/api/v1` và cần access token, trừ nhóm auth và `/hea
 | --- | --- |
 | Sức khỏe | `GET /health` |
 | Tài khoản (public) | `POST /auth/register`, `/auth/register/verify`, `/auth/code/resend`, `/auth/login`, `/auth/refresh`, `/auth/logout`, `/auth/password/forgot`, `/auth/password/verify`, `/auth/password/reset` |
-| Hồ sơ | `GET /me`, `PATCH /me` |
+| Hồ sơ | `GET /me`, `PATCH /me`, `DELETE /me` (xóa tài khoản) |
 | Lịch sử tìm kiếm | `GET /me/search-history`, `DELETE /me/search-history/:id`, `DELETE /me/search-history` |
 | Yêu thích | `GET /me/favorites`, `PUT /me/favorites/:placeId`, `DELETE /me/favorites/:placeId` |
 | Liên hệ khẩn cấp | `GET /me/emergency-contacts`, `POST /me/emergency-contacts`, `PATCH /me/emergency-contacts/:id`, `DELETE /me/emergency-contacts/:id` |
 | Địa điểm | `GET /places`, `GET /places/suggestions`, `GET /places/:id`, `POST /places/recognize` |
 | Chuyến đi | `POST /trips`, `GET /trips`, `POST /trips/join`, `GET /trips/:id`, `DELETE /trips/:id`, `PATCH /trips/:id/me`, `DELETE /trips/:id/me` |
+| Quản lý nhóm | `DELETE /trips/:id/members/:memberId`, `PUT /trips/:id/owner`, `POST /trips/:id/invite-code` |
 | Lưu trú | `GET /trips/:id/lodging/options`, `PUT /trips/:id/lodging` |
 | Bình chọn | `GET /trips/:id/options`, `POST /trips/:id/options`, `DELETE /trips/:id/options/:optionId`, `PUT /trips/:id/options/:optionId/vote`, `DELETE /trips/:id/options/:optionId/vote`, `POST /trips/:id/ballot` |
 | Lộ trình | `POST /trips/:id/plan`, `GET /trips/:id/itinerary`, `PUT /trips/:id/itinerary` |

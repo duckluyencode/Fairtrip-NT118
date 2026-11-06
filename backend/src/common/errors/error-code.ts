@@ -38,6 +38,10 @@ export const ErrorCode = {
   InviteCodeNotFound: 'INVITE_CODE_NOT_FOUND',
   AlreadyMember: 'ALREADY_MEMBER',
   OwnerCannotLeave: 'OWNER_CANNOT_LEAVE',
+  /** No member with this id in the trip. */
+  MemberNotFound: 'MEMBER_NOT_FOUND',
+  /** Only group trips have invite codes. */
+  NotAGroup: 'NOT_A_GROUP',
   HotelNotFound: 'HOTEL_NOT_FOUND',
   /** Someone's share of the room is more than their budget. */
   LodgingOverBudget: 'LODGING_OVER_BUDGET',

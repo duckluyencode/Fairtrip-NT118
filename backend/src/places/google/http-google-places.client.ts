@@ -48,6 +48,7 @@ const DETAIL_FIELDS = [
   'priceLevel',
   'priceRange',
   'regularOpeningHours',
+  'utcOffsetMinutes',
   'editorialSummary',
   'googleMapsUri',
 ].join(',');
@@ -78,11 +79,16 @@ interface ApiPlace {
   };
   editorialSummary?: { text?: string };
   googleMapsUri?: string;
+  /** The place's offset from UTC now, e.g. 420 in Vietnam. */
+  utcOffsetMinutes?: number;
 }
 
-/** Vietnam is UTC+7 all year. */
-function vietnamWeekday(now: Date): number {
-  return new Date(now.getTime() + 7 * 60 * 60 * 1000).getUTCDay();
+/** Vietnam (UTC+7, no daylight saving time), used when Google gives no offset. */
+const VIETNAM_OFFSET_MINUTES = 7 * 60;
+
+/** The weekday where the place is (0 = Sunday), so "open today" uses its local date. */
+function localWeekday(now: Date, offsetMinutes: number): number {
+  return new Date(now.getTime() + offsetMinutes * 60 * 1000).getUTCDay();
 }
 
 const minutes = (point: OpeningPoint) =>
@@ -119,8 +125,9 @@ export function hoursForWeekday(
 export function todayHours(
   periods: Periods,
   now = new Date(),
+  offsetMinutes = VIETNAM_OFFSET_MINUTES,
 ): DayHours | null {
-  return hoursForWeekday(periods, vietnamWeekday(now));
+  return hoursForWeekday(periods, localWeekday(now, offsetMinutes));
 }
 
 export function toGooglePlace(place: ApiPlace, now = new Date()): GooglePlace {
@@ -144,7 +151,11 @@ export function toGooglePlace(place: ApiPlace, now = new Date()): GooglePlace {
             end: end?.units !== undefined ? Number(end.units) : null,
           }
         : null,
-    todayHours: todayHours(place.regularOpeningHours?.periods, now),
+    todayHours: todayHours(
+      place.regularOpeningHours?.periods,
+      now,
+      place.utcOffsetMinutes,
+    ),
     weeklyHours: place.regularOpeningHours?.periods?.length
       ? Array.from({ length: 7 }, (_, weekday) =>
           hoursForWeekday(place.regularOpeningHours?.periods, weekday),

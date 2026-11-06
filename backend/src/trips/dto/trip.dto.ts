@@ -27,6 +27,7 @@ import {
 
 export const MAX_TRIP_DAYS = 14;
 export const MAX_BUDGET = 1_000_000_000;
+export const MAX_GUESTS_PER_ROOM = 4;
 
 const INTERESTS = Object.values(Interest);
 
@@ -141,6 +142,12 @@ export class UpdateMembershipDto {
   interests?: Interest[];
 }
 
+export class TransferOwnershipDto {
+  /** The member (memberId in the trip's members) who becomes the owner. */
+  @IsInt()
+  memberId: number;
+}
+
 export class ChooseLodgingDto {
   @IsIn(Object.values(LodgingMode))
   mode: LodgingMode;
@@ -149,6 +156,13 @@ export class ChooseLodgingDto {
   @ValidateIf((dto: ChooseLodgingDto) => dto.mode === 'HOTEL')
   @IsInt()
   placeId?: number;
+
+  /** People sharing a room, 1–4; default 2. Use the value the options were listed with. */
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(MAX_GUESTS_PER_ROOM)
+  guestsPerRoom?: number;
 }
 
 export class AddOptionDto {

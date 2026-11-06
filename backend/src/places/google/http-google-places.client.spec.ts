@@ -89,6 +89,19 @@ describe('todayHours', () => {
   it('is unknown without periods', () => {
     expect(todayHours(undefined, WEDNESDAY)).toBeNull();
   });
+
+  it("uses the place's own date, not Vietnam's", () => {
+    // 03:00 UTC on Wednesday is still Tuesday in New York (UTC-5).
+    const tuesdayOnly = [
+      { open: { day: 2, hour: 9 }, close: { day: 2, hour: 17 } },
+    ];
+    expect(todayHours(tuesdayOnly, WEDNESDAY, -300)).toEqual({
+      allDay: false,
+      open: 540,
+      close: 1020,
+    });
+    expect(todayHours(tuesdayOnly, WEDNESDAY)).toEqual({ closed: true });
+  });
 });
 
 describe('googleCategories', () => {

@@ -32,10 +32,19 @@ function openingWindow(
   return { open: place.openMinute, close };
 }
 
+/** When meals may start, minutes after midnight: lunch 11:00–13:30, dinner 17:30–20:30. */
+export const MEAL_WINDOWS = [
+  { name: 'LUNCH', from: 660, lastStart: 810 },
+  { name: 'DINNER', from: 1050, lastStart: 1230 },
+] as const;
+
 export interface SimulatedDay extends TimedDay {
   /** The day (with the way back to the base) ends after dayEndMinute. */
   endsLate: boolean;
-  /** Places whose visit would end after their closing time. */
+  /**
+   * Places whose visit would end after their closing time, and meals that would not
+   * start at a free lunch or dinner time.
+   */
   closedPlaceIds: number[];
 }
 
@@ -57,12 +66,28 @@ export function simulateDay(
   let previous: LatLng | null = settings.base;
   const visits: TimedVisit[] = [];
   const closedPlaceIds: number[] = [];
+  const mealsTaken = new Set<string>();
   let endsLate = false;
   for (const [index, place] of order.entries()) {
     const travel =
       legs?.[index] ?? (previous ? travelMinutes(previous, place) : 0);
     clock += travel + (index > 0 ? settings.gapMinutes : 0);
     const window = openingWindow(place);
+    if (place.meal) {
+      // The first meal of the day still free that can start in time, opening hours too.
+      const opens = window?.open ?? 0;
+      const slot = MEAL_WINDOWS.find(
+        (w) =>
+          !mealsTaken.has(w.name) &&
+          Math.max(clock, w.from, opens) <= w.lastStart,
+      );
+      if (slot) {
+        mealsTaken.add(slot.name);
+        clock = Math.max(clock, slot.from);
+      } else {
+        closedPlaceIds.push(place.id);
+      }
+    }
     if (window && clock < window.open) {
       clock = window.open;
     }

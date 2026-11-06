@@ -1,5 +1,6 @@
 import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { CurrentUser, type AuthUser } from '../auth/auth.decorators.js';
 import {
   PlaceDetailQuery,
@@ -21,6 +22,8 @@ export class PlacesController {
 
   /** Search or browse places; a search with text is added to the search history. */
   @Get()
+  // Each page is a billed Google Text Search.
+  @Throttle({ default: { limit: 60, ttl: 60_000 } })
   search(
     @CurrentUser() me: AuthUser,
     @Query() query: SearchPlacesQuery,

@@ -45,6 +45,18 @@ function newInviteCode(): string {
   ).join('');
 }
 
+function memberOf(trip: LoadedTrip, memberId: number) {
+  const member = trip.members.find((m) => m.id === memberId);
+  if (!member) {
+    throw new AppError(
+      HttpStatus.NOT_FOUND,
+      ErrorCode.MemberNotFound,
+      'No such member in this trip',
+    );
+  }
+  return member;
+}
+
 @Injectable()
 export class TripsService {
   constructor(
@@ -269,6 +281,85 @@ export class TripsService {
       await tx.tripMember.delete({ where: { id: me.id } });
       await this.access.resetPlan(tx, tripId);
     });
+  }
+
+  /** Owner only: takes a member out of the group; the trip has to be planned again. */
+  async removeMember(
+    userId: number,
+    tripId: number,
+    memberId: number,
+  ): Promise<void> {
+    const { trip, me } = await this.access.loadAsOwner(userId, tripId);
+    const member = memberOf(trip, memberId);
+    if (member.id === me.id) {
+      throw new AppError(
+        HttpStatus.CONFLICT,
+        ErrorCode.OwnerCannotLeave,
+        'The owner cannot remove themselves; transfer ownership or delete the trip',
+      );
+    }
+    await this.prisma.$transaction(async (tx) => {
+      await tx.tripMember.delete({ where: { id: member.id } });
+      await this.access.resetPlan(tx, tripId);
+    });
+  }
+
+  /** Owner only: another member becomes the owner and you become a member. */
+  async transferOwnership(
+    userId: number,
+    tripId: number,
+    memberId: number,
+  ): Promise<TripDetailResponse> {
+    const { trip, me } = await this.access.loadAsOwner(userId, tripId);
+    const heir = memberOf(trip, memberId);
+    if (heir.id !== me.id) {
+      await this.prisma.$transaction([
+        this.prisma.tripMember.update({
+          where: { id: me.id },
+          data: { role: 'MEMBER' },
+        }),
+        this.prisma.tripMember.update({
+          where: { id: heir.id },
+          data: { role: 'OWNER' },
+        }),
+        this.prisma.trip.update({
+          where: { id: tripId },
+          data: { ownerId: heir.userId },
+        }),
+      ]);
+    }
+    return this.detail(userId, tripId);
+  }
+
+  /** Owner only: a new invite code, e.g. after the old one was shared too widely. */
+  async renewInviteCode(
+    userId: number,
+    tripId: number,
+  ): Promise<TripDetailResponse> {
+    const { trip } = await this.access.loadAsOwner(userId, tripId);
+    if (trip.type !== 'GROUP') {
+      throw new AppError(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.NotAGroup,
+        'Only group trips have an invite code',
+      );
+    }
+    for (let attempt = 0; ; attempt++) {
+      try {
+        await this.prisma.trip.update({
+          where: { id: tripId },
+          data: { inviteCode: newInviteCode() },
+        });
+        return this.detail(userId, tripId);
+      } catch (error) {
+        const collision =
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2002';
+        if (!collision || attempt >= 4) {
+          throw error;
+        }
+      }
+    }
   }
 
   async remove(userId: number, tripId: number): Promise<void> {

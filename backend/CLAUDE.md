@@ -38,6 +38,8 @@ NestJS 12 + TypeScript (ESM), chạy trên Node.js 24 LTS. Quy tắc chung của
 - OTP 6 số: hiệu lực 15 phút, gửi lại sau 60 giây, khóa sau 5 lần sai. Route `auth/*` giới hạn 10 request/phút mỗi IP.
 - Gửi mã qua `OtpDelivery`: email bằng SMTP (`SMTP_*` trong `.env`; Gmail dùng App Password), SMS chưa có nhà cung cấp. Kênh nào chưa có nhà cung cấp (SMS, hoặc email khi để trống `SMTP_HOST`) thì in mã ra log khi chạy development, còn ở production thì báo `CODE_DELIVERY_FAILED` và không bao giờ in mã. E2e test thay `OtpDelivery` bằng `FakeOtpDelivery` để đọc mã.
 - Email/SĐT được chuẩn hóa như app Android (`src/auth/contact.ts`): email viết thường, SĐT lưu dạng `+84…`.
+- `AuthGuard` kiểm tra tài khoản còn tồn tại ở mỗi request, nên tài khoản vừa xóa mất quyền ngay, không đợi access token hết hạn.
+- `DELETE /me` (body `{ password }`) xóa tài khoản (`AccountDeletionService`): nhóm còn người khác thì chuyển quyền chủ nhóm cho người vào sớm nhất và lập lại lộ trình; chuyến không còn ai thì xóa; phần còn lại xóa theo `ON DELETE CASCADE`. Google Play bắt buộc có chức năng này.
 
 ## Địa điểm, lịch sử tìm kiếm, yêu thích (`src/places/`, `src/search-history/`, `src/favorites/`)
 - Dữ liệu thật lấy từ Google Places (New) qua `GooglePlacesClient`: có `GOOGLE_MAPS_API_KEY` thì tìm kiếm (Text Search, phân trang bằng `nextPageToken`, ưu tiên quanh vị trí người dùng), gợi ý khi gõ (Autocomplete, gửi cùng `sessionToken` tới lúc mở chi tiết) và chi tiết đều lấy từ Google. Không có key (phát triển, test) thì dùng danh mục mẫu.
@@ -55,7 +57,11 @@ NestJS 12 + TypeScript (ESM), chạy trên Node.js 24 LTS. Quy tắc chung của
 - `src/planner/` là thuật toán thuần TypeScript (không NestJS, không database): Greedy theo tỉ lệ giá trị/chi phí (điểm miễn phí trước) → Local search (2-opt từng ngày, đổi điểm 1-swap, Greedy lấp chỗ trống) → Fairness check (đổi phần tham gia của từng người, thêm điểm cho người kém hài lòng). Ngân sách là giới hạn cứng. Chuyến một mình là nhóm một người. `exact.ts` là lời giải tối ưu bằng vét cạn (≤ 12 điểm) chỉ dùng để đánh giá. Mô tả đầy đủ: [docs/algorithm.md](../docs/algorithm.md). Test bằng `npm test`, dữ liệu mẫu trong `planner.fixtures.ts`.
 - `src/trips/` nối thuật toán với dữ liệu: `TripPlacesService` đọc điểm (danh mục hoặc Google, kèm giá, giờ mở cửa theo ngày), `LodgingService` gợi ý 3 khách sạn thật từ Google (loại `lodging`, giá ước tính theo price level tới khi có Agoda), `PlanningService` lập lộ trình rồi tính lại giờ bằng Google Routes, `ItineraryService` trả lộ trình kèm tổng dồn, số tiền còn lại và cảnh báo, `VotesService` lo bình chọn.
 - Ứng viên khi lập lộ trình: các điểm đã chọn hoặc bình chọn (`vote_options`); chưa có thì tìm điểm nổi tiếng và quán ăn của thành phố trên Google (2 lượt Text Search), không có key thì lấy danh mục mẫu cùng thành phố.
-- Mọi thay đổi đầu vào (thành viên, ngân sách, sở thích, phiếu, chỗ ở) gọi `TripAccess.resetPlan`: xóa lộ trình, trip về DRAFT, phải lập lại.
+- Mọi thay đổi đầu vào (thành viên, ngân sách, sở thích, phiếu, chỗ ở) gọi `resetPlan` (`trip-access.ts`): xóa lộ trình, trip về DRAFT, phải lập lại.
+- Chủ nhóm mời thành viên ra (`DELETE /trips/:id/members/:memberId`), chuyển quyền (`PUT /trips/:id/owner`), đổi mã mời (`POST /trips/:id/invite-code`, mã cũ hết hiệu lực).
+- Quán ăn (`meal`, nhà hàng theo loại Google; danh mục: nhóm FOOD) chỉ được thuật toán xếp vào giờ ăn trưa 11:00–13:30 hoặc tối 17:30–20:30, mỗi bữa một quán (`MEAL_WINDOWS` trong `schedule.ts`). Lộ trình tự thiết kế không áp quy tắc này. Thời gian ghé điểm Google lấy theo loại (`visitMinutesFor`).
+- Số người mỗi phòng 1–4 (mặc định 2): `?guestsPerRoom=` khi xem gợi ý và `guestsPerRoom` khi chọn khách sạn.
+- Route tốn nhiều lượt gọi Google bị giới hạn riêng: lập lộ trình, tự thiết kế lộ trình, gợi ý khách sạn 10 lần/phút; tìm kiếm 60 lần/phút; nhận diện ảnh 10 lần/phút.
 - Ngân sách của người khác không bao giờ trả về; cả nhóm chỉ thấy phần chi (`spent`). Cảnh báo `MEMBER_OVER_BUDGET` không nói là ai.
 
 ## Liên hệ khẩn cấp, nhận diện ảnh (`src/emergency-contacts/`, `src/recognition/`)
