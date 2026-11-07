@@ -68,9 +68,11 @@ Dùng VPC mặc định (đã có subnet public và Internet Gateway) cho EC2, v
 $vpc = (& $aws ec2 describe-vpcs --filters Name=isDefault,Values=true --query 'Vpcs[0].VpcId' --output text)
 $tag = 'Key=Project,Value=TripFair'
 $rt = & $aws ec2 create-route-table --vpc-id $vpc --tag-specifications "ResourceType=route-table,Tags=[{Key=Name,Value=tripfair-db-private},{$tag}]" --query 'RouteTable.RouteTableId' --output text
-# Hai dải CIDR chưa dùng trong VPC mặc định (172.31.0.0/16); kiểm tra bằng describe-subnets trước.
-$a = & $aws ec2 create-subnet --vpc-id $vpc --availability-zone ap-southeast-1a --cidr-block 172.31.16.0/20 --tag-specifications "ResourceType=subnet,Tags=[{Key=Name,Value=tripfair-db-a},{$tag}]" --query 'Subnet.SubnetId' --output text
-$c = & $aws ec2 create-subnet --vpc-id $vpc --availability-zone ap-southeast-1c --cidr-block 172.31.32.0/20 --tag-specifications "ResourceType=subnet,Tags=[{Key=Name,Value=tripfair-db-c},{$tag}]" --query 'Subnet.SubnetId' --output text
+# Subnet mặc định của VPC (172.31.0.0/16) đã chiếm 172.31.0.0/20, .16.0/20, .32.0/20 (mỗi AZ một cái).
+# Xem các dải đang dùng trước, rồi chọn hai dải /20 còn trống, vd. 172.31.128.0/20 và 172.31.144.0/20:
+& $aws ec2 describe-subnets --filters "Name=vpc-id,Values=$vpc" --query 'Subnets[].[CidrBlock,AvailabilityZone]' --output text
+$a = & $aws ec2 create-subnet --vpc-id $vpc --availability-zone ap-southeast-1a --cidr-block 172.31.128.0/20 --tag-specifications "ResourceType=subnet,Tags=[{Key=Name,Value=tripfair-db-a},{$tag}]" --query 'Subnet.SubnetId' --output text
+$c = & $aws ec2 create-subnet --vpc-id $vpc --availability-zone ap-southeast-1c --cidr-block 172.31.144.0/20 --tag-specifications "ResourceType=subnet,Tags=[{Key=Name,Value=tripfair-db-c},{$tag}]" --query 'Subnet.SubnetId' --output text
 & $aws ec2 associate-route-table --route-table-id $rt --subnet-id $a
 & $aws ec2 associate-route-table --route-table-id $rt --subnet-id $c
 & $aws rds create-db-subnet-group --db-subnet-group-name tripfair-db-subnets --db-subnet-group-description 'TripFair database, private subnets' --subnet-ids $a $c --tags $tag
