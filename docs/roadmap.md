@@ -42,6 +42,7 @@ Các câu hỏi mở dưới đây đang chặn việc làm backend, nên đư�
 | Lưu trú khi chưa có Agoda API | Khách sạn thật từ Google Places (loại `lodging`); giá một đêm ước tính theo `priceLevel` (lấy mức cao), nguồn ESTIMATED, hiện dấu ~ | `src/trips/lodging-shares.ts` |
 | Ứng viên khi chưa chọn điểm nào | Tìm "điểm tham quan nổi tiếng" và "quán ăn ngon nổi tiếng" của thành phố trên Google (2 lượt Text Search, đã gồm giá và giờ mở cửa) | `TripPlacesService.discover` |
 | Phòng khách sạn | Nhóm chọn 1–4 người một phòng (mặc định 2), xếp theo thứ tự vào nhóm; khách sạn chỉ được gợi ý khi phần tiền phòng của mọi người đều trong ngân sách | `GUESTS_PER_ROOM` |
+| Region AWS | Sydney (`ap-southeast-2`), vì tài khoản AWS mới được gắn với region này; Singapore nhanh hơn khoảng 100 ms mỗi request từ Việt Nam. Script đọc region từ cấu hình, không ghi cứng | `aws configure set region`, `$region` trong [deploy.md](deploy.md) |
 | A11: ILP bằng OR-Tools cần Python | Dùng lời giải tối ưu bằng tìm kiếm vét cạn trên bộ dữ liệu nhỏ (cùng kết quả với ILP), viết bằng TypeScript, không thêm Python | `src/planner/exact.ts` |
 | Production chưa có SMTP | API vẫn khởi động; đăng ký bằng email báo `CODE_DELIVERY_FAILED` cho tới khi có SMTP, giống SMS. Mã OTP không bao giờ in ra log ở production | `DefaultOtpDelivery` |
 
@@ -104,7 +105,7 @@ Việc còn lại của các bước đang làm:
 
 | Bước | Mục tiêu | Trạng thái |
 | --- | --- | --- |
-| B1 Tài khoản AWS | MFA cho root, IAM quyền tối thiểu, cảnh báo chi phí, region Singapore | ⏳ chuyển sang tài khoản mới: bật MFA root, IAM user, cảnh báo chi phí |
+| B1 Tài khoản AWS | MFA cho root, IAM quyền tối thiểu, cảnh báo chi phí, region Sydney (`ap-southeast-2`) | ⏳ chuyển sang tài khoản mới: bật MFA root, IAM user, cảnh báo chi phí |
 | B2 Đóng gói Docker | Dockerfile multi-stage (image chạy API và image chạy migration), chạy thử trên máy, CI build cả hai image | ✅ |
 | B3 RDS MySQL | Subnet riêng, chỉ nhận kết nối từ EC2, TLS, backup tự động | ⏳ làm lại trên tài khoản mới |
 | B4 EC2 chạy backend | Docker, IAM role, secrets trong SSM Parameter Store, HTTPS | ⏳ làm lại trên tài khoản mới |

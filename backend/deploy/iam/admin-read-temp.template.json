@@ -4,7 +4,7 @@
     {
       "Effect": "Allow",
       "Action": "ssm:GetParameter",
-      "Resource": "arn:aws:ssm:ap-southeast-1:ACCOUNT_ID:parameter/tripfair/admin/MYSQL_MASTER_PASSWORD"
+      "Resource": "arn:aws:ssm:REGION:ACCOUNT_ID:parameter/tripfair/admin/MYSQL_MASTER_PASSWORD"
     }
   ]
 }

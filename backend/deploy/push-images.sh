@@ -6,7 +6,12 @@
 #   AWS="/c/Program Files/Amazon/AWSCLIV2/aws.exe" sh deploy/push-images.sh
 set -eu
 AWS=${AWS:-aws}
-REGION=ap-southeast-1
+# The region saved with `aws configure set region …` (or AWS_REGION).
+REGION=${AWS_REGION:-$("$AWS" configure get region)}
+if [ -z "$REGION" ]; then
+  echo "No AWS region: run aws configure set region <region> first" >&2
+  exit 1
+fi
 if [ -n "$(git status --porcelain -- .)" ]; then
   echo "backend/ has uncommitted changes: commit first so the tag matches the code" >&2
   exit 1

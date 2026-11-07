@@ -6,7 +6,11 @@
 set -eu
 
 TAG="${1:?usage: deploy.sh <image-tag>}"
-REGION=ap-southeast-1
+# The region the host runs in, from the instance metadata service (IMDSv2).
+IMDS_TOKEN=$(curl -fsS -X PUT http://169.254.169.254/latest/api/token \
+  -H 'X-aws-ec2-metadata-token-ttl-seconds: 60')
+REGION=$(curl -fsS -H "X-aws-ec2-metadata-token: $IMDS_TOKEN" \
+  http://169.254.169.254/latest/meta-data/placement/region)
 PREFIX=/tripfair/prod
 DIR=/opt/tripfair
 ACCOUNT=$(aws sts get-caller-identity --query Account --output text)

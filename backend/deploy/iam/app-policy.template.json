@@ -6,8 +6,8 @@
       "Effect": "Allow",
       "Action": ["ssm:GetParametersByPath", "ssm:GetParameters", "ssm:GetParameter"],
       "Resource": [
-        "arn:aws:ssm:ap-southeast-1:ACCOUNT_ID:parameter/tripfair/prod",
-        "arn:aws:ssm:ap-southeast-1:ACCOUNT_ID:parameter/tripfair/prod/*"
+        "arn:aws:ssm:REGION:ACCOUNT_ID:parameter/tripfair/prod",
+        "arn:aws:ssm:REGION:ACCOUNT_ID:parameter/tripfair/prod/*"
       ]
     },
     {
@@ -15,7 +15,7 @@
       "Effect": "Allow",
       "Action": "kms:Decrypt",
       "Resource": "*",
-      "Condition": { "StringEquals": { "kms:ViaService": "ssm.ap-southeast-1.amazonaws.com" } }
+      "Condition": { "StringEquals": { "kms:ViaService": "ssm.REGION.amazonaws.com" } }
     },
     {
       "Sid": "EcrLogin",
@@ -28,8 +28,8 @@
       "Effect": "Allow",
       "Action": ["ecr:BatchGetImage", "ecr:GetDownloadUrlForLayer", "ecr:BatchCheckLayerAvailability"],
       "Resource": [
-        "arn:aws:ecr:ap-southeast-1:ACCOUNT_ID:repository/tripfair-api",
-        "arn:aws:ecr:ap-southeast-1:ACCOUNT_ID:repository/tripfair-migrate"
+        "arn:aws:ecr:REGION:ACCOUNT_ID:repository/tripfair-api",
+        "arn:aws:ecr:REGION:ACCOUNT_ID:repository/tripfair-migrate"
       ]
     }
   ]

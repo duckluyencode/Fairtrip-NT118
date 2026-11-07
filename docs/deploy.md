@@ -27,7 +27,7 @@ Nguyên tắc:
 
 ## 2. Chi phí và cách tiết kiệm
 
-Region Singapore (`ap-southeast-1`). Giá tham khảo, kiểm tra lại trên trang giá của AWS:
+TripFair chạy ở region Sydney (`ap-southeast-2`), region mà tài khoản AWS hiện tại được gắn khi tạo. Singapore (`ap-southeast-1`) gần Việt Nam hơn (nhanh hơn khoảng 100 ms mỗi request); script không ghi cứng region nên đổi region chỉ cần đổi biến `$region` dưới đây. Giá tham khảo (Sydney và Singapore gần như nhau), kiểm tra lại trên trang giá của AWS:
 
 | Tài nguyên | Khi chạy | Khi tắt |
 | --- | --- | --- |
@@ -41,17 +41,18 @@ Cách dùng tiết kiệm: chỉ bật EC2 và RDS khi cần (deploy, demo, Andr
 ## 3. Chuẩn bị (B1)
 
 1. Tài khoản AWS: bật MFA cho root, không dùng root để làm việc hằng ngày; tạo IAM user riêng cho mình.
-2. Cài AWS CLI v2 (Windows: `winget install Amazon.AWSCLI`), lưu region một lần (`aws configure set region ap-southeast-1`), rồi đăng nhập bằng IAM user:
+2. Cài AWS CLI v2 (Windows: `winget install Amazon.AWSCLI`), lưu region một lần (`aws configure set region ap-southeast-2`), rồi đăng nhập bằng IAM user:
 
    ```bash
-   aws login
+   aws login --region ap-southeast-2
    ```
 
-   Lệnh mở trình duyệt để bạn đăng nhập (đăng nhập AWS Console trên web không thay được bước này). Phiên hết hạn sau vài giờ; khi lệnh báo `Your session has expired` thì chạy lại `aws login`. Đổi sang tài khoản khác: `aws logout` rồi `aws login`.
-3. Profile không lưu region, nên đặt cho mỗi cửa sổ terminal:
+   Lệnh mở trình duyệt để bạn đăng nhập (đăng nhập AWS Console trên web không thay được bước này). Phiên hết hạn sau vài giờ; khi lệnh báo `Your session has expired` thì chạy lại `aws login`. Đổi sang tài khoản khác: `aws logout` rồi `aws login`. Tài khoản tạo theo kiểu "project" chỉ cho đăng nhập ở region của project; sai region thì trang đăng nhập báo `not supported for your project` và chỉ ra lệnh cần chạy.
+3. Đặt region cho mỗi cửa sổ PowerShell; các lệnh bên dưới dùng biến `$region`:
 
    ```powershell
-   $env:AWS_REGION = 'ap-southeast-1'
+   $region = 'ap-southeast-2'
+   $env:AWS_REGION = $region
    ```
 
 4. Cảnh báo chi phí: Billing → Budgets → Create budget → "Monthly cost budget", ví dụ 20 USD, gửi email khi vượt 80%.
@@ -71,8 +72,8 @@ $rt = & $aws ec2 create-route-table --vpc-id $vpc --tag-specifications "Resource
 # Subnet mặc định của VPC (172.31.0.0/16) đã chiếm 172.31.0.0/20, .16.0/20, .32.0/20 (mỗi AZ một cái).
 # Xem các dải đang dùng trước, rồi chọn hai dải /20 còn trống, vd. 172.31.128.0/20 và 172.31.144.0/20:
 & $aws ec2 describe-subnets --filters "Name=vpc-id,Values=$vpc" --query 'Subnets[].[CidrBlock,AvailabilityZone]' --output text
-$a = & $aws ec2 create-subnet --vpc-id $vpc --availability-zone ap-southeast-1a --cidr-block 172.31.128.0/20 --tag-specifications "ResourceType=subnet,Tags=[{Key=Name,Value=tripfair-db-a},{$tag}]" --query 'Subnet.SubnetId' --output text
-$c = & $aws ec2 create-subnet --vpc-id $vpc --availability-zone ap-southeast-1c --cidr-block 172.31.144.0/20 --tag-specifications "ResourceType=subnet,Tags=[{Key=Name,Value=tripfair-db-c},{$tag}]" --query 'Subnet.SubnetId' --output text
+$a = & $aws ec2 create-subnet --vpc-id $vpc --availability-zone "${region}a" --cidr-block 172.31.128.0/20 --tag-specifications "ResourceType=subnet,Tags=[{Key=Name,Value=tripfair-db-a},{$tag}]" --query 'Subnet.SubnetId' --output text
+$c = & $aws ec2 create-subnet --vpc-id $vpc --availability-zone "${region}c" --cidr-block 172.31.144.0/20 --tag-specifications "ResourceType=subnet,Tags=[{Key=Name,Value=tripfair-db-c},{$tag}]" --query 'Subnet.SubnetId' --output text
 & $aws ec2 associate-route-table --route-table-id $rt --subnet-id $a
 & $aws ec2 associate-route-table --route-table-id $rt --subnet-id $c
 & $aws rds create-db-subnet-group --db-subnet-group-name tripfair-db-subnets --db-subnet-group-description 'TripFair database, private subnets' --subnet-ids $a $c --tags $tag
@@ -145,7 +146,7 @@ Role gồm `AmazonSSMManagedInstanceCore` (để SSM Run Command điều khiển
 
 ```powershell
 $account = & $aws sts get-caller-identity --query Account --output text
-(Get-Content backend\deploy\iam\app-policy.template.json) -replace 'ACCOUNT_ID', $account | Set-Content "$env:TEMP\app-policy.json" -Encoding ascii
+(Get-Content backend\deploy\iam\app-policy.template.json) -replace 'ACCOUNT_ID', $account -replace 'REGION', $region | Set-Content "$env:TEMP\app-policy.json" -Encoding ascii
 & $aws iam create-role --role-name tripfair-ec2-role --assume-role-policy-document file://backend/deploy/iam/ec2-trust.json --tags $tag
 & $aws iam attach-role-policy --role-name tripfair-ec2-role --policy-arn arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
 & $aws iam put-role-policy --role-name tripfair-ec2-role --policy-name tripfair-app --policy-document "file://$env:TEMP\app-policy.json"
@@ -159,7 +160,7 @@ Amazon Linux 2023 (có sẵn AWS CLI và SSM agent); [user-data.sh](../backend/d
 
 ```powershell
 $ami = & $aws ssm get-parameter --name /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64 --query Parameter.Value --output text
-$subnet = & $aws ec2 describe-subnets --filters "Name=vpc-id,Values=$vpc" Name=default-for-az,Values=true Name=availability-zone,Values=ap-southeast-1b --query 'Subnets[0].SubnetId' --output text
+$subnet = & $aws ec2 describe-subnets --filters "Name=vpc-id,Values=$vpc" Name=default-for-az,Values=true "Name=availability-zone,Values=${region}b" --query 'Subnets[0].SubnetId' --output text
 $iid = & $aws ec2 run-instances --image-id $ami --instance-type t3.micro --subnet-id $subnet `
   --security-group-ids $api --iam-instance-profile Name=tripfair-ec2-profile `
   --metadata-options HttpTokens=required,HttpPutResponseHopLimit=1,HttpEndpoint=enabled `
@@ -231,7 +232,7 @@ foreach ($f in 'deploy.sh', 'Caddyfile') {
 API đăng nhập RDS bằng user `tripfair` (chỉ có quyền trên database `tripfair`, bắt buộc TLS), không bao giờ dùng master. Để tạo user này, máy EC2 cần đọc mật khẩu master **một lần**: gắn tạm một policy, chạy [create-app-user.sh](../backend/deploy/create-app-user.sh), rồi gỡ policy ngay (khối `finally` gỡ cả khi script lỗi).
 
 ```powershell
-(Get-Content backend\deploy\iam\admin-read-temp.template.json) -replace 'ACCOUNT_ID', $account | Set-Content "$env:TEMP\admin-read.json" -Encoding ascii
+(Get-Content backend\deploy\iam\admin-read-temp.template.json) -replace 'ACCOUNT_ID', $account -replace 'REGION', $region | Set-Content "$env:TEMP\admin-read.json" -Encoding ascii
 & $aws iam put-role-policy --role-name tripfair-ec2-role --policy-name tripfair-setup-temp --policy-document "file://$env:TEMP\admin-read.json"
 Start-Sleep -Seconds 15   # IAM cần vài giây để áp dụng
 $b64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes('backend\deploy\create-app-user.sh'))

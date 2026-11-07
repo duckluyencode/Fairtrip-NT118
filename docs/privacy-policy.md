@@ -29,14 +29,14 @@ TripFair không thu thập danh bạ, không đọc tin nhắn, không dùng d�
 | --- | --- | --- |
 | Google (Places API, Routes API, Cloud Vision API) | Từ khóa tìm kiếm, tọa độ khi tìm gần đây, tọa độ các điểm trong lộ trình, ảnh nhận diện | Tìm địa điểm, tính thời gian di chuyển, nhận diện địa danh. Xem [Chính sách quyền riêng tư của Google](https://policies.google.com/privacy) |
 | Google Gmail (SMTP) | Email của bạn và mã xác minh | Gửi email chứa mã OTP |
-| Amazon Web Services (khu vực Singapore) | Toàn bộ dữ liệu ở mục 1 được lưu trên máy chủ và cơ sở dữ liệu thuê của AWS | Chạy dịch vụ TripFair |
+| Amazon Web Services (khu vực Sydney, Úc) | Toàn bộ dữ liệu ở mục 1 được lưu trên máy chủ và cơ sở dữ liệu thuê của AWS | Chạy dịch vụ TripFair |
 | `<nhà cung cấp SMS, khi có>` | Số điện thoại và mã xác minh | Gửi mã OTP qua SMS |
 
 Tin SOS được điện thoại của bạn gửi trực tiếp tới liên hệ khẩn cấp bằng SMS, không đi qua server TripFair.
 
 ## 3. Lưu trữ và bảo mật
 
-- Dữ liệu được lưu trên AWS tại Singapore. Kết nối giữa app và server dùng HTTPS; kết nối giữa server và cơ sở dữ liệu được mã hóa (TLS); ổ đĩa cơ sở dữ liệu được mã hóa.
+- Dữ liệu được lưu trên AWS tại Sydney (Úc). Kết nối giữa app và server dùng HTTPS; kết nối giữa server và cơ sở dữ liệu được mã hóa (TLS); ổ đĩa cơ sở dữ liệu được mã hóa.
 - Cơ sở dữ liệu không mở ra Internet, chỉ máy chủ TripFair kết nối được.
 - Dữ liệu được giữ cho tới khi bạn xóa (lịch sử, yêu thích, liên hệ) hoặc xóa tài khoản. Bản sao lưu tự động của cơ sở dữ liệu được giữ tối đa 7 ngày rồi tự xóa, nên dữ liệu đã xóa có thể còn trong bản sao lưu tới 7 ngày.
 
