@@ -18,9 +18,21 @@ COPY src ./src
 RUN npm run build
 
 # One-off job: applies pending migrations, then exits. Needs DATABASE_URL at run time.
+# Only what `prisma migrate deploy` needs: the Prisma CLI and dotenv (loaded by
+# prisma.config.ts) at the versions in package-lock.json, the schema and the migrations.
+# This keeps the image small enough to push reliably (the full dev install is ~1 GB).
 # The sample catalog is for development only: prisma/seed.ts refuses to run in production.
-FROM build AS migrate
+FROM ${NODE_IMAGE} AS migrate
 ENV NODE_ENV=production
+WORKDIR /app
+COPY package-lock.json /tmp/lock.json
+RUN set -eu; \
+  v() { node -p "require('/tmp/lock.json').packages['node_modules/' + process.argv[1]].version" "$1"; }; \
+  echo '{"name":"tripfair-migrate","private":true,"type":"module"}' > package.json; \
+  npm install --no-audit --no-fund "prisma@$(v prisma)" "dotenv@$(v dotenv)"; \
+  npm cache clean --force; rm /tmp/lock.json
+COPY prisma.config.ts ./
+COPY prisma ./prisma
 CMD ["npx", "prisma", "migrate", "deploy"]
 
 # The API: compiled code and production dependencies only, run as a non-root user.

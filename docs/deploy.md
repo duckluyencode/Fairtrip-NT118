@@ -117,12 +117,12 @@ Tạo RDS:
   --allocated-storage 20 --storage-type gp3 --storage-encrypted `
   --master-username tripfair_admin --master-user-password $master --db-name tripfair `
   --db-subnet-group-name tripfair-db-subnets --vpc-security-group-ids $db `
-  --no-publicly-accessible --no-multi-az --backup-retention-period 7 `
+  --no-publicly-accessible --no-multi-az --backup-retention-period 1 `
   --auto-minor-version-upgrade --deletion-protection --copy-tags-to-snapshot --tags $tag
 Remove-Variable master, appPw, jwt
 ```
 
-Lý do: MySQL 8.4 LTS giống bản chạy trên máy; `db.t4g.micro` là loại rẻ nhất; mã hóa ổ đĩa; không public; backup tự động 7 ngày; `--deletion-protection` chặn xóa nhầm. Chờ khoảng 10 phút tới khi trạng thái là `available`, rồi lấy endpoint:
+Lý do: MySQL 8.4 LTS giống bản chạy trên máy; `db.t4g.micro` là loại rẻ nhất; mã hóa ổ đĩa; không public; backup tự động (tài khoản gói Free chỉ cho giữ 1 ngày, báo `FreeTierRestrictionError` nếu đặt nhiều hơn; tài khoản trả phí nên đặt 7); `--deletion-protection` chặn xóa nhầm. Chờ khoảng 10 phút tới khi trạng thái là `available`, rồi lấy endpoint:
 
 ```powershell
 & $aws rds describe-db-instances --db-instance-identifier tripfair-db --query 'DBInstances[0].[DBInstanceStatus,Endpoint.Address]' --output text
@@ -313,6 +313,9 @@ Kiểm tra trạng thái:
 | Image báo `Cannot find module '.../client.ts'` | Prisma đoán sai đuôi import khi build trong Docker | Giữ `moduleFormat` và `importFileExtension` trong generator của `schema.prisma` |
 | API dừng ngay khi khởi động ở production | Thiếu biến bắt buộc (vd. `MYSQL_SSL_CA`) | Thêm tham số vào SSM rồi deploy lại |
 | `Your session has expired` | Phiên `aws login` hết hạn | Chạy lại `aws login` |
+| `FreeTierRestrictionError ... backup retention period` khi tạo RDS | Tài khoản gói Free giới hạn số ngày giữ sao lưu | `--backup-retention-period 1`, hoặc nâng gói tài khoản |
+| `failed commit on ref ... timeout awaiting response headers` khi đẩy image | Mạng chậm khi đẩy layer lớn sang region xa | `push-images.sh` tự thử lại 5 lần và bỏ qua image đã có trên ECR; chạy lại script nếu vẫn lỗi |
+| Trang đăng nhập báo `not supported for your project` | Tài khoản gắn với region khác | `aws login --region <region của tài khoản>` |
 | Lệnh dài truyền qua `--parameters` bị hỏng dấu nháy | PowerShell 5.1 | `ssm-run.ps1` ghi tham số ra file JSON rồi truyền `file://` |
 
 ## 13. Gỡ toàn bộ hạ tầng
