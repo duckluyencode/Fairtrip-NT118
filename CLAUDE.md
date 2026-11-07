@@ -18,9 +18,10 @@ Khi đề xuất tạo thư mục hoặc module mới: giải thích vai trò c�
 Khi có `android/` và `backend/`: lệnh build/test và quy ước riêng của từng phần đặt trong `android/CLAUDE.md` và `backend/CLAUDE.md`; file này chỉ giữ phần dùng chung.
 
 ```
+.github/     GitHub Actions (CI backend)
 android/     App Android Kotlin + Jetpack Compose, xem android/CLAUDE.md
 backend/     API server NestJS (TypeScript), xem backend/CLAUDE.md
-docs/        Tài liệu dự án (mô tả tổng quan)
+docs/        Tài liệu dự án (mô tả tổng quan, thiết kế database, lộ trình và tiến độ)
 CLAUDE.md
 README.md
 ```
@@ -28,9 +29,10 @@ README.md
 ## Lệnh thường dùng
 - Android: xem [android/CLAUDE.md](android/CLAUDE.md).
 - Backend: xem [backend/CLAUDE.md](backend/CLAUDE.md).
-- [Điền khi đã thiết lập: docker compose]
+- Database trên máy: `docker compose up -d` trong `backend/` (MySQL 8.4), chi tiết trong backend/CLAUDE.md.
 
 ## Cách làm việc với tôi
+- Kế hoạch và tiến độ theo dõi ở [docs/roadmap.md](docs/roadmap.md). Đầu mỗi task, nói rõ task thuộc bước nào trong roadmap. PR của bước nào thì cập nhật luôn trạng thái, ngày xong, việc còn lại và nhật ký của bước đó trong cùng PR. Kế hoạch thay đổi thì sửa roadmap trước rồi mới làm.
 - Tôi muốn hiểu mọi thứ được tạo ra. Trước khi viết code cho một task: nêu kế hoạch ngắn (file sẽ tạo/sửa, cách tiếp cận) và chờ tôi đồng ý.
 - Làm theo bước nhỏ, mỗi bước là một thay đổi kiểm tra được; sau mỗi bước giải thích ngắn đã làm gì và vì sao.
 - Chỉ làm đúng phạm vi task; không tự refactor hoặc thêm tính năng ngoài yêu cầu. Thấy vấn đề ngoài phạm vi thì ghi chú để tôi quyết định.
@@ -78,15 +80,17 @@ README.md
 - 2026-10-19: Giao diện có chế độ sáng (theo Figma) và tối (tự thiết kế từ màu Figma, đạt WCAG AA), theo cài đặt của điện thoại; không dùng màu động Material You. Font Inter đóng gói trong app (file biến thiên, giấy phép OFL).
 - 2026-10-20: Điều hướng Android dùng Navigation 3 (1.2.0) + kotlinx-serialization. Icon lấy từ Figma (bộ Lucide) chuyển sang VectorDrawable, không dùng thư viện icon. Màn hình làm theo Figma với dữ liệu mẫu trước, nối backend sau.
 - 2026-10-21: Android dùng ViewModel (lifecycle 2.11.0) và repository; dữ liệu mẫu qua repository giả lập trong bộ nhớ cho tới khi nối backend; unit test bằng JUnit 4.
+- 2026-11-04: Thiết kế database ở [docs/database.md](docs/database.md); bảng được tạo dần theo từng module backend. Tiền lưu bằng số nguyên VND theo người; thuật toán dùng price_max khi điểm có khoảng giá. Đánh giá địa điểm lấy từ Google Places (không có bảng reviews). Liên hệ khẩn cấp lưu trên server, Android giữ bản sao để SOS chạy khi mất mạng.
+- 2026-11-04: API backend nằm dưới `/api/v1`; lỗi trả dạng `{ statusCode, code, message, details? }` với `code` ổn định để Android xử lý; tài liệu Swagger ở `/docs`. GitHub Actions chạy lint, build, unit test và e2e test cho mọi PR chạm `backend/`.
+- 2026-11-04: OTP email gửi qua SMTP (Gmail App Password khi chạy trên máy; đổi nhà cung cấp, vd. Amazon SES, chỉ cần sửa `.env`). Đăng nhập trả access token JWT 15 phút và refresh token 30 ngày (đổi mới mỗi lần dùng); mật khẩu hash bằng scrypt.
+- 2026-11-04: Địa điểm kết hợp danh mục riêng của TripFair (dữ liệu mẫu Đà Nẵng, có thời gian ghé và giá) với Google Places (New): tìm kiếm bổ sung kết quả Google khi có `GOOGLE_MAPS_API_KEY`; điểm từ Google chỉ lưu `place_id` (theo điều khoản Google), chi tiết lấy trực tiếp và ghi nguồn "Google Maps".
+- 2026-11-04: Giá điểm không có vé đối tác: `priceRange` của Google → loại điểm thường miễn phí (bãi biển, công viên, chùa, cầu…) = 0đ ước tính → bảng quy đổi theo price_level → mức mặc định theo nhóm. Điểm nằm trong khu có bán vé (vd. Le Jardin trong Bà Nà Hills) dùng giá vé của khu; trong lộ trình tính 0đ nếu vé khu đã có trong lộ trình.
 
 ## Câu hỏi mở
 Mỗi mục ghi rõ cần chốt trước khi làm phần nào. Chưa tới phần đó thì để nguyên.
-- [Giá] Điểm tham quan không có trên Klook/GetYourGuide/Tiqets (chùa, công viên, bãi biển…) thì lấy giá theo chuỗi nào?
-- [Giá] Địa điểm nằm trong khu đã bán vé (vd. vườn hoa Le Jardin trong Bà Nà Hills) tính giá thế nào?
-- [User] Chọn dịch vụ gửi OTP qua SMS và email. Chốt khi làm backend.
+- [User] Chọn dịch vụ gửi OTP qua SMS (eSMS/SpeedSMS cần đăng ký brandname và nạp tiền; Firebase Phone Auth cần gói Blaze và đổi luồng Android). Hiện SMS chỉ in ra log. Chốt khi có ngân sách hoặc trước khi chạy thật.
 - [Trip] Lộ trình cá nhân dùng chung pipeline với nhóm (n = 1) hay thuật toán riêng? "Thời gian giữa các lần đi chơi" nghĩa là gì?
 - [Trip] Thời gian và quãng đường giữa các điểm lấy bằng ước tính đường chim bay hay Google Routes API? Cần cho ràng buộc tổng thời gian ≤ T.
-- [Database] Thuật toán cần thời gian ghé thăm và khoảng giá (min/max, đơn vị tiền tệ), nhưng bảng Place chưa có các cột này. Cũng chưa có bảng lưu trú, bình chọn và cách chia chi phí.
 - [Rủi ro] Kiểm tra sớm điều kiện cấp Partner API của Klook, GetYourGuide, Tiqets, Agoda và độ phủ ở Việt Nam. Tất cả đều cần duyệt đối tác; đồ án sinh viên có thể không được duyệt.
 - [Camera] Có thêm CameraX (dependency lớn) để khung ngắm dùng camera thật không? Hiện màn nhận diện dùng ảnh mẫu. Chốt trước khi làm nhận diện ảnh thật.
 - [Offline] Giao diện offline trong Figma (mất mạng, cần mạng, có mạng lại) đang tạm bỏ qua. Chốt phạm vi trước khi làm lưu lộ trình bằng Room.

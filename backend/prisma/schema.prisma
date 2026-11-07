@@ -1,5 +1,5 @@
 // Prisma schema for the TripFair backend.
-// Models are added in step A4 after the database design is approved.
+// Tables are added module by module; the full design is in docs/database.md.
 
 generator client {
   provider = "prisma-client"
@@ -8,4 +8,180 @@ generator client {
 
 datasource db {
   provider = "mysql"
+}
+
+/// A TripFair account. Signs in with email or phone; the database requires at least one.
+model User {
+  id                Int       @id @default(autoincrement())
+  email             String?   @unique @db.VarChar(254)
+  /// E.164 format, e.g. +84905128846.
+  phone             String?   @unique @db.VarChar(16)
+  passwordHash      String    @map("password_hash") @db.VarChar(255)
+  fullName          String    @map("full_name") @db.VarChar(100)
+  avatarUrl         String?   @map("avatar_url") @db.VarChar(2048)
+  /// Set when the sign-up code is confirmed; null means the account cannot sign in yet.
+  verifiedAt        DateTime? @map("verified_at")
+  /// Password reset tokens issued before this time are no longer accepted.
+  passwordChangedAt DateTime? @map("password_changed_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  otpCodes      OtpCode[]
+  refreshTokens RefreshToken[]
+  searchHistory SearchHistory[]
+  favorites     Favorite[]
+
+  @@map("users")
+}
+
+enum PlaceSource {
+  /// TripFair's own data (sample catalog until partner data arrives).
+  CATALOG
+  /// Found through Google Places; only the place ID is stored, details are fetched live.
+  GOOGLE
+}
+
+/// Filters in the app: Ăn uống, Vui chơi, Cảnh đẹp.
+enum PlaceCategory {
+  FOOD
+  FUN
+  SCENIC
+}
+
+enum PriceSource {
+  PARTNER_API
+  GOOGLE_API
+  ESTIMATED
+}
+
+/// A place. CATALOG rows hold all their data (a CHECK constraint requires it);
+/// GOOGLE rows hold only the Google place ID, as the Google Maps terms allow.
+model Place {
+  id             Int            @id @default(autoincrement())
+  source         PlaceSource    @default(CATALOG)
+  /// Stable key of catalog places, e.g. "golden-bridge".
+  slug           String?        @unique @db.VarChar(100)
+  googlePlaceId  String?        @unique @map("google_place_id") @db.VarChar(255)
+  name           String?        @db.VarChar(200)
+  /// Line under the name, e.g. "Bà Nà Hills · Hòa Vang".
+  area           String?        @db.VarChar(200)
+  city           String?        @db.VarChar(100)
+  /// Main category, shown as the label.
+  category       PlaceCategory?
+  lat            Float?
+  lng            Float?
+  rating         Float?
+  ratingCount    Int?           @map("rating_count")
+  /// Minutes after midnight; both null means open all day. close < open means after midnight.
+  openMinute     Int?           @map("open_minute")
+  closeMinute    Int?           @map("close_minute")
+  description    String?        @db.Text
+  imageUrl       String?        @map("image_url") @db.VarChar(2048)
+  visitMinutes   Int?           @map("visit_minutes")
+  /// VND per person; equal when the price is fixed, 0 when free. Null when included in the parent's ticket.
+  priceMin       Int?           @map("price_min")
+  priceMax       Int?           @map("price_max")
+  priceSource    PriceSource?   @map("price_source")
+  priceProvider  String?        @map("price_provider") @db.VarChar(100)
+  priceUpdatedAt DateTime?      @map("price_updated_at")
+  /// Ticketed area this place is inside, e.g. Cầu Vàng inside Bà Nà Hills.
+  parentId       Int?           @map("parent_id")
+  /// Name, area and city lowercased without diacritics, for search.
+  searchText     String?        @map("search_text") @db.VarChar(600)
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  parent     Place?              @relation("PlaceParent", fields: [parentId], references: [id], onDelete: SetNull)
+  children   Place[]             @relation("PlaceParent")
+  categories PlaceCategoryLink[]
+  favorites  Favorite[]
+
+  @@index([source, city])
+  @@map("places")
+}
+
+/// Every category a place belongs to (including its main one), for filtering.
+model PlaceCategoryLink {
+  placeId  Int           @map("place_id")
+  category PlaceCategory
+
+  place Place @relation(fields: [placeId], references: [id], onDelete: Cascade)
+
+  @@id([placeId, category])
+  @@index([category])
+  @@map("place_categories")
+}
+
+/// One row per distinct query of a user; searching again moves it to the top.
+model SearchHistory {
+  id              Int            @id @default(autoincrement())
+  userId          Int            @map("user_id")
+  /// As the user last typed it.
+  query           String         @db.VarChar(100)
+  /// Lowercased without diacritics; "Đà Nẵng" and "da nang" are the same entry.
+  normalizedQuery String         @map("normalized_query") @db.VarChar(100)
+  /// Category filter used with the query, if any.
+  category        PlaceCategory?
+  searchedAt      DateTime       @default(now()) @map("searched_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, normalizedQuery])
+  @@index([userId, searchedAt])
+  @@map("search_history")
+}
+
+model Favorite {
+  userId    Int      @map("user_id")
+  placeId   Int      @map("place_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  place Place @relation(fields: [placeId], references: [id], onDelete: Cascade)
+
+  @@id([userId, placeId])
+  @@index([placeId])
+  @@map("favorites")
+}
+
+enum OtpPurpose {
+  REGISTER
+  RESET_PASSWORD
+}
+
+/// A 6-digit code sent by email or SMS. Only the latest unused code of a purpose is valid.
+model OtpCode {
+  id          Int        @id @default(autoincrement())
+  userId      Int        @map("user_id")
+  purpose     OtpPurpose
+  /// Normalized email or E.164 phone the code was sent to.
+  destination String     @db.VarChar(254)
+  /// HMAC-SHA256 of the code, hex.
+  codeHash    String     @map("code_hash") @db.Char(64)
+  expiresAt   DateTime   @map("expires_at")
+  /// Wrong guesses so far; the code is locked once the limit is reached.
+  attempts    Int        @default(0)
+  usedAt      DateTime?  @map("used_at")
+  createdAt   DateTime   @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose, createdAt])
+  @@map("otp_codes")
+}
+
+/// Long-lived sign-in token; rotated on every refresh and revoked on logout.
+model RefreshToken {
+  id        Int       @id @default(autoincrement())
+  userId    Int       @map("user_id")
+  /// SHA-256 of the token, hex. The token itself is only ever sent to the client.
+  tokenHash String    @unique @map("token_hash") @db.Char(64)
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
 }

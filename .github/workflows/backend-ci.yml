@@ -1,0 +1,63 @@
+name: Backend CI
+
+on:
+  pull_request:
+    paths: ['backend/**', '.github/workflows/backend-ci.yml']
+  push:
+    branches: [main]
+    paths: ['backend/**', '.github/workflows/backend-ci.yml']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: ci-root-password
+          MYSQL_DATABASE: tripfair_test
+          MYSQL_USER: tripfair
+          MYSQL_PASSWORD: ci-password
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 --silent"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+
+    # Throwaway credentials for the CI database container only.
+    env:
+      MYSQL_HOST: 127.0.0.1
+      MYSQL_PORT: '3306'
+      MYSQL_USER: tripfair
+      MYSQL_PASSWORD: ci-password
+      MYSQL_DATABASE: tripfair
+      MYSQL_TEST_DATABASE: tripfair_test
+      MYSQL_ALLOW_PUBLIC_KEY_RETRIEVAL: 'true'
+      DATABASE_URL: mysql://tripfair:ci-password@127.0.0.1:3306/tripfair_test
+      JWT_SECRET: ci-only-secret-not-used-anywhere-else-0123456789
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+      - run: npm test
+      - run: npm run test:e2e

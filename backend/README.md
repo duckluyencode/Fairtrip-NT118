@@ -12,13 +12,17 @@ REST API for the TripFair Android app, built with NestJS and TypeScript.
 
 ## Getting started
 
-1. Copy `.env.example` to `.env` and set the passwords.
-2. Start MySQL 8.4 and install dependencies:
+1. Copy `.env.example` to `.env`, set the passwords and a random `JWT_SECRET`. To send sign-up codes by email, fill in the `SMTP_*` values (for Gmail, use an App Password); without them, codes are printed in the server log.
+2. Start MySQL 8.4, install dependencies, create the tables and load the sample place catalog:
 
    ```bash
    docker compose up -d
    npm install
+   npx prisma migrate deploy
+   npm run db:seed
    ```
+
+   Place search uses the sample catalog; set `GOOGLE_MAPS_API_KEY` to add Google Places results.
 
 3. Start the API:
 
@@ -26,7 +30,13 @@ REST API for the TripFair Android app, built with NestJS and TypeScript.
    npm run start:dev
    ```
 
-The server runs at http://localhost:3000. `GET /health` returns `200` when the database is reachable and `503` when it is not.
+The server runs at http://localhost:3000. API routes live under `/api/v1`, and the interactive API docs are at http://localhost:3000/docs. `GET /health` returns `200` when the database is reachable and `503` when it is not.
+
+Errors always use the same shape:
+
+```json
+{ "statusCode": 400, "code": "VALIDATION_FAILED", "message": "Request validation failed", "details": [] }
+```
 
 ## Scripts
 
@@ -36,8 +46,9 @@ The server runs at http://localhost:3000. `GET /health` returns `200` when the d
 | `npm run build` | Compile to `dist/` |
 | `npm run start:prod` | Run the compiled build |
 | `npm test` | Run unit tests (Vitest) |
-| `npm run test:e2e` | Run end-to-end tests |
+| `npm run test:e2e` | Run end-to-end tests against the `tripfair_test` database |
 | `npm run lint` | Lint with oxlint |
 | `npm run format` | Format with Prettier |
 | `npm run db:generate` | Regenerate the Prisma Client after schema changes |
 | `npm run db:migrate` | Create and apply a database migration |
+| `npm run db:seed` | Load the sample place catalog |

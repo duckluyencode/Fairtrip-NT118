@@ -1,0 +1,309 @@
+import { HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { AppError } from '../common/errors/app-error.js';
+import { ErrorCode } from '../common/errors/error-code.js';
+import type { Place } from '../generated/prisma/client.js';
+import type { PlaceCategory } from '../generated/prisma/enums.js';
+import { PrismaService } from '../prisma/prisma.service.js';
+import { SearchHistoryService } from '../search-history/search-history.service.js';
+import type {
+  PlaceDetail,
+  PlacePage,
+  PlaceSuggestion,
+  PlaceSummary,
+} from './dto/place.response.js';
+import type { SearchPlacesQuery } from './dto/place.query.js';
+import { distanceKm, type LatLng } from './geo.js';
+import { googleCategories } from './google/google-categories.js';
+import { GooglePlacesClient } from './google/google-places.client.js';
+import {
+  catalogDetail,
+  catalogSummary,
+  googleDetail,
+  googleSummary,
+  type CatalogRow,
+} from './places.mapper.js';
+import { rankByQuery } from './ranking.js';
+import { normalizeText, words } from './text.js';
+
+// The catalog is per city and small; matches are ranked in memory.
+const CANDIDATE_LIMIT = 500;
+const SUGGESTION_LIMIT = 5;
+const GOOGLE_RESULT_LIMIT = 10;
+
+export function placeNotFound(): AppError {
+  return new AppError(
+    HttpStatus.NOT_FOUND,
+    ErrorCode.PlaceNotFound,
+    'No such place',
+  );
+}
+
+/**
+ * Every query word must start a word of the place's search text, so "cau v" finds
+ * "cầu vàng" while "ang" does not.
+ */
+function everyWordStartsAWord(text: string) {
+  return words(text).map((word) => ({
+    OR: [
+      { searchText: { startsWith: word } },
+      { searchText: { contains: ` ${word}` } },
+    ],
+  }));
+}
+
+function originOf(query: { lat?: number; lng?: number }): LatLng | null {
+  return query.lat !== undefined && query.lng !== undefined
+    ? { lat: query.lat, lng: query.lng }
+    : null;
+}
+
+@Injectable()
+export class PlacesService {
+  private readonly logger = new Logger(PlacesService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly google: GooglePlacesClient,
+    private readonly history: SearchHistoryService,
+  ) {}
+
+  /**
+   * Catalog places matching every word of `q` (ignoring diacritics), best match first.
+   * Without `q`: the whole catalog, nearest first when the user's position is sent,
+   * otherwise best rated. When the first page is not full, Google results fill it.
+   * A search with text is saved to the user's history.
+   */
+  async search(userId: number, query: SearchPlacesQuery): Promise<PlacePage> {
+    const text = normalizeText(query.q ?? '');
+    const origin = originOf(query);
+    const rows = await this.prisma.place.findMany({
+      where: {
+        source: 'CATALOG',
+        ...(query.category && {
+          categories: { some: { category: query.category } },
+        }),
+        ...(text && { AND: everyWordStartsAWord(text) }),
+      },
+      include: { categories: true },
+      take: CANDIDATE_LIMIT,
+    });
+
+    const ordered = this.order(rows, text, origin);
+    const start = (query.page - 1) * query.limit;
+    const items = ordered
+      .slice(start, start + query.limit)
+      .map((row) => catalogSummary(row, origin, false));
+    let total = ordered.length;
+
+    if (text && query.page === 1 && items.length < query.limit) {
+      const extra = await this.googleResults(
+        query.q ?? '',
+        query.category,
+        origin,
+        query.limit - items.length,
+      );
+      items.push(...extra);
+      total += extra.length;
+    }
+
+    if (text) {
+      await this.history.record(userId, query.q ?? '', query.category ?? null);
+    }
+    return {
+      items: await this.markFavorites(userId, items),
+      page: query.page,
+      limit: query.limit,
+      total,
+    };
+  }
+
+  /** Names to show while typing, from the catalog only; not saved to history. */
+  async suggestions(q: string): Promise<PlaceSuggestion[]> {
+    const text = normalizeText(q);
+    if (!text) {
+      return [];
+    }
+    const rows = await this.prisma.place.findMany({
+      where: {
+        source: 'CATALOG',
+        AND: everyWordStartsAWord(text),
+      },
+      select: {
+        id: true,
+        name: true,
+        area: true,
+        rating: true,
+        ratingCount: true,
+      },
+      take: CANDIDATE_LIMIT,
+    });
+    return rankByQuery(
+      text,
+      rows.map((row) => ({ ...row, name: row.name ?? '' })),
+    )
+      .slice(0, SUGGESTION_LIMIT)
+      .map(({ id, name, area }) => ({ id, name, area }));
+  }
+
+  async detail(
+    userId: number,
+    id: number,
+    origin: { lat?: number; lng?: number },
+  ): Promise<PlaceDetail> {
+    const row = await this.prisma.place.findUnique({
+      where: { id },
+      include: { categories: true, parent: true },
+    });
+    if (!row) {
+      throw placeNotFound();
+    }
+    const isFavorite =
+      (await this.prisma.favorite.count({
+        where: { userId, placeId: id },
+      })) > 0;
+    if (row.source === 'CATALOG') {
+      return catalogDetail(row, originOf(origin), isFavorite);
+    }
+    const place = await this.google.getPlace(row.googlePlaceId ?? '');
+    if (!place) {
+      throw placeNotFound();
+    }
+    return googleDetail(row.id, place, originOf(origin), isFavorite);
+  }
+
+  /**
+   * Summaries for stored places, in the same order. Google places are fetched live;
+   * any that Google cannot return right now are left out.
+   */
+  async summaries(
+    rows: CatalogRow[],
+    isFavorite: (id: number) => boolean,
+  ): Promise<PlaceSummary[]> {
+    const results = await Promise.all(
+      rows.map(async (row) => {
+        if (row.source === 'CATALOG') {
+          return catalogSummary(row, null, isFavorite(row.id));
+        }
+        if (!this.google.enabled || !row.googlePlaceId) {
+          return null;
+        }
+        try {
+          const place = await this.google.getPlace(row.googlePlaceId);
+          return place
+            ? googleSummary(row.id, place, null, isFavorite(row.id))
+            : null;
+        } catch (error) {
+          this.logger.warn(`Skipped Google place ${row.id}: ${String(error)}`);
+          return null;
+        }
+      }),
+    );
+    return results.filter((summary) => summary !== null);
+  }
+
+  /** Throws PLACE_NOT_FOUND unless the place exists. */
+  async assertExists(id: number): Promise<Place> {
+    const place = await this.prisma.place.findUnique({ where: { id } });
+    if (!place) {
+      throw placeNotFound();
+    }
+    return place;
+  }
+
+  private order(
+    rows: CatalogRow[],
+    text: string,
+    origin: LatLng | null,
+  ): CatalogRow[] {
+    if (text) {
+      return rankByQuery(
+        text,
+        rows.map((row) => ({
+          row,
+          name: row.name ?? '',
+          area: row.area,
+          rating: row.rating,
+          ratingCount: row.ratingCount,
+        })),
+      ).map(({ row }) => row);
+    }
+    if (origin) {
+      const distance = (row: CatalogRow) =>
+        row.lat !== null && row.lng !== null
+          ? distanceKm(origin, { lat: row.lat, lng: row.lng })
+          : Number.POSITIVE_INFINITY;
+      return [...rows].sort((a, b) => distance(a) - distance(b) || a.id - b.id);
+    }
+    return [...rows].sort(
+      (a, b) =>
+        (b.rating ?? 0) - (a.rating ?? 0) ||
+        (b.ratingCount ?? 0) - (a.ratingCount ?? 0) ||
+        a.id - b.id,
+    );
+  }
+
+  /**
+   * Google results not already in the catalog. Only their place IDs are stored, which
+   * gives them a TripFair id for details, favorites and trips.
+   */
+  private async googleResults(
+    q: string,
+    category: PlaceCategory | undefined,
+    origin: LatLng | null,
+    max: number,
+  ): Promise<PlaceSummary[]> {
+    if (!this.google.enabled) {
+      return [];
+    }
+    const found = (await this.google.searchText(q, GOOGLE_RESULT_LIMIT)).filter(
+      (place) =>
+        !category ||
+        googleCategories(place.types).categories.includes(category),
+    );
+    if (found.length === 0) {
+      return [];
+    }
+    const googleIds = found.map((place) => place.id);
+    await this.prisma.place.createMany({
+      data: googleIds.map((googlePlaceId) => ({
+        source: 'GOOGLE' as const,
+        googlePlaceId,
+      })),
+      skipDuplicates: true,
+    });
+    const stored = await this.prisma.place.findMany({
+      where: { googlePlaceId: { in: googleIds } },
+      select: { id: true, source: true, googlePlaceId: true },
+    });
+    // A catalog place linked to the same Google place is shown from the catalog instead.
+    const idByGoogleId = new Map(
+      stored
+        .filter((row) => row.source === 'GOOGLE')
+        .map((row) => [row.googlePlaceId, row.id]),
+    );
+    return found
+      .filter((place) => idByGoogleId.has(place.id))
+      .slice(0, max)
+      .map((place) =>
+        googleSummary(idByGoogleId.get(place.id) ?? 0, place, origin, false),
+      );
+  }
+
+  private async markFavorites(
+    userId: number,
+    items: PlaceSummary[],
+  ): Promise<PlaceSummary[]> {
+    if (items.length === 0) {
+      return items;
+    }
+    const favorites = await this.prisma.favorite.findMany({
+      where: { userId, placeId: { in: items.map((item) => item.id) } },
+      select: { placeId: true },
+    });
+    const ids = new Set(favorites.map((f) => f.placeId));
+    for (const item of items) {
+      item.isFavorite = ids.has(item.id);
+    }
+    return items;
+  }
+}
