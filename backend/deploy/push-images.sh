@@ -29,6 +29,25 @@ CFG=$(mktemp -d)
 trap 'rm -rf "$CFG"' EXIT
 AUTH=$(printf 'AWS:%s' "$("$AWS" ecr get-login-password --region "$REGION")" | base64 | tr -d '\n')
 printf '{"auths":{"%s":{"auth":"%s"}}}' "$REG" "$AUTH" >"$CFG/config.json"
-docker --config "$CFG" push "$REG/tripfair-api:$TAG"
-docker --config "$CFG" push "$REG/tripfair-migrate:$TAG"
+
+# Large layers sometimes time out on slow links ("timeout awaiting response headers");
+# each try uploads the layers that are still missing. Tags are immutable, so an image
+# already in ECR (from an earlier, partly failed run) is skipped instead of pushed again.
+push() {
+  if "$AWS" ecr describe-images --region "$REGION" --repository-name "$1" \
+    --image-ids imageTag="$TAG" >/dev/null 2>&1; then
+    echo "$1:$TAG is already in ECR"
+    return 0
+  fi
+  for attempt in 1 2 3 4 5; do
+    if docker --config "$CFG" push "$REG/$1:$TAG"; then
+      return 0
+    fi
+    echo "Push of $1 failed (try $attempt of 5), retrying" >&2
+    sleep 10
+  done
+  return 1
+}
+push tripfair-api
+push tripfair-migrate
 echo "Pushed tripfair-api:$TAG and tripfair-migrate:$TAG"
