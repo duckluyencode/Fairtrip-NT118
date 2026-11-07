@@ -41,13 +41,13 @@ Cách dùng tiết kiệm: chỉ bật EC2 và RDS khi cần (deploy, demo, Andr
 ## 3. Chuẩn bị (B1)
 
 1. Tài khoản AWS: bật MFA cho root, không dùng root để làm việc hằng ngày; tạo IAM user riêng cho mình.
-2. Cài AWS CLI v2 (Windows: `winget install Amazon.AWSCLI`), đăng nhập bằng IAM user:
+2. Cài AWS CLI v2 (Windows: `winget install Amazon.AWSCLI`), lưu region một lần (`aws configure set region ap-southeast-1`), rồi đăng nhập bằng IAM user:
 
    ```bash
    aws login
    ```
 
-   Phiên đăng nhập hết hạn sau vài giờ; khi lệnh báo `Your session has expired` thì chạy lại `aws login`.
+   Lệnh mở trình duyệt để bạn đăng nhập (đăng nhập AWS Console trên web không thay được bước này). Phiên hết hạn sau vài giờ; khi lệnh báo `Your session has expired` thì chạy lại `aws login`. Đổi sang tài khoản khác: `aws logout` rồi `aws login`.
 3. Profile không lưu region, nên đặt cho mỗi cửa sổ terminal:
 
    ```powershell
@@ -172,7 +172,7 @@ $alloc, $ip = (& $aws ec2 allocate-address --domain vpc --query '[AllocationId,P
 "site: $($ip.Replace('.', '-')).sslip.io"
 ```
 
-Lý do: `HttpTokens=required` bắt buộc IMDSv2 (chặn lấy trộm credential của role qua lỗi SSRF); `CpuCredits=standard` không bị tính thêm tiền khi dùng CPU nhiều; Elastic IP giữ địa chỉ cố định qua các lần tắt/bật. `sslip.io` biến IP thành tên miền (`47-128-180-54.sslip.io` trỏ về `47.128.180.54`) để có chứng chỉ HTTPS mà không cần mua tên miền.
+Lý do: `HttpTokens=required` bắt buộc IMDSv2 (chặn lấy trộm credential của role qua lỗi SSRF); `CpuCredits=standard` không bị tính thêm tiền khi dùng CPU nhiều; Elastic IP giữ địa chỉ cố định qua các lần tắt/bật. `sslip.io` biến IP thành tên miền (vd. `13-250-10-20.sslip.io` trỏ về `13.250.10.20`) để có chứng chỉ HTTPS mà không cần mua tên miền.
 
 Kiểm tra SSM thấy máy (vài phút sau khi bật):
 
@@ -204,7 +204,7 @@ Mọi biến môi trường của API nằm dưới `/tripfair/prod/`; tên tham
 Thêm hoặc sửa một tham số:
 
 ```powershell
-& $aws ssm put-parameter --name /tripfair/prod/SITE_ADDRESS --type String --value '47-128-180-54.sslip.io' --overwrite
+& $aws ssm put-parameter --name /tripfair/prod/SITE_ADDRESS --type String --value '<ip-gạch-ngang>.sslip.io' --overwrite
 ```
 
 Secret do người dùng tự nhập (App Password, API key) nên được nhập bằng Console (Systems Manager → Parameter Store → Create parameter, chọn SecureString) để giá trị không nằm trong lịch sử terminal. Chưa có SMTP thì API vẫn chạy, đăng ký bằng email báo `CODE_DELIVERY_FAILED`; chưa có key Google thì tìm kiếm trả rỗng (không có danh mục mẫu ở production).
@@ -266,7 +266,7 @@ AWS="/c/Program Files/Amazon/AWSCLIV2/aws.exe" sh deploy/push-images.sh
 ### 10.5 Kiểm tra
 
 ```bash
-curl https://47-128-180-54.sslip.io/health
+curl https://<ip-gạch-ngang>.sslip.io/health
 ```
 
 Kết quả đúng: `{"status":"ok","database":"up"}`. Xem log khi có lỗi:
@@ -311,3 +311,40 @@ Kiểm tra trạng thái:
 | API dừng ngay khi khởi động ở production | Thiếu biến bắt buộc (vd. `MYSQL_SSL_CA`) | Thêm tham số vào SSM rồi deploy lại |
 | `Your session has expired` | Phiên `aws login` hết hạn | Chạy lại `aws login` |
 | Lệnh dài truyền qua `--parameters` bị hỏng dấu nháy | PowerShell 5.1 | `ssm-run.ps1` ghi tham số ra file JSON rồi truyền `file://` |
+
+## 13. Gỡ toàn bộ hạ tầng
+
+Khi không dùng tài khoản nữa (hoặc chuyển sang tài khoản khác), tắt máy vẫn còn tính tiền Elastic IP, ổ đĩa, lưu trữ RDS và image. Muốn hết phí thì phải xóa. Xóa là **không khôi phục được**: sao lưu database trước nếu có dữ liệu cần giữ. Kiểm tra tag `Project=TripFair` trước mỗi lần xóa để không đụng tài nguyên khác trong tài khoản.
+
+Thứ tự (tài nguyên phía sau phụ thuộc vào tài nguyên phía trước):
+
+```powershell
+# 1. Elastic IP: gỡ khỏi máy rồi trả lại
+& $aws ec2 disassociate-address --association-id <eipassoc-…>
+& $aws ec2 release-address --allocation-id <eipalloc-…>
+# 2. EC2 (ổ đĩa tự xóa theo vì DeleteOnTermination=true)
+& $aws ec2 terminate-instances --instance-ids $iid
+& $aws ec2 wait instance-terminated --instance-ids $iid
+# 3. RDS: tắt chống xóa (làm được cả khi đang tắt), xóa không giữ snapshot, xóa cả sao lưu tự động
+& $aws rds modify-db-instance --db-instance-identifier tripfair-db --no-deletion-protection --apply-immediately
+& $aws rds delete-db-instance --db-instance-identifier tripfair-db --skip-final-snapshot --delete-automated-backups
+# 4. ECR, SSM, IAM (không tốn tiền nhưng chứa image và secret)
+& $aws ecr delete-repository --repository-name tripfair-api --force
+& $aws ecr delete-repository --repository-name tripfair-migrate --force
+& $aws ssm delete-parameters --names <tối đa 10 tên mỗi lần>
+& $aws iam remove-role-from-instance-profile --instance-profile-name tripfair-ec2-profile --role-name tripfair-ec2-role
+& $aws iam delete-instance-profile --instance-profile-name tripfair-ec2-profile
+& $aws iam detach-role-policy --role-name tripfair-ec2-role --policy-arn arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+& $aws iam delete-role-policy --role-name tripfair-ec2-role --policy-name tripfair-app
+& $aws iam delete-role --role-name tripfair-ec2-role
+# 5. Mạng, sau khi RDS đã xóa xong
+& $aws rds wait db-instance-deleted --db-instance-identifier tripfair-db
+& $aws rds delete-db-subnet-group --db-subnet-group-name tripfair-db-subnets
+& $aws ec2 delete-security-group --group-id <tripfair-db-sg>   # trước: nó tham chiếu tới SG của API
+& $aws ec2 delete-security-group --group-id <tripfair-api-sg>
+& $aws ec2 delete-subnet --subnet-id <tripfair-db-a>
+& $aws ec2 delete-subnet --subnet-id <tripfair-db-c>
+& $aws ec2 delete-route-table --route-table-id <tripfair-db-private>
+```
+
+Kiểm tra lại: `aws resourcegroupstaggingapi get-resources --tag-filters Key=Project,Values=TripFair` (API này có thể còn hiện tài nguyên vừa xóa thêm vài phút). Snapshot tự động của RDS biến mất vài phút sau khi xóa database.

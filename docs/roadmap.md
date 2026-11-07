@@ -12,8 +12,8 @@ Trạng thái: ✅ Xong · 🔄 Đang làm · ⏳ Chưa làm · ⛔ Bị chặn 
 | --- | --- | --- |
 | Thiết kế UI (Figma) | ✅ | Đã rà soát và bổ sung các màn còn thiếu; còn vài mục "nên có" |
 | Android | 🔄 | Đủ màn hình theo Figma với dữ liệu mẫu; logic form tài khoản ở PR #7; chưa nối backend |
-| Backend | 🔄 | A1–A11 xong (dữ liệu thật từ Google Places, Routes, Vision); còn deploy lên AWS (B3, B4) |
-| Hạ tầng AWS | 🔄 | B2 (Docker) xong; B3, B4 đã tạo tài nguyên (RDS, EC2 đang tắt), chờ deploy |
+| Backend | 🔄 | A1–A11 xong (dữ liệu thật từ Google Places, Routes, Vision); A12 gần xong; chưa deploy |
+| Hạ tầng AWS | 🔄 | B2 (Docker) xong; chuyển sang tài khoản AWS mới, tài nguyên trên tài khoản cũ đã xóa hết; B1–B4 làm lại |
 
 ## Bước tiếp theo
 
@@ -25,8 +25,9 @@ Thứ tự làm hết phần backend, theo cách tốn ít tiền AWS nhất: vi
 2. ~~**A7:** tìm kiếm toàn cầu lấy Google Places làm nguồn chính, gợi ý khi gõ bằng Autocomplete.~~ Xong 2026-11-06.
 3. ~~**A10:** liên hệ khẩn cấp, nhận diện ảnh bằng Cloud Vision.~~ Xong 2026-11-07.
 4. ~~**A11:** chương trình đánh giá thuật toán.~~ Xong 2026-11-07, kết quả ở [algorithm.md](algorithm.md).
-5. **B3, B4:** deploy lên RDS và EC2, kiểm tra HTTPS, rồi tắt máy.
-6. **Android AN5:** nối backend trên EC2.
+5. **B1–B4 trên tài khoản AWS mới:** bạn tự dựng theo [deploy.md](deploy.md) mục 3–10, deploy, kiểm tra HTTPS, rồi tắt máy.
+6. **A12:** phần còn lại (xem bảng giai đoạn A).
+7. **Android AN5:** nối backend trên EC2.
 
 ## Quyết định tạm chốt (chờ xác nhận)
 
@@ -40,7 +41,7 @@ Các câu hỏi mở dưới đây đang chặn việc làm backend, nên đư�
 | Tìm kiếm toàn cầu dùng API nào? | Google Places (New) là nguồn chính (dữ liệu thật, toàn thế giới); danh mục mẫu chỉ dùng khi không có key (phát triển, test). Thay quyết định 2026-11-04 "tìm kiếm bổ sung kết quả Google" trong CLAUDE.md | `PlacesService.search` |
 | Lưu trú khi chưa có Agoda API | Khách sạn thật từ Google Places (loại `lodging`); giá một đêm ước tính theo `priceLevel` (lấy mức cao), nguồn ESTIMATED, hiện dấu ~ | `src/trips/lodging-shares.ts` |
 | Ứng viên khi chưa chọn điểm nào | Tìm "điểm tham quan nổi tiếng" và "quán ăn ngon nổi tiếng" của thành phố trên Google (2 lượt Text Search, đã gồm giá và giờ mở cửa) | `TripPlacesService.discover` |
-| Phòng khách sạn | 2 người một phòng, xếp theo thứ tự vào nhóm; khách sạn chỉ được gợi ý khi phần tiền phòng của mọi người đều trong ngân sách | `GUESTS_PER_ROOM` |
+| Phòng khách sạn | Nhóm chọn 1–4 người một phòng (mặc định 2), xếp theo thứ tự vào nhóm; khách sạn chỉ được gợi ý khi phần tiền phòng của mọi người đều trong ngân sách | `GUESTS_PER_ROOM` |
 | A11: ILP bằng OR-Tools cần Python | Dùng lời giải tối ưu bằng tìm kiếm vét cạn trên bộ dữ liệu nhỏ (cùng kết quả với ILP), viết bằng TypeScript, không thêm Python | `src/planner/exact.ts` |
 | Production chưa có SMTP | API vẫn khởi động; đăng ký bằng email báo `CODE_DELIVERY_FAILED` cho tới khi có SMTP, giống SMS. Mã OTP không bao giờ in ra log ở production | `DefaultOtpDelivery` |
 
@@ -50,7 +51,7 @@ Các câu hỏi mở dưới đây đang chặn việc làm backend, nên đư�
 | --- | --- | --- |
 | Gmail App Password (`SMTP_*`) trong `backend/.env` và SSM | Gửi OTP qua email thật | Hướng dẫn ở [google-cloud.md](google-cloud.md), mục 5. Chưa có thì trên máy mã in ra log, trên AWS đăng ký bằng email báo `CODE_DELIVERY_FAILED` |
 | Google Cloud API key (`GOOGLE_MAPS_API_KEY`) | Dữ liệu thật: tìm kiếm, lộ trình, khách sạn, nhận diện ảnh | Hướng dẫn ở [google-cloud.md](google-cloud.md). Không có key thì trên máy chạy bằng danh mục mẫu, trên AWS tìm kiếm trả rỗng |
-| Đăng nhập lại AWS CLI (`aws login`) | Deploy B3, B4 | Phiên đăng nhập hết hạn; các bước còn lại ở [deploy.md](deploy.md), mục 10 |
+| Tài khoản AWS mới | B1–B4 | Bật MFA cho root, tạo IAM user, đặt cảnh báo chi phí, rồi dựng hạ tầng theo [deploy.md](deploy.md) |
 | Review và merge PR #7 | Android AN3 | Khi merge sẽ phải gộp tay một dòng trong "Quyết định đã chốt" của CLAUDE.md |
 
 ## Thiết kế UI
@@ -103,10 +104,10 @@ Việc còn lại của các bước đang làm:
 
 | Bước | Mục tiêu | Trạng thái |
 | --- | --- | --- |
-| B1 Tài khoản AWS | MFA cho root, IAM quyền tối thiểu, cảnh báo chi phí, region Singapore | 🔄 có tài khoản, IAM user, region Singapore; MFA root và cảnh báo chi phí do chủ tài khoản kiểm tra |
+| B1 Tài khoản AWS | MFA cho root, IAM quyền tối thiểu, cảnh báo chi phí, region Singapore | ⏳ chuyển sang tài khoản mới: bật MFA root, IAM user, cảnh báo chi phí |
 | B2 Đóng gói Docker | Dockerfile multi-stage (image chạy API và image chạy migration), chạy thử trên máy, CI build cả hai image | ✅ |
-| B3 RDS MySQL | Subnet riêng, chỉ nhận kết nối từ EC2, TLS, backup tự động | 🔄 đã tạo, đang tắt; còn tạo user ứng dụng và chạy migration |
-| B4 EC2 chạy backend | Docker, IAM role, secrets trong SSM Parameter Store, HTTPS | 🔄 đã tạo, đang tắt; còn deploy và kiểm tra HTTPS |
+| B3 RDS MySQL | Subnet riêng, chỉ nhận kết nối từ EC2, TLS, backup tự động | ⏳ làm lại trên tài khoản mới |
+| B4 EC2 chạy backend | Docker, IAM role, secrets trong SSM Parameter Store, HTTPS | ⏳ làm lại trên tài khoản mới |
 | B5 S3 cho ảnh | Bucket private, upload bằng pre-signed URL | ⏳ |
 | B6 Tự động deploy | Merge vào main thì build image, deploy lên EC2, kiểm tra `/health` | ⏳ |
 | B7 Vận hành | Log trên CloudWatch, cảnh báo khi `/health` lỗi, kiểm soát chi phí | ⏳ |
@@ -136,3 +137,4 @@ Nội dung đầy đủ ở mục "Câu hỏi mở" của [CLAUDE.md](../CLAUDE.
 - **2026-11-07:** Xong A10: liên hệ khẩn cấp (tối đa 5, SĐT E.164) và nhận diện địa danh từ ảnh bằng Cloud Vision, khớp với địa điểm thật trên Google Places; ảnh không được lưu.
 - **2026-11-07:** Xong A11: lời giải tối ưu bằng vét cạn và chương trình đánh giá (`npm run bench:planner`). Đánh giá cho thấy Local search và Fairness ban đầu không cải thiện gì so với Greedy, nên thêm đổi điểm (1-swap) và đổi phần tham gia; bản đầy đủ đạt 97–99% tối ưu trong dưới 2 ms ([algorithm.md](algorithm.md)).
 - **2026-11-07:** A12 (chuẩn bị đưa vào sử dụng): xóa tài khoản, quản lý nhóm, quán ăn đúng giờ ăn, thời gian ghé theo loại điểm, giờ mở cửa theo giờ địa phương, chọn số người mỗi phòng, giới hạn route tốn phí Google, `npm audit fix` (0 lỗ hổng), bản nháp chính sách quyền riêng tư.
+- **2026-11-07:** Chuyển sang tài khoản AWS mới. Trên tài khoản cũ đã xóa toàn bộ tài nguyên TripFair (EC2, Elastic IP, RDS và sao lưu, ECR, SSM, IAM role, security group, subnet), không còn phí; chi phí từ đầu tháng của TripFair khoảng 0,8 USD, đã được tín dụng trừ. Cách gỡ ghi ở [deploy.md](deploy.md) mục 13.

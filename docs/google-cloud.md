@@ -48,7 +48,7 @@ gcloud services enable places.googleapis.com routes.googleapis.com vision.google
 1. APIs & Services → Credentials → Create credentials → API key.
 2. Edit key:
    - **API restrictions** → Restrict key → chọn đúng ba API: Places API (New), Routes API, Cloud Vision API. Key lộ ra cũng không dùng được cho API khác.
-   - **Application restrictions** → IP addresses → thêm Elastic IP của EC2 (vd. `47.128.180.54`) và IP công khai của máy phát triển. Key chỉ dùng ở server nên giới hạn theo IP là đúng loại. IP nhà mạng thay đổi thì cập nhật lại.
+   - **Application restrictions** → IP addresses → thêm Elastic IP của máy EC2 và IP công khai của máy phát triển. Key chỉ dùng ở server nên giới hạn theo IP là đúng loại. IP nhà mạng thay đổi thì cập nhật lại.
 3. Đặt quota theo ngày để chặn hóa đơn bất ngờ: APIs & Services → chọn từng API → Quotas & System Limits → sửa "requests per day". Gợi ý cho đồ án: Text Search 500, Place Details 2000, Autocomplete 2000, Compute Routes 500, Vision 200.
 4. Billing → Budgets & alerts: ngân sách tháng (vd. 10 USD) gửi email khi đạt 50%, 90%, 100%.
 
