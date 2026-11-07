@@ -46,7 +46,7 @@ Các bước AN4–AN6 là đề xuất, chỉnh lại khi tới.
 | AN2 Màn hình theo Figma | Navigation 3, mọi màn với dữ liệu mẫu | ✅ | #6 | 2026-11-04 |
 | AN3 Logic form tài khoản | ViewModel + repository mẫu, kiểm tra input, đếm ngược gửi lại mã | 🔄 chờ review | #7 | |
 | AN4 Logic các màn còn lại | ViewModel cho tìm kiếm, nhóm, bình chọn, lộ trình với dữ liệu mẫu | ⏳ | | |
-| AN5 Nối backend | Retrofit thay repository mẫu: tài khoản, tìm kiếm, lịch sử, yêu thích trước; lộ trình, nhóm sau khi backend xong | ⏳ | | |
+| AN5 Nối backend | Retrofit thay repository mẫu: tài khoản, tìm kiếm, lịch sử, yêu thích trước; lộ trình, nhóm sau khi backend xong | 🔄 nhánh `feat/android-backend` (xây trên PR #7): xong lớp mạng | | |
 | AN6 Tính năng thiết bị | Google Maps SDK, vị trí cho SOS, camera thật, lưu lộ trình offline | ⛔ [Camera], [Offline] | | |
 
 ## Backend: giai đoạn A (chạy trên máy)
@@ -104,3 +104,4 @@ Nội dung đầy đủ ở mục "Câu hỏi mở" của [CLAUDE.md](../CLAUDE.
 - **2026-10-21:** Android có đủ màn hình theo Figma (#6) và logic form tài khoản (#7).
 - **2026-11-04:** Backend xong A4–A6, tìm kiếm, giá, lịch sử và yêu thích (#8–#11); CI chạy cho mọi PR backend.
 - **2026-11-05:** Thêm file lộ trình này.
+- **2026-11-08:** Bắt đầu AN5 trên nhánh `feat/android-backend`, xây chồng lên PR #7: lớp mạng Retrofit/OkHttp, đọc lỗi theo `code` của backend, địa chỉ backend cấu hình trong `local.properties`.
