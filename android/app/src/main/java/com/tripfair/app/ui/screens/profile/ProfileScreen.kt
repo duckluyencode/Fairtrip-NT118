@@ -49,8 +49,9 @@ import com.tripfair.app.ui.components.MainTab
 import com.tripfair.app.ui.components.MainTabBar
 import com.tripfair.app.ui.components.TripFairTopBar
 import com.tripfair.app.data.auth.Account
+import com.tripfair.app.data.contacts.EmergencyContact
 import com.tripfair.app.ui.sample.SampleAccount
-import com.tripfair.app.ui.sample.SampleData
+import com.tripfair.app.ui.sample.SampleSos
 import com.tripfair.app.ui.sample.SampleTrip
 import com.tripfair.app.ui.theme.ThemePreviews
 import com.tripfair.app.ui.theme.TripFairTheme
@@ -59,6 +60,7 @@ import com.tripfair.app.ui.theme.extendedColors
 @Composable
 fun ProfileScreen(
     account: Account?,
+    emergencyContacts: List<EmergencyContact>,
     onEditProfile: () -> Unit,
     onTrip: () -> Unit,
     onFavorites: () -> Unit,
@@ -110,7 +112,7 @@ fun ProfileScreen(
                 ListDivider()
                 ListRow(icon = R.drawable.ic_heart, title = stringResource(R.string.profile_favorites), onClick = onFavorites)
             }
-            SosCard(onClick = onEmergencyContacts)
+            SosCard(contacts = emergencyContacts, onClick = onEmergencyContacts)
             ListCard {
                 ListRow(icon = R.drawable.ic_settings, title = stringResource(R.string.profile_settings), onClick = onSettings)
                 ListDivider()
@@ -265,13 +267,20 @@ private fun TripHistoryRow(onClick: () -> Unit) {
 }
 
 @Composable
-private fun SosCard(onClick: () -> Unit) {
+private fun SosCard(contacts: List<EmergencyContact>, onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     val extended = MaterialTheme.extendedColors
+    val count = pluralStringResource(R.plurals.contacts_count, contacts.size, contacts.size)
+    val receivers = contacts.filter { it.receivesSos }.joinToString(", ") { it.name }
+    val summary = when {
+        contacts.isEmpty() -> stringResource(R.string.profile_sos_none)
+        receivers.isEmpty() -> stringResource(R.string.profile_sos_no_receivers, count)
+        else -> stringResource(R.string.profile_sos_summary, count, receivers)
+    }
     ListRow(
         icon = R.drawable.ic_circle_alert,
         title = stringResource(R.string.profile_sos),
-        subtitle = SampleData.SOS_CONTACTS_SUMMARY,
+        subtitle = summary,
         onClick = onClick,
         iconTint = colors.error,
         iconBackground = colors.errorContainer,
@@ -290,6 +299,7 @@ private fun ProfileScreenPreview() {
     TripFairTheme {
         ProfileScreen(
             account = SampleAccount,
+            emergencyContacts = SampleSos.contacts,
             onEditProfile = {},
             onTrip = {},
             onFavorites = {},

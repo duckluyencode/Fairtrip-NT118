@@ -4,6 +4,11 @@ import android.content.Context
 import com.tripfair.app.BuildConfig
 import com.tripfair.app.data.auth.AuthRepository
 import com.tripfair.app.data.auth.RemoteAuthRepository
+import com.tripfair.app.data.contacts.DataStoreContactsCache
+import com.tripfair.app.data.contacts.EmergencyContactsApi
+import com.tripfair.app.data.contacts.EmergencyContactsRepository
+import com.tripfair.app.data.contacts.RemoteEmergencyContactsRepository
+import com.tripfair.app.data.contacts.contactsDataStore
 import com.tripfair.app.data.network.ApiClient
 import com.tripfair.app.data.network.AuthApi
 import com.tripfair.app.data.network.MeApi
@@ -21,6 +26,9 @@ import com.tripfair.app.data.session.sessionDataStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import retrofit2.Retrofit
 
@@ -29,11 +37,13 @@ import retrofit2.Retrofit
  * Swapping a sample repository for a backend one only changes this file.
  */
 class AppContainer(context: Context) {
+    private val appContext = context.applicationContext
+
     /** Work that outlives any screen (restoring the session, signing out). */
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
     val session = SessionManager(
-        DataStoreSessionStore(context.applicationContext.sessionDataStore, KeystoreTokenCipher()),
+        DataStoreSessionStore(appContext.sessionDataStore, KeystoreTokenCipher()),
     )
 
     // Sign-in routes and the token refresh go without the access token and its refresh logic.
@@ -57,6 +67,13 @@ class AppContainer(context: Context) {
         RemotePlacesRepository(retrofit.create(PlacesApi::class.java))
     }
 
+    val emergencyContactsRepository: EmergencyContactsRepository by lazy {
+        RemoteEmergencyContactsRepository(
+            retrofit.create(EmergencyContactsApi::class.java),
+            DataStoreContactsCache(appContext.contactsDataStore, ApiClient.json),
+        )
+    }
+
     val authRepository: AuthRepository by lazy { RemoteAuthRepository(authApi, meApi, session, appScope) }
 
     /**
@@ -67,6 +84,17 @@ class AppContainer(context: Context) {
         appScope.launch {
             session.restore()
             if (session.state.value is SessionState.SignedIn) authRepository.refreshAccount()
+        }
+        // The emergency contacts follow the session: loaded (copy first, then the server)
+        // when someone is signed in, removed from the phone when they sign out.
+        appScope.launch {
+            session.state
+                .filter { it !is SessionState.Restoring }
+                .map { it is SessionState.SignedIn }
+                .distinctUntilChanged()
+                .collect { signedIn ->
+                    if (signedIn) emergencyContactsRepository.sync() else emergencyContactsRepository.clearLocal()
+                }
         }
     }
 }

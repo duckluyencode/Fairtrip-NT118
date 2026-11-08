@@ -62,7 +62,7 @@ import com.tripfair.app.R
 import com.tripfair.app.ui.components.PrimaryButton
 import com.tripfair.app.ui.components.TopBarTextAction
 import com.tripfair.app.ui.components.TripFairTopBar
-import com.tripfair.app.ui.sample.EmergencyContact
+import com.tripfair.app.data.contacts.EmergencyContact
 import com.tripfair.app.ui.sample.SampleSos
 import com.tripfair.app.ui.theme.ThemePreviews
 import com.tripfair.app.ui.theme.TripFairTheme
@@ -99,7 +99,7 @@ fun SosScreen(
     // Opens the phone app with the number filled in; the user still taps call.
     val call: (String) -> Unit = { number ->
         try {
-            context.startActivity(Intent(Intent.ACTION_DIAL, "tel:${number.filter { it.isDigit() }}".toUri()))
+            context.startActivity(Intent(Intent.ACTION_DIAL, "tel:${number.filter { it.isDigit() || it == '+' }}".toUri()))
         } catch (_: ActivityNotFoundException) {
             // No phone app (e.g. a tablet): nothing to open.
         }

@@ -561,6 +561,13 @@
     </plurals>
     <string name="contacts_receivers_none">Chưa chọn ai. Đánh dấu ít nhất một người để gửi được SOS.</string>
     <string name="cd_edit_contact">Sửa %1$s</string>
+    <string name="contacts_error_limit">Mỗi tài khoản lưu tối đa 5 liên hệ khẩn cấp.</string>
+    <string name="contacts_error_not_found">Liên hệ này không còn trong danh sách. Hãy mở lại màn hình.</string>
+    <string name="contacts_error_phone">Số điện thoại chưa đúng. Số Việt Nam gồm 10 chữ số; số nước ngoài bắt đầu bằng + và mã quốc gia.</string>
+    <string name="contacts_error_exists">Số này đã có trong danh sách liên hệ khẩn cấp.</string>
+    <string name="profile_sos_none">Chưa có liên hệ. Thêm người sẽ nhận tin SOS.</string>
+    <string name="profile_sos_no_receivers">%1$s · chưa chọn người nhận tin</string>
+    <string name="profile_sos_summary">%1$s · %2$s nhận tin</string>
     <string name="cd_receives_sos">%1$s nhận tin SOS</string>
     <string name="contact_form_section">Thông tin liên hệ</string>
     <string name="contact_form_name">Họ và tên</string>

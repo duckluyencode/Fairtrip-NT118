@@ -25,7 +25,6 @@ import com.tripfair.app.ui.sample.SampleCamera
 import com.tripfair.app.ui.sample.SampleItinerary
 import com.tripfair.app.ui.sample.SamplePlaces
 import com.tripfair.app.ui.sample.SampleSearch
-import com.tripfair.app.ui.sample.SampleSos
 import com.tripfair.app.ui.screens.auth.ForgotPasswordRoute
 import com.tripfair.app.ui.screens.auth.LoginRoute
 import com.tripfair.app.ui.screens.auth.NewPasswordRoute
@@ -58,8 +57,8 @@ import com.tripfair.app.ui.screens.profile.FavoritesRoute
 import com.tripfair.app.ui.screens.profile.ProfileScreen
 import com.tripfair.app.ui.screens.profile.SettingsScreen
 import com.tripfair.app.ui.screens.profile.SupportScreen
-import com.tripfair.app.ui.screens.sos.ContactFormScreen
-import com.tripfair.app.ui.screens.sos.EmergencyContactsScreen
+import com.tripfair.app.ui.screens.sos.ContactFormRoute
+import com.tripfair.app.ui.screens.sos.EmergencyContactsRoute
 import com.tripfair.app.ui.screens.sos.SosScreen
 import com.tripfair.app.ui.screens.sos.rememberLocationPermission
 import com.tripfair.app.ui.screens.trip.CreateTripScreen
@@ -115,9 +114,9 @@ private fun TripFairNavHost(container: AppContainer, startSignedIn: Boolean) {
         backStack.replaceAll(Login)
     }
 
-    // Data shared by several screens, kept here until there is a backend.
+    // The itinerary is shared by several screens; it stays here until trips come from the backend.
     var itinerary by remember { mutableStateOf(SampleItinerary.days) }
-    var sosContacts by remember { mutableStateOf(SampleSos.contacts) }
+    val sosContacts by container.emergencyContactsRepository.contacts.collectAsState()
 
     // Shows the itinerary, going back to it if it is already open below.
     val showItinerary: () -> Unit = {
@@ -230,6 +229,7 @@ private fun TripFairNavHost(container: AppContainer, startSignedIn: Boolean) {
             entry<Profile> {
                 ProfileScreen(
                     account = account,
+                    emergencyContacts = sosContacts,
                     onEditProfile = { backStack.add(EditProfile) },
                     onTrip = { backStack.add(DayItinerary) },
                     onFavorites = { selectTab(MainTab.Favorites) },
@@ -431,30 +431,18 @@ private fun TripFairNavHost(container: AppContainer, startSignedIn: Boolean) {
                 )
             }
             entry<EmergencyContacts> {
-                EmergencyContactsScreen(
-                    contacts = sosContacts,
-                    onToggle = { id ->
-                        sosContacts = sosContacts.map { if (it.id == id) it.copy(receivesSos = !it.receivesSos) else it }
-                    },
-                    onSelectAll = { sosContacts = sosContacts.map { it.copy(receivesSos = true) } },
+                EmergencyContactsRoute(
                     onBack = { backStack.goBack() },
-                    onSave = { backStack.goBack() },
+                    onSaved = { backStack.goBack() },
                     onAdd = { backStack.add(ContactForm()) },
                     onEdit = { backStack.add(ContactForm(it)) },
                 )
             }
             entry<ContactForm> { route ->
-                ContactFormScreen(
-                    contact = sosContacts.firstOrNull { it.id == route.contactId },
+                ContactFormRoute(
+                    contactId = route.contactId,
                     onBack = { backStack.goBack() },
-                    onSave = { saved ->
-                        sosContacts = if (sosContacts.any { it.id == saved.id }) {
-                            sosContacts.map { if (it.id == saved.id) saved else it }
-                        } else {
-                            sosContacts + saved
-                        }
-                        backStack.goBack()
-                    },
+                    onSaved = { backStack.goBack() },
                 )
             }
         },

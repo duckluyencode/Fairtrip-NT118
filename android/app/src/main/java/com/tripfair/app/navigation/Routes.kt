@@ -145,4 +145,4 @@ data object EmergencyContacts : NavKey
 
 /** Adds a contact, or edits the one with [contactId]. */
 @Serializable
-data class ContactForm(val contactId: String? = null) : NavKey
+data class ContactForm(val contactId: Int? = null) : NavKey

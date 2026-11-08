@@ -14,5 +14,4 @@ object SampleData {
     /** Meets the password rule: at least 8 characters with letters and digits. */
     const val PASSWORD = "tripfair26"
     const val OTP_CODE = "482915"
-    const val SOS_CONTACTS_SUMMARY = "3 liên hệ · Mẹ, Minh Đức nhận tin"
 }

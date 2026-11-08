@@ -19,6 +19,8 @@ import com.tripfair.app.ui.screens.home.HomeViewModel
 import com.tripfair.app.ui.screens.profile.DeleteAccountViewModel
 import com.tripfair.app.ui.screens.profile.FavoritesViewModel
 import com.tripfair.app.ui.screens.profile.EditProfileViewModel
+import com.tripfair.app.ui.screens.sos.ContactFormViewModel
+import com.tripfair.app.ui.screens.sos.EmergencyContactsViewModel
 
 /** Creates every ViewModel with the repositories it needs from the [AppContainer]. */
 object AppViewModelProvider {
@@ -36,6 +38,8 @@ object AppViewModelProvider {
         initializer { PlaceDetailViewModel(container().placesRepository) }
         initializer { SearchHistoryViewModel(container().placesRepository) }
         initializer { FavoritesViewModel(container().placesRepository) }
+        initializer { EmergencyContactsViewModel(container().emergencyContactsRepository) }
+        initializer { ContactFormViewModel(container().emergencyContactsRepository) }
     }
 }
 

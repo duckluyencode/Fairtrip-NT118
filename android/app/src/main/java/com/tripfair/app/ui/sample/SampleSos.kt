@@ -3,22 +3,7 @@ package com.tripfair.app.ui.sample
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import com.tripfair.app.R
-
-/** Someone who can receive the SOS text. */
-data class EmergencyContact(
-    val id: String,
-    val name: String,
-    val relation: String,
-    /** Display format, e.g. "090 512 8846". */
-    val phone: String,
-    val receivesSos: Boolean,
-) {
-    /** Up to two initials, e.g. "MĐ" for "Minh Đức"; one-word names give one letter. */
-    val initials: String
-        get() = name.split(" ").filter { it.isNotBlank() }.let { words ->
-            if (words.size >= 3) words.last().take(1) else words.joinToString("") { it.take(1) }
-        }.uppercase()
-}
+import com.tripfair.app.data.contacts.EmergencyContact
 
 /** Public emergency number on the SOS screen. */
 data class Hotline(val number: String, @param:StringRes val label: Int, @param:DrawableRes val icon: Int)
@@ -32,9 +17,9 @@ object SampleSos {
     val relations = listOf("Gia đình", "Bạn bè", "Đồng nghiệp", "Khác")
 
     val contacts = listOf(
-        EmergencyContact("mom", "Mẹ", "Gia đình", "090 512 8846", receivesSos = true),
-        EmergencyContact("minh-duc", "Minh Đức", "Bạn thân", "091 347 2280", receivesSos = true),
-        EmergencyContact("dung", "Ngô Văn Dũng", "Anh họ", "098 622 1035", receivesSos = false),
+        EmergencyContact(1, "Mẹ", "Gia đình", "+84905128846", receivesSos = true),
+        EmergencyContact(2, "Minh Đức", "Bạn thân", "+84913472280", receivesSos = true),
+        EmergencyContact(3, "Ngô Văn Dũng", "Anh họ", "+84986221035", receivesSos = false),
     )
 
     val hotlines = listOf(
