@@ -101,6 +101,25 @@ class SampleAuthRepository(
         return null
     }
 
+    override suspend fun refreshAccount(): AuthError? = null
+
+    override suspend fun updateName(fullName: String): AuthError? {
+        val current = _currentAccount.value ?: return AuthError.NoPendingCode
+        val stored = accounts.first { it.account == current }
+        stored.account = current.copy(fullName = fullName.trim())
+        _currentAccount.value = stored.account
+        return null
+    }
+
+    override suspend fun deleteAccount(password: String): AuthError? {
+        val current = _currentAccount.value ?: return AuthError.NoPendingCode
+        val stored = accounts.first { it.account == current }
+        if (stored.password != password) return AuthError.WrongCredentials
+        accounts.remove(stored)
+        _currentAccount.value = null
+        return null
+    }
+
     override fun logout() {
         _currentAccount.value = null
     }

@@ -51,6 +51,7 @@ import com.tripfair.app.ui.theme.extendedColors
 
 @Composable
 fun HomeScreen(
+    userName: String,
     onSearch: () -> Unit,
     onSos: () -> Unit,
     onCamera: () -> Unit,
@@ -66,7 +67,7 @@ fun HomeScreen(
 
     Scaffold(
         topBar = {
-            TripFairTopBar(title = stringResource(R.string.home_greeting, SampleData.USER_NAME)) {
+            TripFairTopBar(title = stringResource(R.string.home_greeting, userName)) {
                 AvatarButton(onClick = { onTabSelect(MainTab.Profile) })
             }
         },
@@ -247,6 +248,7 @@ private fun UpcomingTripCard(onClick: () -> Unit) {
 private fun HomeScreenPreview() {
     TripFairTheme {
         HomeScreen(
+            userName = SampleData.USER_NAME,
             onSearch = {},
             onSos = {},
             onCamera = {},

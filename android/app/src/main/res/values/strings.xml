@@ -96,6 +96,12 @@
     <string name="auth_error_code_wrong">Mã xác thực không đúng.</string>
     <string name="auth_error_code_expired">Mã đã hết hạn. Hãy gửi lại mã mới.</string>
     <string name="auth_error_session">Phiên xác thực đã hết. Hãy bắt đầu lại.</string>
+    <string name="auth_error_code_locked">Bạn đã nhập sai mã quá nhiều lần. Hãy gửi lại mã mới.</string>
+    <string name="auth_error_resend_too_soon">Vui lòng đợi một chút rồi gửi lại mã.</string>
+    <string name="auth_error_code_delivery">Chưa gửi được mã xác thực. Hãy thử lại sau ít phút.</string>
+    <string name="auth_error_too_many">Bạn thử quá nhiều lần. Hãy đợi một phút rồi thử lại.</string>
+    <string name="error_network">Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.</string>
+    <string name="error_unexpected">Có lỗi xảy ra. Hãy thử lại.</string>
     <string name="otp_resend">Gửi lại mã</string>
 
     <!-- Home -->
@@ -192,7 +198,17 @@
     <string name="edit_profile_email">Email</string>
     <string name="edit_profile_phone">Số điện thoại</string>
     <string name="edit_profile_verify_title">Đổi email hoặc số điện thoại cần xác thực</string>
-    <string name="edit_profile_verify_text">Khi đổi email hoặc số điện thoại, TripFair gửi mã 6 chữ số đến địa chỉ mới để xác nhận trước khi lưu.</string>
+    <string name="edit_profile_verify_text">Đổi email hoặc số điện thoại cần xác nhận bằng mã 6 chữ số gửi tới địa chỉ mới; tính năng này sẽ có ở bản sau.</string>
+    <string name="edit_profile_none">Chưa có</string>
+    <string name="edit_profile_saved">Đã lưu thay đổi.</string>
+    <string name="delete_account_title">Xóa tài khoản</string>
+    <string name="delete_account_row_detail">Xóa vĩnh viễn tài khoản và dữ liệu</string>
+    <string name="delete_account_intro">Tài khoản của bạn sẽ bị xóa vĩnh viễn và không khôi phục được.</string>
+    <string name="delete_account_point_data">Hồ sơ, lịch sử tìm kiếm, địa điểm yêu thích và liên hệ khẩn cấp bị xóa.</string>
+    <string name="delete_account_point_trips">Chuyến đi chỉ có bạn bị xóa.</string>
+    <string name="delete_account_point_groups">Nhóm còn người khác vẫn tiếp tục; nếu bạn là chủ nhóm, người vào nhóm sớm nhất sẽ thành chủ nhóm.</string>
+    <string name="delete_account_password_label">Nhập mật khẩu để xác nhận</string>
+    <string name="delete_account_confirm">Xóa tài khoản vĩnh viễn</string>
     <string name="edit_profile_save">Lưu thay đổi</string>
 
     <!-- Favorites -->

@@ -1,10 +1,17 @@
 package com.tripfair.app.navigation
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
@@ -12,6 +19,7 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.tripfair.app.data.AppContainer
+import com.tripfair.app.data.session.SessionState
 import com.tripfair.app.ui.components.MainTab
 import com.tripfair.app.ui.sample.SampleCamera
 import com.tripfair.app.ui.sample.SampleItinerary
@@ -41,7 +49,8 @@ import com.tripfair.app.ui.screens.home.HomeScreen
 import com.tripfair.app.ui.screens.legal.LegalDocumentScreen
 import com.tripfair.app.ui.screens.legal.PrivacyPolicy
 import com.tripfair.app.ui.screens.legal.TermsOfUse
-import com.tripfair.app.ui.screens.profile.EditProfileScreen
+import com.tripfair.app.ui.screens.profile.DeleteAccountRoute
+import com.tripfair.app.ui.screens.profile.EditProfileRoute
 import com.tripfair.app.ui.screens.profile.FavoritesScreen
 import com.tripfair.app.ui.screens.profile.ProfileScreen
 import com.tripfair.app.ui.screens.profile.SettingsScreen
@@ -60,13 +69,42 @@ import com.tripfair.app.ui.screens.vote.AddToVoteScreen
 import com.tripfair.app.ui.screens.vote.BallotScreen
 import com.tripfair.app.ui.screens.vote.VoteListScreen
 
+/** Screens reachable without an account; the others need a signed-in session. */
+private fun NavKey.isPublic(): Boolean =
+    this == Login || this == Register || this == ForgotPassword || this is OtpVerification ||
+        this == NewPassword || this == Support || this == PrivacyPolicyPage || this == TermsPage
+
+/**
+ * Waits for the saved session (a few milliseconds at app start) so the first screen is the
+ * right one: Home when signed in, Login otherwise.
+ */
+@Composable
+fun TripFairNavDisplay(container: AppContainer) {
+    val session by container.session.state.collectAsState()
+    if (session is SessionState.Restoring) {
+        Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background))
+    } else {
+        TripFairNavHost(container, startSignedIn = session is SessionState.SignedIn)
+    }
+}
+
 /**
  * Connects every button to its target screen, following the flow notes in Figma.
  * The back stack is a plain list: navigating adds a route, going back removes the last one.
  */
 @Composable
-fun TripFairNavDisplay(container: AppContainer) {
-    val backStack = rememberNavBackStack(Login)
+private fun TripFairNavHost(container: AppContainer, startSignedIn: Boolean) {
+    val backStack = rememberNavBackStack(if (startSignedIn) Home else Login)
+    val session by container.session.state.collectAsState()
+    val account by container.authRepository.currentAccount.collectAsState()
+
+    // The session can end anywhere (sign out, account deleted, refresh token refused):
+    // then only the login screens stay reachable.
+    LaunchedEffect(session) {
+        if (session is SessionState.SignedOut && backStack.any { !it.isPublic() }) {
+            backStack.replaceAll(Login)
+        }
+    }
 
     // Signing out ends the session, then starts a new history at the login screen.
     val logout: () -> Unit = {
@@ -153,6 +191,7 @@ fun TripFairNavDisplay(container: AppContainer) {
             // Main tabs
             entry<Home> {
                 HomeScreen(
+                    userName = account?.fullName.orEmpty(),
                     onSearch = { backStack.add(Search) },
                     onSos = { backStack.add(Sos) },
                     onCamera = { backStack.add(CameraScan) },
@@ -185,6 +224,7 @@ fun TripFairNavDisplay(container: AppContainer) {
             }
             entry<Profile> {
                 ProfileScreen(
+                    account = account,
                     onEditProfile = { backStack.add(EditProfile) },
                     onTrip = { backStack.add(DayItinerary) },
                     onFavorites = { selectTab(MainTab.Favorites) },
@@ -237,15 +277,20 @@ fun TripFairNavDisplay(container: AppContainer) {
 
             // 08 Profile & favorites
             entry<EditProfile> {
-                EditProfileScreen(onBack = { backStack.goBack() }, onSave = { backStack.goBack() })
+                EditProfileRoute(onBack = { backStack.goBack() }, onSaved = { backStack.goBack() })
+            }
+            entry<DeleteAccount> {
+                DeleteAccountRoute(onBack = { backStack.goBack() }, onDeleted = { backStack.replaceAll(Login) })
             }
             entry<Settings> {
                 SettingsScreen(
+                    account = account,
                     onBack = { backStack.goBack() },
                     onEditProfile = { backStack.add(EditProfile) },
                     onPrivacy = { backStack.add(PrivacyPolicyPage) },
                     onSupport = { backStack.add(Support) },
                     onTerms = { backStack.add(TermsPage) },
+                    onDeleteAccount = { backStack.add(DeleteAccount) },
                     onLogout = logout,
                 )
             }

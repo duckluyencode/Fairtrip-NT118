@@ -48,6 +48,8 @@ import com.tripfair.app.ui.components.ListRow
 import com.tripfair.app.ui.components.MainTab
 import com.tripfair.app.ui.components.MainTabBar
 import com.tripfair.app.ui.components.TripFairTopBar
+import com.tripfair.app.data.auth.Account
+import com.tripfair.app.ui.sample.SampleAccount
 import com.tripfair.app.ui.sample.SampleData
 import com.tripfair.app.ui.sample.SampleTrip
 import com.tripfair.app.ui.theme.ThemePreviews
@@ -56,6 +58,7 @@ import com.tripfair.app.ui.theme.extendedColors
 
 @Composable
 fun ProfileScreen(
+    account: Account?,
     onEditProfile: () -> Unit,
     onTrip: () -> Unit,
     onFavorites: () -> Unit,
@@ -84,12 +87,12 @@ fun ProfileScreen(
                 .padding(start = 18.dp, end = 18.dp, top = 8.dp, bottom = 14.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            ProfileCard(onEdit = onEditProfile)
+            ProfileCard(account = account, onEdit = onEditProfile)
             ListCard {
                 ListRow(
                     icon = R.drawable.ic_contact_round,
                     title = stringResource(R.string.profile_account),
-                    subtitle = stringResource(R.string.profile_account_detail, SampleData.USER_PHONE),
+                    subtitle = stringResource(R.string.profile_account_detail, account?.phone ?: account?.email.orEmpty()),
                     onClick = onEditProfile,
                     minHeight = 56.dp,
                 )
@@ -170,7 +173,7 @@ internal fun LogoutDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
 }
 
 @Composable
-private fun ProfileCard(onEdit: () -> Unit) {
+private fun ProfileCard(account: Account?, onEdit: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     Row(
         modifier = Modifier
@@ -196,8 +199,8 @@ private fun ProfileCard(onEdit: () -> Unit) {
             )
         }
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-            Text(text = SampleData.USER_NAME, style = MaterialTheme.typography.headlineSmall.copy(fontSize = 20.sp, letterSpacing = 0.sp))
-            Text(text = SampleData.USER_EMAIL, style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
+            Text(text = account?.fullName.orEmpty(), style = MaterialTheme.typography.headlineSmall.copy(fontSize = 20.sp, letterSpacing = 0.sp))
+            Text(text = account?.contact.orEmpty(), style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
             Text(
                 text = stringResource(R.string.profile_edit_link),
                 style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
@@ -286,6 +289,7 @@ private fun SosCard(onClick: () -> Unit) {
 private fun ProfileScreenPreview() {
     TripFairTheme {
         ProfileScreen(
+            account = SampleAccount,
             onEditProfile = {},
             onTrip = {},
             onFavorites = {},

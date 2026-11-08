@@ -1,5 +1,6 @@
 package com.tripfair.app.ui.screens.profile
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -23,10 +24,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,9 +32,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tripfair.app.R
+import com.tripfair.app.ui.AppViewModelProvider
 import com.tripfair.app.ui.components.LabeledTextField
 import com.tripfair.app.ui.components.PrimaryButton
 import com.tripfair.app.ui.components.TripFairTopBar
@@ -45,17 +44,42 @@ import com.tripfair.app.ui.theme.ThemePreviews
 import com.tripfair.app.ui.theme.TripFairTheme
 
 @Composable
-fun EditProfileScreen(onBack: () -> Unit, onSave: () -> Unit) {
+fun EditProfileRoute(
+    onBack: () -> Unit,
+    onSaved: () -> Unit,
+    viewModel: EditProfileViewModel = viewModel(factory = AppViewModelProvider.Factory),
+) {
+    val state = viewModel.state
+    LaunchedEffect(state.saved) {
+        if (state.saved) onSaved()
+    }
+    EditProfileScreen(
+        state = state,
+        onNameChange = viewModel::onNameChange,
+        onSave = viewModel::save,
+        onBack = onBack,
+    )
+}
+
+@Composable
+fun EditProfileScreen(
+    state: EditProfileUiState,
+    onNameChange: (String) -> Unit,
+    onSave: () -> Unit,
+    onBack: () -> Unit,
+) {
     val colors = MaterialTheme.colorScheme
-    var name by rememberSaveable { mutableStateOf(SampleData.USER_NAME) }
-    var email by rememberSaveable { mutableStateOf(SampleData.USER_EMAIL) }
-    var phone by rememberSaveable { mutableStateOf(SampleData.USER_PHONE) }
 
     Scaffold(
         topBar = { TripFairTopBar(title = stringResource(R.string.edit_profile_title), onBack = onBack) },
         bottomBar = {
             Box(modifier = Modifier.navigationBarsPadding().padding(horizontal = 20.dp, vertical = 12.dp)) {
-                PrimaryButton(text = stringResource(R.string.edit_profile_save), onClick = onSave, height = 52.dp)
+                PrimaryButton(
+                    text = stringResource(R.string.edit_profile_save),
+                    onClick = onSave,
+                    height = 52.dp,
+                    enabled = !state.loading,
+                )
             }
         },
     ) { innerPadding ->
@@ -121,24 +145,21 @@ fun EditProfileScreen(onBack: () -> Unit, onSave: () -> Unit) {
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                 )
                 LabeledTextField(
-                    value = name,
-                    onValueChange = { name = it },
+                    value = state.name,
+                    onValueChange = onNameChange,
                     label = stringResource(R.string.register_full_name_label),
                     leadingIcon = R.drawable.ic_user_round,
+                    errorText = state.nameError?.let { stringResource(it) },
                 )
-                LabeledTextField(
-                    value = email,
-                    onValueChange = { email = it },
+                ReadOnlyField(
                     label = stringResource(R.string.edit_profile_email),
-                    leadingIcon = R.drawable.ic_mail,
-                    keyboardType = KeyboardType.Email,
+                    value = state.email,
+                    icon = R.drawable.ic_mail,
                 )
-                LabeledTextField(
-                    value = phone,
-                    onValueChange = { phone = it },
+                ReadOnlyField(
                     label = stringResource(R.string.edit_profile_phone),
-                    leadingIcon = R.drawable.ic_phone,
-                    keyboardType = KeyboardType.Phone,
+                    value = state.phone,
+                    icon = R.drawable.ic_phone,
                 )
             }
             Row(
@@ -170,10 +191,44 @@ fun EditProfileScreen(onBack: () -> Unit, onSave: () -> Unit) {
     }
 }
 
+/** A value that cannot be edited here, laid out like a text field. */
+@Composable
+private fun ReadOnlyField(label: String, value: String?, @DrawableRes icon: Int) {
+    val colors = MaterialTheme.colorScheme
+    Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
+        Text(text = label, style = MaterialTheme.typography.labelMedium)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(colors.surfaceContainerLow, MaterialTheme.shapes.small)
+                .padding(horizontal = 14.dp, vertical = 15.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                painter = painterResource(icon),
+                contentDescription = null,
+                tint = colors.onSurfaceVariant,
+                modifier = Modifier.size(18.dp),
+            )
+            Text(
+                text = value ?: stringResource(R.string.edit_profile_none),
+                style = MaterialTheme.typography.bodyLarge,
+                color = colors.onSurfaceVariant,
+            )
+        }
+    }
+}
+
 @ThemePreviews
 @Composable
 private fun EditProfileScreenPreview() {
     TripFairTheme {
-        EditProfileScreen(onBack = {}, onSave = {})
+        EditProfileScreen(
+            state = EditProfileUiState(name = SampleData.USER_NAME, email = SampleData.USER_EMAIL, phone = null),
+            onNameChange = {},
+            onSave = {},
+            onBack = {},
+        )
     }
 }

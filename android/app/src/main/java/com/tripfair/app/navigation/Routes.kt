@@ -66,6 +66,9 @@ data object EditProfile : NavKey
 data object Settings : NavKey
 
 @Serializable
+data object DeleteAccount : NavKey
+
+@Serializable
 data object Support : NavKey
 
 @Serializable

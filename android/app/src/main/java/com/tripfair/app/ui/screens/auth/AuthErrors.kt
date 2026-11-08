@@ -36,4 +36,10 @@ internal fun AuthError.message(): Int = when (this) {
     AuthError.WrongCode -> R.string.auth_error_code_wrong
     AuthError.CodeExpired -> R.string.auth_error_code_expired
     AuthError.NoPendingCode -> R.string.auth_error_session
+    AuthError.CodeLocked -> R.string.auth_error_code_locked
+    AuthError.ResendTooSoon -> R.string.auth_error_resend_too_soon
+    AuthError.CodeDeliveryFailed -> R.string.auth_error_code_delivery
+    AuthError.TooManyRequests -> R.string.auth_error_too_many
+    AuthError.Network -> R.string.error_network
+    AuthError.Unexpected -> R.string.error_unexpected
 }
