@@ -42,8 +42,9 @@ import com.tripfair.app.ui.components.PlaceCard
 import com.tripfair.app.ui.components.SectionHeader
 import com.tripfair.app.ui.components.TripFairTopBar
 import com.tripfair.app.ui.sample.SampleData
-import com.tripfair.app.ui.sample.SamplePlace
-import com.tripfair.app.ui.sample.SamplePlaces
+import com.tripfair.app.data.places.PlaceSummaryDto
+import com.tripfair.app.ui.screens.explore.categoryLabel
+import com.tripfair.app.ui.screens.explore.ratingText
 import com.tripfair.app.ui.sample.SampleTrip
 import com.tripfair.app.ui.theme.ThemePreviews
 import com.tripfair.app.ui.theme.TripFairTheme
@@ -52,12 +53,13 @@ import com.tripfair.app.ui.theme.extendedColors
 @Composable
 fun HomeScreen(
     userName: String,
+    suggestions: List<PlaceSummaryDto>,
     onSearch: () -> Unit,
     onSos: () -> Unit,
     onCamera: () -> Unit,
     onTrip: () -> Unit,
     onSeeAllSuggestions: () -> Unit,
-    onPlace: (SamplePlace) -> Unit,
+    onPlace: (placeId: Int) -> Unit,
     onHistory: () -> Unit,
     onTabSelect: (MainTab) -> Unit,
 ) {
@@ -107,21 +109,25 @@ fun HomeScreen(
                 )
             }
             UpcomingTripCard(onClick = onTrip)
-            SectionHeader(
-                title = stringResource(R.string.home_group_suggestions),
-                titleStyle = sectionStyle,
-                actionLabel = stringResource(R.string.home_see_all),
-                onAction = onSeeAllSuggestions,
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                SamplePlaces.groupSuggestions.forEach { place ->
-                    PlaceCard(
-                        name = place.name,
-                        detail = stringResource(R.string.place_card_detail, place.rating, place.categoryLabel),
-                        image = place.cardImage,
-                        onClick = { onPlace(place) },
-                        modifier = Modifier.weight(1f),
-                    )
+            // Shown only when the backend has places to suggest (around the user, or the catalog).
+            if (suggestions.isNotEmpty()) {
+                SectionHeader(
+                    title = stringResource(R.string.home_group_suggestions),
+                    titleStyle = sectionStyle,
+                    actionLabel = stringResource(R.string.home_see_all),
+                    onAction = onSeeAllSuggestions,
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    suggestions.take(2).forEach { place ->
+                        val category = stringResource(categoryLabel(place.category))
+                        PlaceCard(
+                            name = place.name,
+                            detail = place.rating?.let { stringResource(R.string.place_card_detail, ratingText(it), category) } ?: category,
+                            category = place.category,
+                            onClick = { onPlace(place.id) },
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
                 }
             }
             SectionHeader(
@@ -249,6 +255,7 @@ private fun HomeScreenPreview() {
     TripFairTheme {
         HomeScreen(
             userName = SampleData.USER_NAME,
+            suggestions = emptyList(),
             onSearch = {},
             onSos = {},
             onCamera = {},

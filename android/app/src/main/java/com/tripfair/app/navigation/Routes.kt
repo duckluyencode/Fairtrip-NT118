@@ -52,7 +52,7 @@ data class SearchResults(val query: String) : NavKey
 data object SearchHistory : NavKey
 
 @Serializable
-data class PlaceDetail(val placeId: String) : NavKey
+data class PlaceDetail(val placeId: String, val sessionToken: String? = null) : NavKey
 
 @Serializable
 data class PlaceReviews(val placeId: String) : NavKey

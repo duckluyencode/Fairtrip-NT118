@@ -20,10 +20,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,25 +30,55 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tripfair.app.R
+import com.tripfair.app.data.places.HistoryEntryDto
+import com.tripfair.app.ui.AppViewModelProvider
+import com.tripfair.app.ui.components.EmptyState
+import com.tripfair.app.ui.components.ErrorState
+import com.tripfair.app.ui.components.LoadingState
 import com.tripfair.app.ui.components.TripFairTopBar
-import com.tripfair.app.ui.sample.SampleSearch
-import com.tripfair.app.ui.sample.SearchHistoryItem
 import com.tripfair.app.ui.theme.ThemePreviews
 import com.tripfair.app.ui.theme.TripFairTheme
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+
+private val DayFormat = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+private val TimeFormat = DateTimeFormatter.ofPattern("HH:mm")
+
+@Composable
+fun SearchHistoryRoute(
+    onBack: () -> Unit,
+    onSearch: (query: String) -> Unit,
+    viewModel: SearchHistoryViewModel = viewModel(factory = AppViewModelProvider.Factory),
+) {
+    SearchHistoryScreen(
+        state = viewModel.state,
+        onBack = onBack,
+        onSearch = onSearch,
+        onRemove = viewModel::delete,
+        onClear = viewModel::clear,
+        onRetry = viewModel::load,
+    )
+}
 
 @Composable
 fun SearchHistoryScreen(
+    state: SearchHistoryUiState,
     onBack: () -> Unit,
     onSearch: (query: String) -> Unit,
+    onRemove: (Int) -> Unit,
+    onClear: () -> Unit,
+    onRetry: () -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
-    // Removing items only changes this screen (Figma: "xóa lịch sử: thay đổi tại chỗ").
-    var removedIds by rememberSaveable { mutableStateOf(setOf<Int>()) }
-    val groups = SampleSearch.history
-        .map { group -> group.copy(items = group.items.filter { it.id !in removedIds }) }
-        .filter { it.items.isNotEmpty() }
-    val count = groups.sumOf { it.items.size }
+    val zone = ZoneId.systemDefault()
+    val today = LocalDate.now(zone)
+    // Newest first, as the backend sends them; one group per local day.
+    val groups = state.entries.groupBy { Instant.parse(it.searchedAt).atZone(zone).toLocalDate() }
+    val count = state.entries.size
 
     Scaffold(
         topBar = { TripFairTopBar(title = stringResource(R.string.history_title), onBack = onBack) },
@@ -65,61 +91,70 @@ fun SearchHistoryScreen(
                 .padding(start = 18.dp, end = 18.dp, top = 8.dp, bottom = 18.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = pluralStringResource(R.plurals.history_count, count, count),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = colors.onSurfaceVariant,
-                    modifier = Modifier.weight(1f),
-                )
-                if (count > 0) {
-                    Text(
-                        text = stringResource(R.string.history_clear),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = colors.tertiary,
-                        modifier = Modifier.clickable(role = Role.Button) {
-                            removedIds = SampleSearch.history.flatMap { g -> g.items.map { it.id } }.toSet()
-                        },
-                    )
-                }
-            }
-            groups.forEach { group ->
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(
-                        text = group.title,
-                        style = MaterialTheme.typography.titleSmall.copy(fontSize = 16.sp, lineHeight = 22.sp),
-                    )
-                    Column(
-                        modifier = Modifier
-                            .clip(MaterialTheme.shapes.small)
-                            .background(colors.surfaceContainerLow),
-                    ) {
-                        group.items.forEach { item ->
-                            HistoryRow(
-                                item = item,
-                                onClick = { onSearch(item.query) },
-                                onRemove = { removedIds = removedIds + item.id },
+            when {
+                state.loading -> LoadingState()
+                state.error != null -> ErrorState(message = stringResource(state.error), onRetry = onRetry)
+                count == 0 -> EmptyState(text = stringResource(R.string.history_empty))
+                else -> {
+                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = pluralStringResource(R.plurals.history_count, count, count),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = colors.onSurfaceVariant,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Text(
+                            text = stringResource(R.string.history_clear),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = colors.tertiary,
+                            modifier = Modifier.clickable(role = Role.Button, onClick = onClear),
+                        )
+                    }
+                    groups.forEach { (day, entries) ->
+                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Text(
+                                text = when (day) {
+                                    today -> stringResource(R.string.history_today)
+                                    today.minusDays(1) -> stringResource(R.string.history_yesterday)
+                                    else -> day.format(DayFormat)
+                                },
+                                style = MaterialTheme.typography.titleSmall.copy(fontSize = 16.sp, lineHeight = 22.sp),
                             )
+                            Column(
+                                modifier = Modifier
+                                    .clip(MaterialTheme.shapes.small)
+                                    .background(colors.surfaceContainerLow),
+                            ) {
+                                entries.forEach { entry ->
+                                    HistoryRow(
+                                        entry = entry,
+                                        time = Instant.parse(entry.searchedAt).atZone(zone).format(TimeFormat),
+                                        onClick = { onSearch(entry.query) },
+                                        onRemove = { onRemove(entry.id) },
+                                    )
+                                }
+                            }
                         }
                     }
+                    Text(
+                        text = stringResource(R.string.history_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = colors.primary,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(colors.primaryContainer, MaterialTheme.shapes.extraSmall)
+                            .padding(12.dp),
+                    )
                 }
             }
-            Text(
-                text = stringResource(R.string.history_hint),
-                style = MaterialTheme.typography.bodySmall,
-                color = colors.primary,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(colors.primaryContainer, MaterialTheme.shapes.extraSmall)
-                    .padding(12.dp),
-            )
         }
     }
 }
 
 @Composable
-private fun HistoryRow(item: SearchHistoryItem, onClick: () -> Unit, onRemove: () -> Unit) {
+private fun HistoryRow(entry: HistoryEntryDto, time: String, onClick: () -> Unit, onRemove: () -> Unit) {
     val colors = MaterialTheme.colorScheme
+    val filter = entry.category?.let { stringResource(categoryLabel(it)) } ?: stringResource(R.string.filter_all)
     Column {
         Row(
             modifier = Modifier
@@ -144,10 +179,10 @@ private fun HistoryRow(item: SearchHistoryItem, onClick: () -> Unit, onRemove: (
             }
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 Text(
-                    text = item.query,
+                    text = entry.query,
                     style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold, lineHeight = 20.sp),
                 )
-                Text(text = item.detail, style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
+                Text(text = "$filter · $time", style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
             }
             IconButton(onClick = onRemove) {
                 Icon(
@@ -166,6 +201,19 @@ private fun HistoryRow(item: SearchHistoryItem, onClick: () -> Unit, onRemove: (
 @Composable
 private fun SearchHistoryScreenPreview() {
     TripFairTheme {
-        SearchHistoryScreen(onBack = {}, onSearch = {})
+        SearchHistoryScreen(
+            state = SearchHistoryUiState(
+                loading = false,
+                entries = listOf(
+                    HistoryEntryDto(1, "Cầu Vàng", null, Instant.now().toString()),
+                    HistoryEntryDto(2, "Mì Quảng", "FOOD", Instant.now().minusSeconds(86_400).toString()),
+                ),
+            ),
+            onBack = {},
+            onSearch = {},
+            onRemove = {},
+            onClear = {},
+            onRetry = {},
+        )
     }
 }

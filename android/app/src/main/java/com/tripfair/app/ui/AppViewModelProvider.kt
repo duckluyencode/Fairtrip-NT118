@@ -11,7 +11,13 @@ import com.tripfair.app.ui.screens.auth.LoginViewModel
 import com.tripfair.app.ui.screens.auth.NewPasswordViewModel
 import com.tripfair.app.ui.screens.auth.OtpViewModel
 import com.tripfair.app.ui.screens.auth.RegisterViewModel
+import com.tripfair.app.ui.screens.explore.PlaceDetailViewModel
+import com.tripfair.app.ui.screens.explore.SearchHistoryViewModel
+import com.tripfair.app.ui.screens.explore.SearchResultsViewModel
+import com.tripfair.app.ui.screens.explore.SearchViewModel
+import com.tripfair.app.ui.screens.home.HomeViewModel
 import com.tripfair.app.ui.screens.profile.DeleteAccountViewModel
+import com.tripfair.app.ui.screens.profile.FavoritesViewModel
 import com.tripfair.app.ui.screens.profile.EditProfileViewModel
 
 /** Creates every ViewModel with the repositories it needs from the [AppContainer]. */
@@ -24,6 +30,12 @@ object AppViewModelProvider {
         initializer { NewPasswordViewModel(container().authRepository) }
         initializer { EditProfileViewModel(container().authRepository) }
         initializer { DeleteAccountViewModel(container().authRepository) }
+        initializer { HomeViewModel(container().placesRepository) }
+        initializer { SearchViewModel(container().placesRepository) }
+        initializer { SearchResultsViewModel(container().placesRepository) }
+        initializer { PlaceDetailViewModel(container().placesRepository) }
+        initializer { SearchHistoryViewModel(container().placesRepository) }
+        initializer { FavoritesViewModel(container().placesRepository) }
     }
 }
 

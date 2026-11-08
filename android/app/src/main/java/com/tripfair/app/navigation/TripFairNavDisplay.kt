@@ -33,11 +33,11 @@ import com.tripfair.app.ui.screens.auth.OtpRoute
 import com.tripfair.app.ui.screens.auth.RegisterRoute
 import com.tripfair.app.ui.screens.camera.CameraScreen
 import com.tripfair.app.ui.screens.camera.RecognitionResultScreen
-import com.tripfair.app.ui.screens.explore.PlaceDetailScreen
+import com.tripfair.app.ui.screens.explore.PlaceDetailRoute
 import com.tripfair.app.ui.screens.explore.PlaceReviewsScreen
-import com.tripfair.app.ui.screens.explore.SearchHistoryScreen
-import com.tripfair.app.ui.screens.explore.SearchResultsScreen
-import com.tripfair.app.ui.screens.explore.SearchScreen
+import com.tripfair.app.ui.screens.explore.SearchHistoryRoute
+import com.tripfair.app.ui.screens.explore.SearchResultsRoute
+import com.tripfair.app.ui.screens.explore.SearchRoute
 import com.tripfair.app.ui.screens.group.CreateGroupScreen
 import com.tripfair.app.ui.screens.group.CreateOrJoinGroupScreen
 import com.tripfair.app.ui.screens.group.EditBudgetScreen
@@ -46,12 +46,15 @@ import com.tripfair.app.ui.screens.group.GroupsScreen
 import com.tripfair.app.ui.screens.group.InviteFriendsScreen
 import com.tripfair.app.ui.screens.group.JoinGroupScreen
 import com.tripfair.app.ui.screens.home.HomeScreen
+import com.tripfair.app.ui.screens.home.HomeViewModel
+import com.tripfair.app.ui.AppViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tripfair.app.ui.screens.legal.LegalDocumentScreen
 import com.tripfair.app.ui.screens.legal.PrivacyPolicy
 import com.tripfair.app.ui.screens.legal.TermsOfUse
 import com.tripfair.app.ui.screens.profile.DeleteAccountRoute
 import com.tripfair.app.ui.screens.profile.EditProfileRoute
-import com.tripfair.app.ui.screens.profile.FavoritesScreen
+import com.tripfair.app.ui.screens.profile.FavoritesRoute
 import com.tripfair.app.ui.screens.profile.ProfileScreen
 import com.tripfair.app.ui.screens.profile.SettingsScreen
 import com.tripfair.app.ui.screens.profile.SupportScreen
@@ -190,14 +193,16 @@ private fun TripFairNavHost(container: AppContainer, startSignedIn: Boolean) {
 
             // Main tabs
             entry<Home> {
+                val home: HomeViewModel = viewModel(factory = AppViewModelProvider.Factory)
                 HomeScreen(
                     userName = account?.fullName.orEmpty(),
+                    suggestions = home.suggestions,
                     onSearch = { backStack.add(Search) },
                     onSos = { backStack.add(Sos) },
                     onCamera = { backStack.add(CameraScan) },
                     onTrip = { backStack.add(DayItinerary) },
                     onSeeAllSuggestions = { backStack.add(SearchResults(SampleSearch.QUERY)) },
-                    onPlace = { backStack.add(PlaceDetail(it.id)) },
+                    onPlace = { backStack.add(PlaceDetail(it.toString())) },
                     onHistory = { backStack.add(SearchHistory) },
                     onTabSelect = selectTab,
                 )
@@ -216,8 +221,8 @@ private fun TripFairNavHost(container: AppContainer, startSignedIn: Boolean) {
                 )
             }
             entry<Favorites> {
-                FavoritesScreen(
-                    onPlace = { backStack.add(PlaceDetail(it.id)) },
+                FavoritesRoute(
+                    onPlace = { backStack.add(PlaceDetail(it.toString())) },
                     onExplore = { selectTab(MainTab.Explore) },
                     onTabSelect = selectTab,
                 )
@@ -238,31 +243,32 @@ private fun TripFairNavHost(container: AppContainer, startSignedIn: Boolean) {
 
             // 02 Explore & search
             entry<Search> {
-                SearchScreen(
+                SearchRoute(
                     onBack = { backStack.goBack() },
-                    onSearch = { query -> backStack.add(SearchResults(query.ifBlank { SampleSearch.QUERY })) },
+                    onSearch = { query -> backStack.add(SearchResults(query)) },
+                    onPlace = { id, sessionToken -> backStack.add(PlaceDetail(id.toString(), sessionToken)) },
                     onHistory = { backStack.add(SearchHistory) },
                 )
             }
             entry<SearchResults> { route ->
-                SearchResultsScreen(
+                SearchResultsRoute(
                     query = route.query,
                     onEditQuery = { backStack.add(Search) },
-                    onPlace = { backStack.add(PlaceDetail(it.id)) },
+                    onPlace = { backStack.add(PlaceDetail(it.toString())) },
                 )
             }
             entry<SearchHistory> {
-                SearchHistoryScreen(
+                SearchHistoryRoute(
                     onBack = { backStack.goBack() },
                     onSearch = { query -> backStack.add(SearchResults(query)) },
                 )
             }
             entry<PlaceDetail> { route ->
-                PlaceDetailScreen(
-                    place = SamplePlaces.byId(route.placeId),
+                PlaceDetailRoute(
+                    placeId = route.placeId,
+                    sessionToken = route.sessionToken,
                     onBack = { backStack.goBack() },
                     onProfile = { selectTab(MainTab.Profile) },
-                    onReviews = { backStack.add(PlaceReviews(route.placeId)) },
                     onAddToVote = { backStack.add(AddToGroupVote(route.placeId)) },
                 )
             }

@@ -102,6 +102,30 @@
     <string name="auth_error_too_many">Bạn thử quá nhiều lần. Hãy đợi một phút rồi thử lại.</string>
     <string name="error_network">Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.</string>
     <string name="error_unexpected">Có lỗi xảy ra. Hãy thử lại.</string>
+    <string name="error_place_not_found">Không tìm thấy địa điểm này.</string>
+    <string name="error_google_unavailable">Google Maps đang không phản hồi. Hãy thử lại sau ít phút.</string>
+    <string name="action_retry">Thử lại</string>
+    <string name="price_free">Miễn phí</string>
+    <string name="price_label_partner">Vé · %1$s</string>
+    <string name="price_label_google">Giá · Google</string>
+    <string name="price_label_estimated">Ước tính · %1$s</string>
+    <string name="price_label_included">Đã gồm trong vé %1$s</string>
+    <string name="hours_unknown">Chưa có giờ mở cửa</string>
+    <string name="hours_closed_today">Hôm nay đóng cửa</string>
+    <string name="hours_all_day">Mở cả ngày</string>
+    <string name="hours_range">Mở %1$s–%2$s</string>
+    <string name="duration_minutes">%1$d phút</string>
+    <string name="duration_hours">%1$d giờ</string>
+    <string name="duration_hours_minutes">%1$d giờ %2$d phút</string>
+    <string name="detail_hours">Giờ mở cửa</string>
+    <string name="detail_open_maps">Mở trên Google Maps</string>
+    <string name="detail_source">Dữ liệu: %1$s</string>
+    <string name="results_empty">Không tìm thấy địa điểm phù hợp.</string>
+    <string name="results_load_more">Xem thêm</string>
+    <string name="search_type_hint">Gõ tên địa điểm, món ăn hoặc thành phố.</string>
+    <string name="history_empty">Chưa có tìm kiếm nào.</string>
+    <string name="history_today">Hôm nay</string>
+    <string name="history_yesterday">Hôm qua</string>
     <string name="otp_resend">Gửi lại mã</string>
 
     <!-- Home -->
