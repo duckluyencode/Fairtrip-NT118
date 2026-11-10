@@ -6,7 +6,7 @@ Mô tả chi tiết: [docs/project-overview.md](docs/project-overview.md). Đây
 Thiết kế UI: [Figma](https://www.figma.com/design/o0VGZR03n46tcJonTQ8nQ9/NT118.R13_Group12A).
 
 ## Tech stack
-- Android: Kotlin, Jetpack Compose, Google Maps SDK, Retrofit/OkHttp, Room, CameraX, FusedLocationProviderClient, SmsManager
+- Android: Kotlin, Jetpack Compose, Google Maps SDK, Retrofit/OkHttp, DataStore, FusedLocationProviderClient; Room và CameraX chưa dùng (xem Câu hỏi mở)
 - Backend: NestJS (Node.js), JWT, Docker
 - Database: MySQL trên Amazon RDS
 - Dịch vụ ngoài: Google Places API (New), Google Cloud Vision API, Klook/GetYourGuide/Tiqets API (vé), Agoda API (lưu trú)
@@ -87,6 +87,8 @@ README.md
 - 2026-11-04: Giá điểm không có vé đối tác: `priceRange` của Google → loại điểm thường miễn phí (bãi biển, công viên, chùa, cầu…) = 0đ ước tính → bảng quy đổi theo price_level → mức mặc định theo nhóm. Điểm nằm trong khu có bán vé (vd. Le Jardin trong Bà Nà Hills) dùng giá vé của khu; trong lộ trình tính 0đ nếu vé khu đã có trong lộ trình.
 - 2026-11-10: Bản đồ trong app dùng Google Maps SDK qua maps-compose 8.3.1 (bản mới nhất còn build bằng Kotlin 2.3, đọc được bởi Kotlin 2.2.10 của dự án) và vị trí qua play-services-location 21.4.0. Khóa Android đặt trong `android/local.properties` (`MAPS_API_KEY`), khóa server trong `backend/.env` (`GOOGLE_MAPS_API_KEY`); hai khóa tách riêng và giới hạn theo đúng API.
 - 2026-11-10: Khi phát triển, app gọi backend trên máy tính qua `http://localhost:3000` cùng `adb reverse tcp:3000 tcp:3000`, vì Android 17 chặn app gọi địa chỉ mạng nội bộ (`10.0.2.2`) khi chưa có quyền mạng cục bộ.
+- 2026-11-10: SOS gửi tin bằng cách mở ứng dụng tin nhắn của máy với người nhận và nội dung (tên, liên kết bản đồ, tọa độ) soạn sẵn, không dùng `SmsManager`: Android 17 từ chối app không phải ứng dụng SMS dù đã cấp quyền `SEND_SMS`, và cách này không cần quyền nào.
+- 2026-11-10: Nhận diện ảnh chụp bằng ứng dụng camera của máy hoặc chọn bằng bộ chọn ảnh của hệ thống (không cần quyền camera, không thêm CameraX), rồi gửi lên `POST /places/recognize`.
 
 ## Câu hỏi mở
 Mỗi mục ghi rõ cần chốt trước khi làm phần nào. Chưa tới phần đó thì để nguyên.
@@ -94,7 +96,7 @@ Mỗi mục ghi rõ cần chốt trước khi làm phần nào. Chưa tới ph�
 - [Trip] Lộ trình cá nhân dùng chung pipeline với nhóm (n = 1) hay thuật toán riêng? "Thời gian giữa các lần đi chơi" nghĩa là gì?
 - [Trip] Thời gian và quãng đường giữa các điểm lấy bằng ước tính đường chim bay hay Google Routes API? Cần cho ràng buộc tổng thời gian ≤ T.
 - [Rủi ro] Kiểm tra sớm điều kiện cấp Partner API của Klook, GetYourGuide, Tiqets, Agoda và độ phủ ở Việt Nam. Tất cả đều cần duyệt đối tác; đồ án sinh viên có thể không được duyệt.
-- [Camera] Có thêm CameraX (dependency lớn) để khung ngắm dùng camera thật không? Hiện màn nhận diện dùng ảnh mẫu. Chốt trước khi làm nhận diện ảnh thật.
+- [Camera] Có thêm CameraX (dependency lớn) để có khung ngắm trực tiếp trong app không? Hiện app mở ứng dụng camera của máy để chụp. Chốt khi muốn khung ngắm riêng.
 - [Offline] Giao diện offline trong Figma (mất mạng, cần mạng, có mạng lại) đang tạm bỏ qua. Chốt phạm vi trước khi làm lưu lộ trình bằng Room.
 
 ## Ngôn ngữ

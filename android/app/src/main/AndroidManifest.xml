@@ -8,13 +8,6 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
-    <!-- SOS sends its text by SMS, which works without internet. Asked only when sending;
-         when refused, the SMS app opens with the message ready instead. -->
-    <uses-permission android:name="android.permission.SEND_SMS" />
-    <uses-feature
-        android:name="android.hardware.telephony"
-        android:required="false" />
-
     <application
         android:name=".TripFairApplication"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -28,6 +21,16 @@
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="${MAPS_API_KEY}" />
+        <!-- Lets the phone's camera app save the photo for "Nhận diện địa điểm" into the app's cache. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.files"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
         <activity
             android:name=".MainActivity"
             android:exported="true">

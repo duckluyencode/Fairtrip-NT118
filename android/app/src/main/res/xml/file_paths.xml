@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The photo taken for "Nhận diện địa điểm": the camera app writes it into the app's cache. -->
+<paths>
+    <cache-path
+        name="photos"
+        path="photos/" />
+</paths>

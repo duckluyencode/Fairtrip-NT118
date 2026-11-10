@@ -145,7 +145,7 @@ data object PickPlace : NavKey
 data object CameraScan : NavKey
 
 @Serializable
-data class RecognitionResult(val recognized: Boolean) : NavKey
+data object RecognitionResult : NavKey
 
 @Serializable
 data object Sos : NavKey

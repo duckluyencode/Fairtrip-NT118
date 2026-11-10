@@ -56,15 +56,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
-import android.Manifest
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.remember
 import com.tripfair.app.R
 import com.tripfair.app.data.location.LocationProvider
-import com.tripfair.app.data.sos.SosMessenger
 import com.tripfair.app.data.sos.SosOutcome
 import com.tripfair.app.data.sos.mapsLink
+import com.tripfair.app.data.sos.smsAppIntent
 import com.tripfair.app.data.places.LocationDto
 import com.tripfair.app.ui.components.MapPin
 import com.tripfair.app.ui.components.PlacesMap
@@ -87,8 +84,7 @@ private const val HOLD_MILLIS = 3000
 
 /**
  * Connects the SOS screen to the phone: reads the position once location is allowed, and
- * sends the text by SMS. Sending directly needs the SMS permission, asked at that moment;
- * when it is refused the SMS app opens with the recipients and the text filled in.
+ * opens the SMS app with the recipients and the text filled in, so one more tap sends it.
  */
 @Composable
 fun SosRoute(
@@ -105,7 +101,6 @@ fun SosRoute(
         if (permission.granted) position = locationProvider.current()
     }
 
-    val messenger = remember { SosMessenger(context) }
     var outcome by rememberSaveable { mutableStateOf<SosOutcome?>(null) }
     val numbers = contacts.filter { it.receivesSos }.map { it.phone }
     val place = position
@@ -114,19 +109,6 @@ fun SosRoute(
     } else {
         stringResource(R.string.sos_message_no_location, userName)
     }
-    val deliver: (Boolean) -> Unit = { direct ->
-        outcome = if (direct && messenger.sendDirectly(numbers, message)) {
-            SosOutcome.Sent
-        } else {
-            try {
-                context.startActivity(messenger.smsAppIntent(numbers, message))
-                SosOutcome.OpenedSmsApp
-            } catch (_: ActivityNotFoundException) {
-                SosOutcome.Failed
-            }
-        }
-    }
-    val smsPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted -> deliver(granted) }
 
     SosScreen(
         contacts = contacts,
@@ -134,7 +116,14 @@ fun SosRoute(
         location = position,
         outcome = outcome,
         onRequestLocation = permission.request,
-        onSend = { if (messenger.canSendDirectly()) deliver(true) else smsPermission.launch(Manifest.permission.SEND_SMS) },
+        onSend = {
+            outcome = try {
+                context.startActivity(smsAppIntent(numbers, message))
+                SosOutcome.OpenedSmsApp
+            } catch (_: ActivityNotFoundException) {
+                SosOutcome.Failed
+            }
+        },
         onCloseOutcome = { outcome = null },
         onBack = onBack,
         onContacts = onContacts,
@@ -509,18 +498,8 @@ private fun SentCard(outcome: SosOutcome, recipientNames: String, onClose: () ->
         icon = if (failed) R.drawable.ic_circle_alert else R.drawable.ic_check,
         iconTint = if (failed) colors.error else success,
         iconBackground = if (failed) colors.errorContainer else colors.primaryContainer,
-        title = stringResource(
-            when (outcome) {
-                SosOutcome.Sent -> R.string.sos_sent_title
-                SosOutcome.OpenedSmsApp -> R.string.sos_opened_title
-                SosOutcome.Failed -> R.string.sos_failed_title
-            },
-        ),
-        text = when (outcome) {
-            SosOutcome.Sent -> stringResource(R.string.sos_sent_text, recipientNames)
-            SosOutcome.OpenedSmsApp -> stringResource(R.string.sos_opened_text, recipientNames)
-            SosOutcome.Failed -> stringResource(R.string.sos_failed_text)
-        },
+        title = stringResource(if (failed) R.string.sos_failed_title else R.string.sos_opened_title),
+        text = if (failed) stringResource(R.string.sos_failed_text) else stringResource(R.string.sos_opened_text, recipientNames),
         action = { TopBarTextAction(text = stringResource(R.string.action_close), onClick = onClose) },
     )
 }

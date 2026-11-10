@@ -21,7 +21,6 @@ import androidx.navigation3.ui.NavDisplay
 import com.tripfair.app.data.AppContainer
 import com.tripfair.app.data.session.SessionState
 import com.tripfair.app.ui.components.MainTab
-import com.tripfair.app.ui.sample.SampleCamera
 import com.tripfair.app.ui.sample.SamplePlaces
 import com.tripfair.app.ui.sample.SampleSearch
 import com.tripfair.app.ui.screens.auth.ForgotPasswordRoute
@@ -29,7 +28,8 @@ import com.tripfair.app.ui.screens.auth.LoginRoute
 import com.tripfair.app.ui.screens.auth.NewPasswordRoute
 import com.tripfair.app.ui.screens.auth.OtpRoute
 import com.tripfair.app.ui.screens.auth.RegisterRoute
-import com.tripfair.app.ui.screens.camera.CameraScreen
+import com.tripfair.app.ui.screens.camera.CameraRoute
+import com.tripfair.app.ui.screens.camera.RecognizedPhoto
 import com.tripfair.app.ui.screens.camera.RecognitionResultScreen
 import com.tripfair.app.ui.screens.explore.PlaceDetailRoute
 import com.tripfair.app.ui.screens.explore.PlaceReviewsScreen
@@ -120,6 +120,8 @@ private fun TripFairNavHost(container: AppContainer, startSignedIn: Boolean) {
     val sosContacts by container.emergencyContactsRepository.contacts.collectAsState()
     // A place chosen on the picker screen, on its way back to the itinerary editor.
     var pickedPlace by remember { mutableStateOf<SuggestionDto?>(null) }
+    // The last recognized photo, shown by the result screen; kept in memory only.
+    var recognizedPhoto by remember { mutableStateOf<RecognizedPhoto?>(null) }
 
     // Shows the itinerary, going back to it if it is already open below.
     val showItinerary: (tripId: Int) -> Unit = { tripId ->
@@ -485,21 +487,31 @@ private fun TripFairNavHost(container: AppContainer, startSignedIn: Boolean) {
 
             // 06 Camera & SOS
             entry<CameraScan> {
-                CameraScreen(
+                CameraRoute(
                     onBack = { backStack.goBack() },
                     onHelp = { backStack.add(Support) },
-                    onResult = { recognized -> backStack.add(RecognitionResult(recognized)) },
+                    onResult = { photo ->
+                        recognizedPhoto = photo
+                        backStack.add(RecognitionResult)
+                    },
                 )
             }
-            entry<RecognitionResult> { route ->
-                RecognitionResultScreen(
-                    result = if (route.recognized) SampleCamera.recognized else SampleCamera.notRecognized,
-                    onBack = { backStack.goBack() },
-                    onRetake = { backStack.popUpTo(CameraScan) },
-                    onPlace = { backStack.add(PlaceDetail(it)) },
-                    onViewTrip = { selectTab(MainTab.Trips) },
-                    onSearchByName = { backStack.add(Search) },
-                )
+            entry<RecognitionResult> {
+                val photo = recognizedPhoto
+                // The photo is not saved: after the app was closed in the background, start again.
+                LaunchedEffect(photo) {
+                    if (photo == null) backStack.popUpTo(CameraScan)
+                }
+                if (photo != null) {
+                    RecognitionResultScreen(
+                        image = photo.image,
+                        result = photo.result,
+                        onBack = { backStack.goBack() },
+                        onRetake = { backStack.popUpTo(CameraScan) },
+                        onPlace = { backStack.add(PlaceDetail(it.toString())) },
+                        onSearchByName = { backStack.add(Search) },
+                    )
+                }
             }
             entry<Sos> {
                 SosRoute(

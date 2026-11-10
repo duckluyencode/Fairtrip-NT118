@@ -17,6 +17,9 @@ import com.tripfair.app.data.network.MeApi
 import com.tripfair.app.data.places.PlacesApi
 import com.tripfair.app.data.places.PlacesRepository
 import com.tripfair.app.data.places.RemotePlacesRepository
+import com.tripfair.app.data.recognition.RecognitionApi
+import com.tripfair.app.data.recognition.RecognitionRepository
+import com.tripfair.app.data.recognition.RemoteRecognitionRepository
 import com.tripfair.app.data.session.AuthInterceptor
 import com.tripfair.app.data.session.DataStoreSessionStore
 import com.tripfair.app.data.session.KeystoreTokenCipher
@@ -72,6 +75,10 @@ class AppContainer(context: Context) {
 
     val placesRepository: PlacesRepository by lazy {
         RemotePlacesRepository(retrofit.create(PlacesApi::class.java), locationProvider)
+    }
+
+    val recognitionRepository: RecognitionRepository by lazy {
+        RemoteRecognitionRepository(retrofit.create(RecognitionApi::class.java))
     }
 
     val tripsRepository: TripsRepository by lazy { RemoteTripsRepository(retrofit.create(TripsApi::class.java)) }

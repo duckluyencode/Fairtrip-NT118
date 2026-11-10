@@ -2,12 +2,10 @@ package com.tripfair.app.ui.screens.camera
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,7 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
@@ -23,49 +20,46 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tripfair.app.R
+import com.tripfair.app.data.recognition.RecognitionDto
+import com.tripfair.app.data.recognition.RecognizedPlaceDto
+import com.tripfair.app.ui.components.Chevron
+import com.tripfair.app.ui.components.OutlineButton
+import com.tripfair.app.ui.components.PlacePlaceholder
 import com.tripfair.app.ui.components.PrimaryButton
 import com.tripfair.app.ui.components.TopBarTextAction
 import com.tripfair.app.ui.components.TripFairTopBar
-import com.tripfair.app.ui.sample.PhotoRecognition
-import com.tripfair.app.ui.sample.PhotoSuggestion
-import com.tripfair.app.ui.sample.SampleCamera
+import com.tripfair.app.ui.screens.explore.categoryLabel
 import com.tripfair.app.ui.theme.ThemePreviews
 import com.tripfair.app.ui.theme.TripFairTheme
 import com.tripfair.app.ui.theme.extendedColors
+import kotlin.math.roundToInt
 
 /**
- * "Kết quả nhận diện": the photo with the landmark (or "Chưa nhận ra địa danh"), the labels
- * from Google Cloud Vision and nearby places that can be added to the trip.
+ * "Kết quả nhận diện": the photo with the landmark Google Cloud Vision saw in it (or
+ * "Chưa nhận ra địa danh"), and the matching places, which open their detail screens.
  */
 @Composable
 fun RecognitionResultScreen(
-    result: PhotoRecognition,
+    image: ImageBitmap?,
+    result: RecognitionDto,
     onBack: () -> Unit,
     onRetake: () -> Unit,
-    onPlace: (placeId: String) -> Unit,
-    onViewTrip: () -> Unit,
+    onPlace: (placeId: Int) -> Unit,
     onSearchByName: () -> Unit,
 ) {
-    // Places added to the trip from this screen, starting with those already in it.
-    var added by rememberSaveable { mutableStateOf(result.suggestions.filter { it.inTrip }.map { it.name }.toSet()) }
-
+    val best = result.items.firstOrNull()
     Scaffold(
         topBar = {
             TripFairTopBar(title = stringResource(R.string.recognition_title), onBack = onBack) {
@@ -81,80 +75,54 @@ fun RecognitionResultScreen(
                 .padding(start = 18.dp, end = 18.dp, top = 4.dp, bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            PhotoCard(result = result, onPlace = onPlace)
-            LabelsCard(labels = result.labels)
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = stringResource(if (result.recognized) R.string.recognition_similar else R.string.recognition_by_labels),
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.weight(1f),
-                )
-                Text(
-                    text = stringResource(R.string.recognition_for_trip, SampleCamera.TRIP_NAME),
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                    color = MaterialTheme.colorScheme.primary,
-                )
-            }
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surfaceContainerLow, MaterialTheme.shapes.small)
-                    .padding(horizontal = 12.dp, vertical = 5.dp),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
-            ) {
-                result.suggestions.forEach { suggestion ->
-                    SuggestionRow(
-                        suggestion = suggestion,
-                        added = suggestion.name in added,
-                        onToggle = {
-                            added = if (suggestion.name in added) added - suggestion.name else added + suggestion.name
-                        },
-                        onOpen = suggestion.placeId?.let { id -> { onPlace(id) } },
-                    )
+            PhotoCard(image = image, best = best, onPlace = onPlace)
+            if (result.items.isNotEmpty()) {
+                Text(text = stringResource(R.string.recognition_matches), style = MaterialTheme.typography.titleMedium)
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surfaceContainerLow, MaterialTheme.shapes.small)
+                        .padding(horizontal = 12.dp, vertical = 5.dp),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    result.items.forEach { item -> MatchRow(item = item, onPlace = onPlace) }
                 }
             }
-            if (result.recognized) {
-                PrimaryButton(
-                    text = stringResource(R.string.recognition_view_trip),
-                    onClick = onViewTrip,
-                    leadingIcon = R.drawable.ic_calendar_days,
-                    height = 52.dp,
+            result.attribution?.let {
+                Text(
+                    text = stringResource(R.string.detail_source, it),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-            } else {
+            }
+            best?.place?.let { place ->
                 PrimaryButton(
-                    text = stringResource(R.string.recognition_search_by_name),
-                    onClick = onSearchByName,
-                    leadingIcon = R.drawable.ic_search,
+                    text = stringResource(R.string.recognition_open_place, place.name),
+                    onClick = { onPlace(place.id) },
+                    trailingIcon = R.drawable.ic_arrow_right,
                     height = 52.dp,
                 )
             }
+            OutlineButton(text = stringResource(R.string.recognition_search_by_name), onClick = onSearchByName, leadingIcon = R.drawable.ic_search)
         }
     }
 }
 
 /** The analyzed photo with the AI tag and the main result ("Ảnh đã nhận diện"). */
 @Composable
-private fun PhotoCard(result: PhotoRecognition, onPlace: (String) -> Unit) {
+private fun PhotoCard(image: ImageBitmap?, best: RecognizedPlaceDto?, onPlace: (Int) -> Unit) {
     val colors = MaterialTheme.colorScheme
     val camera = MaterialTheme.extendedColors
+    val place = best?.place
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(210.dp)
-            .clip(MaterialTheme.shapes.large),
+            .height(230.dp)
+            .clip(MaterialTheme.shapes.large)
+            .background(camera.cameraBackground),
     ) {
-        Image(
-            painter = painterResource(result.photo),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize(),
-        )
-        if (result.recognized) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(camera.cameraBackground.copy(alpha = 0.18f)),
-            )
+        if (image != null) {
+            Image(bitmap = image, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
         }
         Column(
             modifier = Modifier
@@ -171,7 +139,7 @@ private fun PhotoCard(result: PhotoRecognition, onPlace: (String) -> Unit) {
             ) {
                 Icon(painter = painterResource(R.drawable.ic_scan), contentDescription = null, tint = camera.onCamera, modifier = Modifier.size(15.dp))
                 Text(
-                    text = stringResource(if (result.recognized) R.string.recognition_found else R.string.recognition_not_found),
+                    text = stringResource(if (best != null) R.string.recognition_found else R.string.recognition_not_found),
                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                     color = camera.onCamera,
                 )
@@ -181,17 +149,24 @@ private fun PhotoCard(result: PhotoRecognition, onPlace: (String) -> Unit) {
                     .fillMaxWidth()
                     .clip(MaterialTheme.shapes.small)
                     .background(colors.surfaceContainerLow.copy(alpha = 0.93f))
-                    .then(if (result.placeId != null) Modifier.clickable(role = Role.Button) { onPlace(result.placeId) } else Modifier)
+                    .then(if (place != null) Modifier.clickable(role = Role.Button) { onPlace(place.id) } else Modifier)
                     .padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                    Text(text = result.title, style = MaterialTheme.typography.titleMedium.copy(lineHeight = 22.sp))
-                    Text(text = result.subtitle, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+                    Text(
+                        text = place?.name ?: best?.landmark ?: stringResource(R.string.recognition_none_title),
+                        style = MaterialTheme.typography.titleMedium.copy(lineHeight = 22.sp),
+                    )
+                    Text(
+                        text = place?.area ?: stringResource(if (best != null) R.string.recognition_no_place else R.string.recognition_none_text),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = colors.onSurfaceVariant,
+                    )
                 }
-                if (result.confidence != null) {
+                if (best != null) {
                     Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Text(text = result.confidence, style = MaterialTheme.typography.titleMedium, color = colors.primary)
+                        Text(text = percent(best.confidence), style = MaterialTheme.typography.titleMedium, color = colors.primary)
                         Text(
                             text = stringResource(R.string.recognition_confidence),
                             style = MaterialTheme.typography.labelSmall,
@@ -204,108 +179,39 @@ private fun PhotoCard(result: PhotoRecognition, onPlace: (String) -> Unit) {
     }
 }
 
-/** "Nhãn trong ảnh": the labels found by Google Cloud Vision; the first one is the strongest. */
-@Composable
-private fun LabelsCard(labels: List<String>) {
-    val colors = MaterialTheme.colorScheme
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(colors.surfaceContainerLow, MaterialTheme.shapes.small)
-            .padding(12.dp),
-        verticalArrangement = Arrangement.spacedBy(9.dp),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(text = stringResource(R.string.recognition_labels), style = MaterialTheme.typography.labelMedium, modifier = Modifier.weight(1f))
-            Text(text = stringResource(R.string.recognition_source), style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
-        }
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(7.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
-            labels.forEachIndexed { index, label ->
-                val top = index == 0
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
-                    color = if (top) colors.onPrimary else colors.onSurface,
-                    modifier = Modifier
-                        .background(if (top) colors.primary else colors.surfaceContainerLow, CircleShape)
-                        .border(1.dp, if (top) colors.primary else colors.outline, CircleShape)
-                        .padding(horizontal = 11.dp, vertical = 7.dp),
-                )
-            }
-        }
-    }
-}
+private fun percent(confidence: Double): String = "${(confidence * 100).roundToInt()}%"
 
-/** Suggested place with a round add button that turns into a check once added. */
+/** One landmark Vision saw: its place on TripFair when there is one, opened by tapping. */
 @Composable
-private fun SuggestionRow(
-    suggestion: PhotoSuggestion,
-    added: Boolean,
-    onToggle: () -> Unit,
-    onOpen: (() -> Unit)?,
-) {
+private fun MatchRow(item: RecognizedPlaceDto, onPlace: (Int) -> Unit) {
     val colors = MaterialTheme.colorScheme
+    val place = item.place
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(68.dp),
+            .clip(MaterialTheme.shapes.extraSmall)
+            .then(if (place != null) Modifier.clickable(role = Role.Button) { onPlace(place.id) } else Modifier)
+            .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Row(
+        PlacePlaceholder(
+            category = place?.category.orEmpty(),
             modifier = Modifier
-                .weight(1f)
-                .clip(MaterialTheme.shapes.extraSmall)
-                .then(if (onOpen != null) Modifier.clickable(role = Role.Button, onClick = onOpen) else Modifier),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Image(
-                painter = painterResource(suggestion.image),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .size(width = 68.dp, height = 60.dp)
-                    .clip(MaterialTheme.shapes.extraSmall),
-            )
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(text = suggestion.name, style = MaterialTheme.typography.titleSmall)
-                Text(text = suggestion.detail, style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
-            }
-        }
-        val label = stringResource(R.string.cd_add_to_trip, suggestion.name)
-        Box(
-            modifier = Modifier
-                .size(38.dp)
-                .clip(CircleShape)
-                .background(if (added) colors.primaryContainer else colors.surfaceContainerLow)
-                .border(1.dp, if (added) colors.primaryContainer else colors.outline, CircleShape)
-                .toggleable(value = added, role = Role.Checkbox, onValueChange = { onToggle() })
-                .semantics { contentDescription = label },
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                painter = painterResource(if (added) R.drawable.ic_check else R.drawable.ic_plus),
-                contentDescription = null,
-                tint = colors.primary,
-                modifier = Modifier.size(18.dp),
-            )
-        }
-    }
-}
-
-@ThemePreviews
-@Composable
-private fun RecognitionResultPreview() {
-    TripFairTheme {
-        RecognitionResultScreen(
-            result = SampleCamera.recognized,
-            onBack = {},
-            onRetake = {},
-            onPlace = {},
-            onViewTrip = {},
-            onSearchByName = {},
+                .size(48.dp)
+                .clip(MaterialTheme.shapes.extraSmall),
+            iconSize = 20,
         )
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Text(text = place?.name ?: item.landmark, style = MaterialTheme.typography.titleSmall)
+            val detail = if (place != null) {
+                listOfNotNull(place.area, stringResource(categoryLabel(place.category)), percent(item.confidence)).joinToString(" · ")
+            } else {
+                stringResource(R.string.recognition_no_place)
+            }
+            Text(text = detail, style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
+        }
+        if (place != null) Chevron()
     }
 }
 
@@ -313,12 +219,20 @@ private fun RecognitionResultPreview() {
 @Composable
 private fun NotRecognizedPreview() {
     TripFairTheme {
+        RecognitionResultScreen(image = null, result = RecognitionDto(), onBack = {}, onRetake = {}, onPlace = {}, onSearchByName = {})
+    }
+}
+
+@ThemePreviews
+@Composable
+private fun RecognizedWithoutPlacePreview() {
+    TripFairTheme {
         RecognitionResultScreen(
-            result = SampleCamera.notRecognized,
+            image = null,
+            result = RecognitionDto(items = listOf(RecognizedPlaceDto("Dragon Bridge", 0.96)), attribution = "Google Maps"),
             onBack = {},
             onRetake = {},
             onPlace = {},
-            onViewTrip = {},
             onSearchByName = {},
         )
     }

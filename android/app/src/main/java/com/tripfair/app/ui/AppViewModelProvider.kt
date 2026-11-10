@@ -7,6 +7,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.tripfair.app.TripFairApplication
 import com.tripfair.app.data.AppContainer
 import com.tripfair.app.ui.screens.auth.ForgotPasswordViewModel
+import com.tripfair.app.ui.screens.camera.RecognitionViewModel
 import com.tripfair.app.ui.screens.auth.LoginViewModel
 import com.tripfair.app.ui.screens.auth.NewPasswordViewModel
 import com.tripfair.app.ui.screens.auth.OtpViewModel
@@ -56,6 +57,7 @@ object AppViewModelProvider {
         initializer { TripDetailViewModel(container().tripsRepository) }
         initializer { EditBudgetViewModel(container().tripsRepository) }
         initializer { VotesViewModel(container().tripsRepository) }
+        initializer { RecognitionViewModel(container().recognitionRepository) }
         initializer { AddToVoteViewModel(container().placesRepository, container().tripsRepository) }
         initializer { LodgingViewModel(container().tripsRepository) }
         initializer { OptimizingViewModel(container().tripsRepository) }

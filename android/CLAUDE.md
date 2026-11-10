@@ -17,7 +17,7 @@ Package `com.tripfair.app`, minSdk 26, compileSdk/targetSdk 37. Giao diện luô
 - `./gradlew testDebugUnitTest`: chạy unit test (JUnit 4) trong `app/src/test/`
 
 ## Cấu trúc code (`app/src/main/java/com/tripfair/app/`)
-- `data/`: repository theo từng loại dữ liệu, mỗi cái gồm interface và bản `Remote…` gọi backend bằng Retrofit: `auth/` (tài khoản), `places/` (tìm kiếm, chi tiết, lịch sử, yêu thích), `contacts/` (liên hệ khẩn cấp, kèm bản sao trong DataStore để SOS dùng khi mất mạng), `trips/` (chuyến đi, chỗ ở, bình chọn, lộ trình). `AppContainer.kt` tạo repository một lần (giữ trong `TripFairApplication`).
+- `data/`: repository theo từng loại dữ liệu, mỗi cái gồm interface và bản `Remote…` gọi backend bằng Retrofit: `auth/` (tài khoản), `places/` (tìm kiếm, chi tiết, lịch sử, yêu thích), `contacts/` (liên hệ khẩn cấp, kèm bản sao trong DataStore để SOS dùng khi mất mạng), `trips/` (chuyến đi, chỗ ở, bình chọn, lộ trình), `recognition/` (gửi ảnh để nhận diện địa danh), `sos/` (nội dung và intent tin SOS). `AppContainer.kt` tạo repository một lần (giữ trong `TripFairApplication`).
 - `data/location/`: vị trí hiện tại qua Google Play services (`FusedLocationProvider`), chỉ đọc khi người dùng đã cho phép; tìm kiếm gửi kèm vị trí để kết quả gần nhất lên trước, SOS dùng để hiện vị trí.
 - `data/network/`: tạo OkHttp/Retrofit, `ApiResult` và `apiCall` đổi lỗi HTTP thành `ApiError` theo `code` của backend (mất mạng là `NETWORK_UNAVAILABLE`). Màn hình chọn thông báo theo `code`.
 - `data/session/`: phiên đăng nhập. Token lưu trong DataStore, mã hóa bằng khóa Android Keystore; `AuthInterceptor` gắn access token, `TokenAuthenticator` tự làm mới token khi gặp 401 và đăng xuất khi refresh token bị từ chối.
@@ -26,7 +26,7 @@ Package `com.tripfair.app`, minSdk 26, compileSdk/targetSdk 37. Giao diện luô
 - `ui/theme/`: màu, chữ, bo góc, `@ThemePreviews` (Preview sáng + tối).
 - `ui/components/`: component dùng chung (nút chính, ô nhập, checkbox…). `PlacesMap.kt` là bản đồ Google dùng chung: ghim địa điểm, ghim đánh số nối thành đường cho lộ trình, chấm xanh vị trí của người dùng.
 - `ui/screens/<nhóm>/`: màn hình theo nhóm Figma: `auth`, `home`, `explore`, `profile`, `legal`, `group`, `vote`, `trip`, `camera`, `sos`.
-- `ui/sample/`: dữ liệu mẫu cho `@Preview` và cho các màn chưa nối backend (nhận diện ảnh, đánh giá địa điểm, phần vị trí và gửi tin của SOS).
+- `ui/sample/`: dữ liệu mẫu cho `@Preview` (và cho màn đánh giá địa điểm, hiện chưa có đường vào).
 
 ## Quy ước
 - Màn hình và component viết bằng Compose; mỗi màn hình có `@Preview` với dữ liệu mẫu.
@@ -34,5 +34,5 @@ Package `com.tripfair.app`, minSdk 26, compileSdk/targetSdk 37. Giao diện luô
 - Chữ hiển thị đặt trong `res/values/strings.xml`. Icon là `res/drawable/ic_*.xml` chuyển từ SVG trong Figma.
 - Màn hình nhận dữ liệu và callback (`onBack`, `onLogin`…) qua tham số; việc chuyển màn chỉ nằm trong `TripFairNavDisplay.kt`.
 - Logic màn hình nằm trong `…ViewModel`, composable màn hình chỉ nhận trạng thái và callback để Preview chạy được. Màn tải dữ liệu có ba trạng thái: đang tải, lỗi kèm nút thử lại, và rỗng (`ui/components/LoadStates.kt`). Trạng thái màn hình giữ bằng `mutableStateOf` của Compose để ô nhập chữ cập nhật đồng bộ (theo khuyến nghị của Compose); repository vẫn dùng `StateFlow`. Hàm `…Route` nối ViewModel với màn hình; ViewModel thuộc về từng màn và bị xóa khi rời màn.
-- Chỉ xin quyền hệ thống khi tính năng cần (hiện có: vị trí cho SOS và cho "Dùng vị trí của tôi" ở kết quả tìm kiếm). Gọi điện dùng `ACTION_DIAL`, chọn liên hệ dùng bộ chọn danh bạ của hệ thống, để không phải xin `CALL_PHONE` hay `READ_CONTACTS`.
+- Chỉ xin quyền hệ thống khi tính năng cần (hiện có: vị trí cho SOS và cho "Dùng vị trí của tôi" ở kết quả tìm kiếm). Việc khác đi qua ứng dụng của máy để không phải xin quyền: gọi điện dùng `ACTION_DIAL`, chọn liên hệ dùng bộ chọn danh bạ, gửi tin SOS mở ứng dụng tin nhắn (`ACTION_SENDTO`), chụp ảnh nhận diện mở ứng dụng camera (ảnh ghi vào cache qua `FileProvider`) hoặc bộ chọn ảnh.
 - API key đặt trong `local.properties`, không đưa vào source code.
