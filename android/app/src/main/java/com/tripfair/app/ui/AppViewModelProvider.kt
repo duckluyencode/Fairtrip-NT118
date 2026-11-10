@@ -20,6 +20,8 @@ import com.tripfair.app.ui.screens.profile.DeleteAccountViewModel
 import com.tripfair.app.ui.screens.profile.FavoritesViewModel
 import com.tripfair.app.ui.screens.profile.EditProfileViewModel
 import com.tripfair.app.ui.screens.sos.ContactFormViewModel
+import com.tripfair.app.ui.screens.vote.AddToVoteViewModel
+import com.tripfair.app.ui.screens.vote.VotesViewModel
 import com.tripfair.app.ui.screens.group.CreateGroupViewModel
 import com.tripfair.app.ui.screens.group.EditBudgetViewModel
 import com.tripfair.app.ui.screens.group.TripDetailViewModel
@@ -53,6 +55,8 @@ object AppViewModelProvider {
         initializer { CreateGroupViewModel(container().tripsRepository) }
         initializer { TripDetailViewModel(container().tripsRepository) }
         initializer { EditBudgetViewModel(container().tripsRepository) }
+        initializer { VotesViewModel(container().tripsRepository) }
+        initializer { AddToVoteViewModel(container().placesRepository, container().tripsRepository) }
         initializer { LodgingViewModel(container().tripsRepository) }
         initializer { OptimizingViewModel(container().tripsRepository) }
         initializer { ItineraryViewModel(container().tripsRepository) }

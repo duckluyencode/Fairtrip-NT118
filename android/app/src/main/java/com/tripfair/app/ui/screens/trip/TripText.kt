@@ -7,6 +7,10 @@ import com.tripfair.app.R
 import com.tripfair.app.data.network.ApiError
 import com.tripfair.app.data.trips.TripSummaryDto
 import java.time.LocalDate
+import java.time.OffsetDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 
 /** "12 – 14 tháng 10", "30 tháng 9 – 2 tháng 10" or "12 tháng 10". */
 @Composable
@@ -26,6 +30,13 @@ fun tripLength(days: Int): String =
 @Composable
 fun tripDatesLine(trip: TripSummaryDto): String =
     "${tripDateRange(LocalDate.parse(trip.startDate), LocalDate.parse(trip.endDate))} · ${tripLength(trip.days)}"
+
+/** "20:00 12/12", in the phone's time zone; the text as it is when it is not a date. */
+fun voteDeadlineText(iso: String): String = try {
+    OffsetDateTime.parse(iso).atZoneSameInstant(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("HH:mm d/M"))
+} catch (_: DateTimeParseException) {
+    iso
+}
 
 /** A group's name, or the city of a solo trip. */
 fun TripSummaryDto.title(): String = name ?: city

@@ -431,10 +431,17 @@
     </plurals>
     <string name="vote_agreed">%1$s đồng ý</string>
     <string name="vote_leader_note">Chỉ trưởng nhóm có thể kết thúc bình chọn để bắt đầu tối ưu. Bình chọn của nhóm vẫn đang mở.</string>
+    <string name="vote_my_ballot">Bình chọn của bạn</string>
+    <string name="vote_empty">Chưa có địa điểm nào. Mở một địa điểm rồi chọn \"Thêm vào bình chọn\".</string>
+    <string name="vote_price_line">%1$s / người · %2$s</string>
+    <string name="vote_price_unknown">Chưa có giá</string>
+    <string name="add_vote_no_group">Bạn chưa có nhóm nào. Tạo nhóm hoặc tham gia nhóm ở tab Chuyến đi trước.</string>
+    <string name="add_vote_rating">Đánh giá</string>
     <string name="vote_finish">Kết thúc bình chọn &amp; tối ưu</string>
     <string name="ballot_title">Bình chọn</string>
     <string name="ballot_open_title">Chọn những nơi bạn muốn đi</string>
-    <string name="ballot_open_text">Gửi phiếu trước %1$s. Bạn sửa được sau khi gửi.</string>
+    <string name="ballot_open_text">Gửi phiếu trước %1$s. Sau khi gửi, bạn không đổi được bình chọn.</string>
+    <string name="ballot_open_text_none">Chọn xong thì gửi phiếu. Sau khi gửi, bạn không đổi được bình chọn.</string>
     <string name="ballot_sent_title">Đã gửi bình chọn của bạn</string>
     <string name="ballot_sent_text">Đang chờ thành viên còn lại.</string>
     <string name="ballot_options">Lựa chọn</string>

@@ -35,11 +35,9 @@ import com.tripfair.app.ui.components.TripFairTopBar
 import com.tripfair.app.ui.components.formatVnd
 import com.tripfair.app.ui.sample.SampleTripPlan
 import com.tripfair.app.ui.screens.trip.TripLoadScaffold
+import com.tripfair.app.ui.screens.trip.voteDeadlineText
 import com.tripfair.app.ui.theme.ThemePreviews
 import com.tripfair.app.ui.theme.TripFairTheme
-import java.time.OffsetDateTime
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 @Composable
 fun GroupPlanRoute(
@@ -169,7 +167,7 @@ fun GroupPlanScreen(
             ) {
                 Text(text = stringResource(R.string.plan_vote_deadline), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
                 Text(
-                    text = trip.voteDeadline?.let { deadlineText(it) } ?: stringResource(R.string.plan_vote_deadline_none),
+                    text = trip.voteDeadline?.let { voteDeadlineText(it) } ?: stringResource(R.string.plan_vote_deadline_none),
                     style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
                     color = colors.primary,
                 )
@@ -181,13 +179,6 @@ fun GroupPlanScreen(
             PrimaryButton(text = stringResource(R.string.plan_start_vote), onClick = onStartVote, height = 52.dp)
         }
     }
-}
-
-/** "20:00 12/12", in the phone's time zone. */
-private fun deadlineText(iso: String): String = try {
-    OffsetDateTime.parse(iso).atZoneSameInstant(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("HH:mm d/M"))
-} catch (_: java.time.format.DateTimeParseException) {
-    iso
 }
 
 @ThemePreviews

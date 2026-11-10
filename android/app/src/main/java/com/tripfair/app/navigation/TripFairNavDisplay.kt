@@ -71,9 +71,9 @@ import com.tripfair.app.ui.screens.trip.ItineraryRoute
 import com.tripfair.app.ui.screens.trip.LodgingRoute
 import com.tripfair.app.ui.screens.trip.OptimizationResultRoute
 import com.tripfair.app.ui.screens.trip.OptimizingRoute
-import com.tripfair.app.ui.screens.vote.AddToVoteScreen
-import com.tripfair.app.ui.screens.vote.BallotScreen
-import com.tripfair.app.ui.screens.vote.VoteListScreen
+import com.tripfair.app.ui.screens.vote.AddToVoteRoute
+import com.tripfair.app.ui.screens.vote.BallotRoute
+import com.tripfair.app.ui.screens.vote.VoteListRoute
 
 /** Screens reachable without an account; the others need a signed-in session. */
 private fun NavKey.isPublic(): Boolean =
@@ -386,18 +386,25 @@ private fun TripFairNavHost(container: AppContainer, startSignedIn: Boolean) {
 
             // 04 Votes
             entry<AddToGroupVote> { route ->
-                AddToVoteScreen(
-                    place = SamplePlaces.byId(route.placeId),
+                AddToVoteRoute(
+                    placeId = route.placeId,
                     onBack = { backStack.goBack() },
-                    onBackToDetail = { backStack.goBack() },
-                    onAdd = { backStack.goBack() },
+                    // The place is on the list now: show it there, with Back returning to the place.
+                    onAdded = { tripId -> backStack.replaceTop(VoteList(tripId)) },
                 )
             }
             entry<VoteList> { route ->
-                VoteListScreen(onBack = { backStack.goBack() }, onFinish = { backStack.add(LodgingChoice(route.tripId, group = true)) })
+                VoteListRoute(
+                    tripId = route.tripId,
+                    onBack = { backStack.goBack() },
+                    onBallot = { backStack.add(Ballot(route.tripId)) },
+                    onFinish = { wantsHotel ->
+                        backStack.add(if (wantsHotel) LodgingChoice(route.tripId, group = true) else Optimizing(route.tripId, group = true))
+                    },
+                )
             }
-            entry<Ballot> {
-                BallotScreen(onBack = { backStack.goBack() }, onAddPlace = { backStack.add(Search) })
+            entry<Ballot> { route ->
+                BallotRoute(tripId = route.tripId, onBack = { backStack.goBack() }, onAddPlace = { backStack.add(Search) })
             }
 
             // 05 Trip & optimization, 10 Solo trip & lodging
