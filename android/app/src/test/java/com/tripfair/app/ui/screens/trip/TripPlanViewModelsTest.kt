@@ -4,6 +4,7 @@ import com.tripfair.app.R
 import com.tripfair.app.data.network.ApiError
 import com.tripfair.app.data.network.ApiResult
 import com.tripfair.app.data.places.LocationDto
+import com.tripfair.app.data.trips.DayPlacesDto
 import com.tripfair.app.data.trips.ItineraryDto
 import com.tripfair.app.data.trips.LodgingOptionDto
 import com.tripfair.app.data.trips.MyCostsDto
@@ -44,6 +45,13 @@ private class PlanningTrips : FakeTrips() {
     }
 
     override suspend fun plan(tripId: Int) = planResult
+
+    var designed: List<DayPlacesDto> = emptyList()
+
+    override suspend fun designItinerary(tripId: Int, days: List<DayPlacesDto>): ApiResult<ItineraryDto> {
+        designed = days
+        return planResult
+    }
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -111,6 +119,22 @@ class TripPlanViewModelsTest {
 
         assertNull(viewModel.error)
         assertTrue(viewModel.done)
+    }
+
+    @Test
+    fun `a self-designed itinerary sends each day's places in order, without the room`() {
+        fun stop(id: String, placeId: String?, kind: StopKind = StopKind.Place) =
+            ItineraryStop(id = id, time = "08:00", name = id, detail = "", cost = 0, kind = kind, placeId = placeId)
+        val days = listOf(
+            ItineraryDay(1, "12/12", "", "", listOf(stop("room", "41", StopKind.Lodging), stop("b", "102"), stop("a", "101")), emptyList()),
+            ItineraryDay(2, "13/12", "", "", emptyList(), emptyList()),
+        )
+
+        val viewModel = ItineraryViewModel(trips)
+        viewModel.design(days.toDayPlaces())
+
+        assertEquals(listOf(DayPlacesDto(1, listOf(102, 101)), DayPlacesDto(2, emptyList())), trips.designed)
+        assertTrue(viewModel.saved)
     }
 
     @Test

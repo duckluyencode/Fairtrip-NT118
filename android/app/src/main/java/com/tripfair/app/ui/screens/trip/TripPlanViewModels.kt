@@ -9,6 +9,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tripfair.app.data.network.ApiError
 import com.tripfair.app.data.network.ApiResult
+import com.tripfair.app.data.trips.DayPlacesDto
 import com.tripfair.app.data.trips.ItineraryDto
 import com.tripfair.app.data.trips.LodgingOptionDto
 import com.tripfair.app.data.trips.TripDetailDto
@@ -164,7 +165,32 @@ class ItineraryViewModel(private val trips: TripsRepository) : ViewModel() {
     var error by mutableStateOf<ApiError?>(null)
         private set
 
+    /** A self-designed itinerary is being saved. */
+    var saving by mutableStateOf(false)
+        private set
+    var saveError by mutableStateOf<ApiError?>(null)
+        private set
+    var saved by mutableStateOf(false)
+        private set
+
     private var tripId = 0
+
+    /** "Tự thiết kế lộ trình": saves the places of each day in the order given. */
+    fun design(days: List<DayPlacesDto>) {
+        if (saving) return
+        viewModelScope.launch {
+            saving = true
+            saveError = null
+            when (val result = trips.designItinerary(tripId, days)) {
+                is ApiResult.Success -> {
+                    itinerary = result.value
+                    saved = true
+                }
+                is ApiResult.Failure -> saveError = result.error
+            }
+            saving = false
+        }
+    }
 
     /** Each time the screen shows; what is on screen stays while it reloads. */
     fun start(tripId: Int) {

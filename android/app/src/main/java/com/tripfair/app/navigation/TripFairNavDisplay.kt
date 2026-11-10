@@ -8,9 +8,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavKey
@@ -22,7 +19,6 @@ import com.tripfair.app.data.AppContainer
 import com.tripfair.app.data.session.SessionState
 import com.tripfair.app.ui.components.MainTab
 import com.tripfair.app.ui.sample.SampleCamera
-import com.tripfair.app.ui.sample.SampleItinerary
 import com.tripfair.app.ui.sample.SamplePlaces
 import com.tripfair.app.ui.sample.SampleSearch
 import com.tripfair.app.ui.screens.auth.ForgotPasswordRoute
@@ -66,7 +62,7 @@ import com.tripfair.app.ui.screens.trip.CreateTripNext
 import com.tripfair.app.ui.screens.trip.CreateTripRoute
 import com.tripfair.app.ui.screens.trip.upcoming
 import com.tripfair.app.data.trips.TripSummaryDto
-import com.tripfair.app.ui.screens.trip.ItineraryEditorScreen
+import com.tripfair.app.ui.screens.trip.ItineraryEditorRoute
 import com.tripfair.app.ui.screens.trip.ItineraryRoute
 import com.tripfair.app.ui.screens.trip.LodgingRoute
 import com.tripfair.app.ui.screens.trip.OptimizationResultRoute
@@ -118,8 +114,6 @@ private fun TripFairNavHost(container: AppContainer, startSignedIn: Boolean) {
         backStack.replaceAll(Login)
     }
 
-    // The itinerary is shared by several screens; it stays here until trips come from the backend.
-    var itinerary by remember { mutableStateOf(SampleItinerary.days) }
     val sosContacts by container.emergencyContactsRepository.contacts.collectAsState()
 
     // Shows the itinerary, going back to it if it is already open below.
@@ -436,7 +430,7 @@ private fun TripFairNavHost(container: AppContainer, startSignedIn: Boolean) {
                     onDone = {
                         // Back from the result skips the progress screen and the lodging choice.
                         backStack.removeAll { it is Optimizing || it is LodgingChoice }
-                        backStack.add(if (route.group) OptimizationResult(route.tripId) else DayItinerary(route.tripId))
+                        if (route.group) backStack.add(OptimizationResult(route.tripId)) else showItinerary(route.tripId)
                     },
                     onChooseLodging = { backStack.replaceTop(LodgingChoice(route.tripId, route.group)) },
                 )
@@ -459,15 +453,12 @@ private fun TripFairNavHost(container: AppContainer, startSignedIn: Boolean) {
                 )
             }
             entry<ItineraryEditor> { route ->
-                ItineraryEditorScreen(
-                    initialDays = SampleItinerary.editDraft(itinerary),
+                ItineraryEditorRoute(
+                    tripId = route.tripId,
                     onBack = { backStack.goBack() },
-                    onSave = { days ->
-                        itinerary = days
-                        backStack.goBack()
-                    },
+                    onSaved = { backStack.goBack() },
                     onAddPlace = { backStack.add(Search) },
-                    onReoptimize = { backStack.replaceTop(Optimizing(route.tripId, group = true)) },
+                    onReoptimize = { group -> backStack.replaceTop(Optimizing(route.tripId, group)) },
                 )
             }
 
