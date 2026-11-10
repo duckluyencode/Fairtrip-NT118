@@ -51,8 +51,6 @@ import com.tripfair.app.ui.components.OutlineButton
 import com.tripfair.app.ui.components.PrimaryButton
 import com.tripfair.app.ui.components.TopBarTextAction
 import com.tripfair.app.ui.components.TripFairTopBar
-import com.tripfair.app.ui.sample.ItineraryDay
-import com.tripfair.app.ui.sample.ItineraryStop
 import com.tripfair.app.ui.sample.SampleItinerary
 import com.tripfair.app.ui.theme.ThemePreviews
 import com.tripfair.app.ui.theme.TripFairTheme
@@ -117,7 +115,7 @@ fun ItineraryEditorScreen(
         ) {
             DayChips(days = days, selected = dayIndex, onSelect = { selected = it })
             DayHeader(day = day)
-            TripBudgetCard(days = days, day = day, editing = true)
+            TripBudgetCard(days = days, day = day, editing = true, budget = SampleItinerary.BUDGET, nights = SampleItinerary.NIGHTS)
             Text(
                 text = stringResource(R.string.editor_hint),
                 style = MaterialTheme.typography.labelSmall,

@@ -67,10 +67,10 @@ import com.tripfair.app.ui.screens.trip.CreateTripRoute
 import com.tripfair.app.ui.screens.trip.upcoming
 import com.tripfair.app.data.trips.TripSummaryDto
 import com.tripfair.app.ui.screens.trip.ItineraryEditorScreen
-import com.tripfair.app.ui.screens.trip.ItineraryScreen
-import com.tripfair.app.ui.screens.trip.LodgingScreen
-import com.tripfair.app.ui.screens.trip.OptimizationResultScreen
-import com.tripfair.app.ui.screens.trip.OptimizingScreen
+import com.tripfair.app.ui.screens.trip.ItineraryRoute
+import com.tripfair.app.ui.screens.trip.LodgingRoute
+import com.tripfair.app.ui.screens.trip.OptimizationResultRoute
+import com.tripfair.app.ui.screens.trip.OptimizingRoute
 import com.tripfair.app.ui.screens.vote.AddToVoteScreen
 import com.tripfair.app.ui.screens.vote.BallotScreen
 import com.tripfair.app.ui.screens.vote.VoteListScreen
@@ -395,31 +395,39 @@ private fun TripFairNavHost(container: AppContainer, startSignedIn: Boolean) {
                 )
             }
             entry<LodgingChoice> { route ->
-                LodgingScreen(onBack = { backStack.goBack() }, onConfirm = { backStack.add(Optimizing(route.tripId, route.group)) })
+                LodgingRoute(
+                    tripId = route.tripId,
+                    onBack = { backStack.goBack() },
+                    onConfirmed = { backStack.add(Optimizing(route.tripId, route.group)) },
+                )
             }
             entry<Optimizing> { route ->
-                OptimizingScreen(
+                OptimizingRoute(
+                    tripId = route.tripId,
                     onBack = { backStack.goBack() },
                     onDone = {
-                        itinerary = SampleItinerary.days
-                        // The progress screen is replaced, so Back does not return to it.
-                        backStack.replaceTop(if (route.group) OptimizationResult(route.tripId) else DayItinerary(route.tripId))
+                        // Back from the result skips the progress screen and the lodging choice.
+                        backStack.removeAll { it is Optimizing || it is LodgingChoice }
+                        backStack.add(if (route.group) OptimizationResult(route.tripId) else DayItinerary(route.tripId))
                     },
+                    onChooseLodging = { backStack.replaceTop(LodgingChoice(route.tripId, route.group)) },
                 )
             }
             entry<OptimizationResult> { route ->
-                OptimizationResultScreen(
+                OptimizationResultRoute(
+                    tripId = route.tripId,
                     onBack = { backStack.goBack() },
                     onProfile = { selectTab(MainTab.Profile) },
                     onViewItinerary = { showItinerary(route.tripId) },
                 )
             }
             entry<DayItinerary> { route ->
-                ItineraryScreen(
-                    days = itinerary,
+                ItineraryRoute(
+                    tripId = route.tripId,
                     onBack = { backStack.goBack() },
                     onEdit = { backStack.add(ItineraryEditor(route.tripId)) },
                     onPlace = { backStack.add(PlaceDetail(it)) },
+                    onPlan = { group -> backStack.replaceTop(Optimizing(route.tripId, group)) },
                 )
             }
             entry<ItineraryEditor> { route ->

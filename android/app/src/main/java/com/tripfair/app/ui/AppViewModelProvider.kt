@@ -23,6 +23,9 @@ import com.tripfair.app.ui.screens.sos.ContactFormViewModel
 import com.tripfair.app.ui.screens.group.CreateGroupViewModel
 import com.tripfair.app.ui.screens.group.TripsViewModel
 import com.tripfair.app.ui.screens.trip.CreateTripViewModel
+import com.tripfair.app.ui.screens.trip.ItineraryViewModel
+import com.tripfair.app.ui.screens.trip.LodgingViewModel
+import com.tripfair.app.ui.screens.trip.OptimizingViewModel
 import com.tripfair.app.ui.screens.sos.EmergencyContactsViewModel
 
 /** Creates every ViewModel with the repositories it needs from the [AppContainer]. */
@@ -46,6 +49,9 @@ object AppViewModelProvider {
         initializer { TripsViewModel(container().tripsRepository) }
         initializer { CreateTripViewModel(container().tripsRepository) }
         initializer { CreateGroupViewModel(container().tripsRepository) }
+        initializer { LodgingViewModel(container().tripsRepository) }
+        initializer { OptimizingViewModel(container().tripsRepository) }
+        initializer { ItineraryViewModel(container().tripsRepository) }
     }
 }
 

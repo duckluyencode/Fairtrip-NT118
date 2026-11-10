@@ -16,6 +16,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -27,12 +28,54 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tripfair.app.R
+import com.tripfair.app.data.trips.ItineraryWarningDto
+import com.tripfair.app.ui.AppViewModelProvider
+import com.tripfair.app.ui.components.EmptyState
 import com.tripfair.app.ui.components.TripFairTopBar
-import com.tripfair.app.ui.sample.ItineraryDay
 import com.tripfair.app.ui.sample.SampleItinerary
 import com.tripfair.app.ui.theme.ThemePreviews
 import com.tripfair.app.ui.theme.TripFairTheme
+
+@Composable
+fun ItineraryRoute(
+    tripId: Int,
+    onBack: () -> Unit,
+    onEdit: () -> Unit,
+    onPlace: (placeId: String) -> Unit,
+    onPlan: (group: Boolean) -> Unit,
+    viewModel: ItineraryViewModel = viewModel(factory = AppViewModelProvider.Factory),
+) {
+    // Again on each return, e.g. after the itinerary was edited.
+    LaunchedEffect(tripId) { viewModel.start(tripId) }
+    val itinerary = viewModel.itinerary
+    val trip = viewModel.trip
+    if (itinerary == null || trip == null) {
+        val error = viewModel.error
+        TripLoadScaffold(
+            title = stringResource(R.string.itinerary_title_short),
+            loading = viewModel.loading,
+            error = error?.let { tripErrorMessage(it) },
+            onRetry = viewModel::load,
+            onBack = onBack,
+            onPlan = if (error?.code == "ITINERARY_NOT_READY") ({ onPlan(trip?.isGroup == true) }) else null,
+        )
+        return
+    }
+    ItineraryScreen(
+        title = stringResource(R.string.itinerary_title, trip.name ?: trip.city, trip.days),
+        days = itineraryDays(itinerary),
+        budget = itinerary.me.budget,
+        nights = itinerary.lodging?.nights ?: 0,
+        warnings = itinerary.warnings,
+        onBack = onBack,
+        onEdit = onEdit,
+        onPlace = onPlace,
+    )
+}
 
 /**
  * "Lộ trình theo ngày": day chips, the route map, your budget and the timeline of the day.
@@ -40,10 +83,14 @@ import com.tripfair.app.ui.theme.TripFairTheme
  */
 @Composable
 fun ItineraryScreen(
+    title: String,
     days: List<ItineraryDay>,
+    budget: Long,
+    nights: Int,
     onBack: () -> Unit,
     onEdit: () -> Unit,
     onPlace: (placeId: String) -> Unit,
+    warnings: List<ItineraryWarningDto> = emptyList(),
 ) {
     var selected by rememberSaveable { mutableIntStateOf(0) }
     val dayIndex = selected.coerceIn(0, days.lastIndex)
@@ -51,7 +98,7 @@ fun ItineraryScreen(
 
     Scaffold(
         topBar = {
-            TripFairTopBar(title = SampleItinerary.TITLE, onBack = onBack) {
+            TripFairTopBar(title = title, onBack = onBack) {
                 ItineraryMenu(onEdit = onEdit)
             }
         },
@@ -64,23 +111,53 @@ fun ItineraryScreen(
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             DayChips(days = days, selected = dayIndex, onSelect = { selected = it })
-            RouteMap(day = day)
+            if (day.markers.isNotEmpty()) RouteMap(day = day)
             DayHeader(day = day)
-            TripBudgetCard(days = days, day = day, editing = false)
+            TripBudgetCard(days = days, day = day, editing = false, budget = budget, nights = nights)
+            WarningsCard(warnings = warnings, day = day.number)
             Column(
                 modifier = Modifier.padding(start = 20.dp, end = 20.dp, bottom = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
+                if (day.stops.isEmpty()) EmptyState(text = stringResource(R.string.itinerary_day_empty))
                 var total = days.costBefore(dayIndex)
                 day.stops.forEach { stop ->
                     total += stop.cost
                     TimelineRow(
                         stop = stop,
-                        runningTotal = total,
+                        // The backend's total, which counts what you pay where; else added up here.
+                        runningTotal = stop.runningTotal ?: total,
                         onClick = stop.placeId?.let { id -> { onPlace(id) } },
                     )
                 }
             }
+        }
+    }
+}
+
+/** What the planner flagged for the whole trip or for [day]: closed places, long days, budgets. */
+@Composable
+private fun WarningsCard(warnings: List<ItineraryWarningDto>, day: Int) {
+    val shown = warnings.filter { it.day == null || it.day == day }.distinctBy { it.code }
+    if (shown.isEmpty()) return
+    val colors = MaterialTheme.colorScheme
+    Column(
+        modifier = Modifier
+            .padding(horizontal = 20.dp)
+            .fillMaxWidth()
+            .background(colors.errorContainer, MaterialTheme.shapes.small)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        shown.forEach { warning ->
+            val text = when (warning.code) {
+                "DAY_TOO_LONG" -> stringResource(R.string.itinerary_warning_day_too_long)
+                "PLACE_CLOSED" -> stringResource(R.string.itinerary_warning_place_closed)
+                "OVER_BUDGET" -> stringResource(R.string.itinerary_warning_over_budget)
+                "MEMBER_OVER_BUDGET" -> stringResource(R.string.itinerary_warning_member_over)
+                else -> null
+            }
+            text?.let { Text(text = it, style = MaterialTheme.typography.bodySmall, color = colors.onErrorContainer) }
         }
     }
 }
@@ -116,6 +193,14 @@ private fun ItineraryMenu(onEdit: () -> Unit) {
 @Composable
 private fun ItineraryScreenPreview() {
     TripFairTheme {
-        ItineraryScreen(days = SampleItinerary.days, onBack = {}, onEdit = {}, onPlace = {})
+        ItineraryScreen(
+            title = SampleItinerary.TITLE,
+            days = SampleItinerary.days,
+            budget = SampleItinerary.BUDGET,
+            nights = SampleItinerary.NIGHTS,
+            onBack = {},
+            onEdit = {},
+            onPlace = {},
+        )
     }
 }

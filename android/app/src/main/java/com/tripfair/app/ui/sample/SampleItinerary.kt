@@ -1,39 +1,9 @@
 package com.tripfair.app.ui.sample
 
-enum class StopKind { Place, Lodging }
-
-/** One row of the day timeline. Costs are per person, in dong. */
-data class ItineraryStop(
-    val id: String,
-    val time: String,
-    val name: String,
-    /** Line under the name, e.g. "Ăn sáng · 45 phút · Google". */
-    val detail: String,
-    /** 0 means free. */
-    val cost: Long,
-    /** True when the price is not an official ticket price, so it is shown with "~". */
-    val estimated: Boolean = false,
-    val kind: StopKind = StopKind.Place,
-    /** Sample place opened when the stop is tapped; null when there is no detail page yet. */
-    val placeId: String? = null,
-    /** Shown as "Mới thêm" in the editor. */
-    val isNew: Boolean = false,
-)
-
-/** Numbered stop on the static map; [x] and [y] are fractions of the map size. */
-data class MapMarker(val number: Int, val x: Float, val y: Float)
-
-data class ItineraryDay(
-    val number: Int,
-    /** Short date on the selected day chip, e.g. "12/10". */
-    val date: String,
-    val title: String,
-    val distance: String,
-    val stops: List<ItineraryStop>,
-    val markers: List<MapMarker>,
-    /** Marker numbers joined by the route line, as drawn in Figma. */
-    val route: List<Int> = emptyList(),
-)
+import com.tripfair.app.ui.screens.trip.ItineraryDay
+import com.tripfair.app.ui.screens.trip.ItineraryStop
+import com.tripfair.app.ui.screens.trip.MapMarker
+import com.tripfair.app.ui.screens.trip.StopKind
 
 /**
  * The optimized 3-day plan from Figma ("Lộ trình theo ngày"). Day 1 is the Figma frame;

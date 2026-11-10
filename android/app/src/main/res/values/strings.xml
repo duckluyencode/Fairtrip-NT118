@@ -469,8 +469,15 @@
     <!-- Lodging -->
     <string name="lodging_title">Chọn chỗ ở</string>
     <string name="lodging_heading">Chỗ ở hợp ngân sách</string>
-    <string name="lodging_intro">Giá phòng lấy từ Agoda lúc %1$s. Tiền phòng được trừ khỏi ngân sách trước, phần còn lại dành cho các điểm.</string>
-    <string name="lodging_rating">%1$s Agoda · %2$s tới lộ trình</string>
+    <string name="lodging_intro">Giá phòng lấy lúc %1$s. Tiền phòng được trừ khỏi ngân sách trước, phần còn lại dành cho các điểm.</string>
+    <string name="lodging_trip_line">%1$s · %2$s · %3$d đêm · %4$d người/phòng</string>
+    <string name="lodging_none">Chưa tìm được khách sạn hợp ngân sách. Bạn vẫn có thể tự lo chỗ ở.</string>
+    <string name="lodging_tag_cheapest">Rẻ nhất</string>
+    <string name="lodging_tag_balanced">Cân bằng</string>
+    <string name="lodging_tag_nearest">Gần lộ trình nhất</string>
+    <string name="lodging_rating">%1$s/5 · %2$s tới lộ trình</string>
+    <string name="lodging_rating_only">%1$s/5</string>
+    <string name="lodging_distance_only">%1$s tới lộ trình</string>
     <plurals name="lodging_price">
         <item quantity="other">%1$s/đêm · phòng %2$d người</item>
     </plurals>
@@ -489,6 +496,7 @@
     <string name="optimizing_step_rooms">Lấy giá phòng từ Agoda</string>
     <string name="optimizing_step_pick">Chọn điểm theo giá trị và chi phí</string>
     <string name="optimizing_step_fair">Kiểm tra không ai vượt ngân sách</string>
+    <string name="optimizing_failed">Chưa lập được lộ trình</string>
     <string name="optimizing_leave">Bạn có thể rời màn hình này; app sẽ báo khi lộ trình sẵn sàng.</string>
 
     <!-- Optimization result -->
@@ -502,7 +510,14 @@
     <string name="result_group_total">Tổng nhóm</string>
     <string name="result_privacy">Ngân sách của từng người được ẩn. Cả nhóm chỉ thấy phần chi; số tiền còn lại chỉ hiện với chính bạn.</string>
     <string name="result_costs">Chi phí theo điểm · mỗi người</string>
-    <string name="result_view_itinerary">Xem lộ trình 3 ngày</string>
+    <string name="result_view_itinerary_days">Xem lộ trình %1$d ngày</string>
+    <string name="result_summary">%1$d địa điểm · %2$d ngày · %3$d người</string>
+    <string name="result_summary_lodging">%1$d địa điểm và lưu trú · %2$d ngày · %3$d người</string>
+    <string name="result_fairness">Chỉ số công bằng (Jain): %1$s</string>
+    <string name="result_overspend">Có người vượt ngân sách cá nhân</string>
+    <string name="result_cost_everyone">Cả nhóm</string>
+    <string name="result_lodging_line">%1$s · %2$d đêm</string>
+    <string name="result_lodging_detail">Cả nhóm · %1$d phòng, chia đều · %2$s</string>
 
     <!-- Day itinerary and editor -->
     <string name="itinerary_day_chip_selected">Ngày %1$d · %2$s</string>
@@ -515,6 +530,27 @@
     <string name="itinerary_over">Vượt ngân sách %1$s</string>
     <string name="itinerary_no_transport">Chưa gồm di chuyển</string>
     <string name="itinerary_breakdown">Gồm lưu trú %1$s (%2$d đêm) và các điểm %3$s</string>
+    <string name="itinerary_breakdown_self">Tự lo chỗ ở · các điểm %1$s</string>
+    <string name="itinerary_title">%1$s · %2$d ngày</string>
+    <string name="itinerary_title_short">Lộ trình</string>
+    <string name="itinerary_distance">~%1$s</string>
+    <string name="itinerary_place_fallback">Địa điểm</string>
+    <string name="itinerary_lodging_fallback">Chỗ ở</string>
+    <string name="itinerary_lodging_detail">Lưu trú · %1$d đêm · %2$s</string>
+    <string name="itinerary_skipped">Bạn không đi điểm này</string>
+    <string name="itinerary_not_going">Không đi</string>
+    <string name="itinerary_day_empty">Ngày này chưa có điểm nào.</string>
+    <string name="itinerary_warning_day_too_long">Ngày này dài hơn khung giờ đi chơi.</string>
+    <string name="itinerary_warning_place_closed">Có điểm có thể đóng cửa vào ngày này. Kiểm tra giờ mở cửa trước khi đi.</string>
+    <string name="itinerary_warning_over_budget">Lộ trình vượt ngân sách của bạn.</string>
+    <string name="itinerary_warning_member_over">Có thành viên vượt ngân sách cá nhân.</string>
+    <string name="weekday_mon">Thứ Hai</string>
+    <string name="weekday_tue">Thứ Ba</string>
+    <string name="weekday_wed">Thứ Tư</string>
+    <string name="weekday_thu">Thứ Năm</string>
+    <string name="weekday_fri">Thứ Sáu</string>
+    <string name="weekday_sat">Thứ Bảy</string>
+    <string name="weekday_sun">Chủ Nhật</string>
     <string name="itinerary_suggest_drop">Gợi ý: bỏ %1$s (%2$s) để về lại trong ngân sách.</string>
     <string name="itinerary_suggest_generic">Gợi ý: bỏ bớt điểm có phí để về lại trong ngân sách.</string>
     <string name="itinerary_running_total">Tổng %1$s</string>
