@@ -42,6 +42,18 @@ open class FakeTrips : TripsRepository {
     override suspend fun detail(tripId: Int): ApiResult<TripDetailDto> = TODO()
     override suspend fun updateMe(tripId: Int, budget: Long?, interests: List<String>?): ApiResult<TripDetailDto> = TODO()
     override suspend fun renewInviteCode(tripId: Int): ApiResult<TripDetailDto> = TODO()
+    val removed = mutableListOf<String>()
+
+    override suspend fun leave(tripId: Int): ApiResult<Unit> {
+        removed += "leave $tripId"
+        return ApiResult.Success(Unit)
+    }
+
+    override suspend fun delete(tripId: Int): ApiResult<Unit> {
+        removed += "delete $tripId"
+        return ApiResult.Success(Unit)
+    }
+
     override suspend fun lodgingOptions(tripId: Int, guestsPerRoom: Int?): ApiResult<List<LodgingOptionDto>> = TODO()
     override suspend fun chooseLodging(tripId: Int, placeId: Int?, guestsPerRoom: Int?): ApiResult<TripDetailDto> = TODO()
     override suspend fun options(tripId: Int): ApiResult<VoteOptionListDto> = TODO()

@@ -31,6 +31,8 @@ interface EmergencyContactsRepository {
      */
     suspend fun setReceivers(receivesSos: Map<Int, Boolean>): ApiResult<Unit>
 
+    suspend fun delete(id: Int): ApiResult<Unit>
+
     /** On sign-out: the next account on this phone must not see these contacts. */
     suspend fun clearLocal()
 }
@@ -81,6 +83,11 @@ class RemoteEmergencyContactsRepository(
         }
         return ApiResult.Success(Unit)
     }
+
+    override suspend fun delete(id: Int): ApiResult<Unit> =
+        apiCall(json) { api.delete(id) }.also { result ->
+            if (result is ApiResult.Success) publish(_contacts.value.filterNot { it.id == id })
+        }
 
     override suspend fun clearLocal() {
         _contacts.value = emptyList()

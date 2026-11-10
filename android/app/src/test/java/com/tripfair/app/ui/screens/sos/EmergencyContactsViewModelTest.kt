@@ -45,6 +45,11 @@ private class FakeContacts : EmergencyContactsRepository {
         return result()
     }
 
+    override suspend fun delete(id: Int): ApiResult<Unit> {
+        if (refusal == null) contacts.value = contacts.value.filterNot { it.id == id }
+        return result()
+    }
+
     override suspend fun clearLocal() = Unit
 }
 
@@ -87,6 +92,16 @@ class EmergencyContactsViewModelTest {
 
         assertFalse(viewModel.done)
         assertEquals(R.string.error_network, viewModel.error)
+    }
+
+    @Test
+    fun `deleting a contact removes it and closes the form`() {
+        val viewModel = ContactFormViewModel(repository)
+
+        viewModel.delete(2)
+
+        assertEquals(listOf(1), repository.contacts.value.map { it.id })
+        assertTrue(viewModel.done)
     }
 
     @Test

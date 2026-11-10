@@ -93,6 +93,19 @@ class ContactFormViewModel(private val repository: EmergencyContactsRepository) 
 
     fun contact(id: Int?): EmergencyContact? = id?.let { repository.contacts.value.firstOrNull { it.id == id } }
 
+    fun delete(contactId: Int) {
+        if (saving) return
+        viewModelScope.launch {
+            saving = true
+            error = null
+            when (val result = repository.delete(contactId)) {
+                is ApiResult.Success -> done = true
+                is ApiResult.Failure -> error = contactErrorMessage(result.error)
+            }
+            saving = false
+        }
+    }
+
     fun save(contactId: Int?, input: ContactInput) {
         if (saving) return
         viewModelScope.launch {

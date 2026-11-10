@@ -26,11 +26,31 @@ class TripDetailViewModel(private val trips: TripsRepository) : ViewModel() {
     var error by mutableStateOf<Int?>(null)
         private set
 
+    /** The user left the group or deleted the trip; the screen then goes back to the list. */
+    var removed by mutableStateOf(false)
+        private set
+    var removing by mutableStateOf(false)
+        private set
+
     private var tripId = 0
 
     fun start(tripId: Int) {
         this.tripId = tripId
         load()
+    }
+
+    /** The owner deletes the trip for everyone; a member only leaves it. */
+    fun remove() {
+        val current = trip ?: return
+        if (removing) return
+        viewModelScope.launch {
+            removing = true
+            when (val result = if (current.isOwner) trips.delete(tripId) else trips.leave(tripId)) {
+                is ApiResult.Success -> removed = true
+                is ApiResult.Failure -> error = tripErrorMessage(result.error)
+            }
+            removing = false
+        }
     }
 
     fun load() {

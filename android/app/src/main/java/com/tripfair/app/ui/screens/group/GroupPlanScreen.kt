@@ -1,6 +1,8 @@
 package com.tripfair.app.ui.screens.group
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -16,11 +18,17 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -28,6 +36,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tripfair.app.R
 import com.tripfair.app.data.trips.TripDetailDto
 import com.tripfair.app.ui.AppViewModelProvider
+import com.tripfair.app.ui.components.ConfirmDialog
 import com.tripfair.app.ui.components.OutlineButton
 import com.tripfair.app.ui.components.PrimaryButton
 import com.tripfair.app.ui.components.TopBarTextAction
@@ -47,9 +56,13 @@ fun GroupPlanRoute(
     onEditBudget: () -> Unit,
     onStartVote: () -> Unit,
     onViewResult: () -> Unit,
+    onRemoved: () -> Unit,
     viewModel: TripDetailViewModel = viewModel(factory = AppViewModelProvider.Factory),
 ) {
     LaunchedEffect(tripId) { viewModel.start(tripId) }
+    LaunchedEffect(viewModel.removed) {
+        if (viewModel.removed) onRemoved()
+    }
     val trip = viewModel.trip
     if (trip == null) {
         TripLoadScaffold(
@@ -63,6 +76,8 @@ fun GroupPlanRoute(
     }
     GroupPlanScreen(
         trip = trip,
+        error = viewModel.error,
+        onRemove = viewModel::remove,
         onBack = onBack,
         onInvite = onInvite,
         onEditBudget = onEditBudget,
@@ -75,6 +90,8 @@ fun GroupPlanRoute(
 @Composable
 fun GroupPlanScreen(
     trip: TripDetailDto,
+    @StringRes error: Int?,
+    onRemove: () -> Unit,
     onBack: () -> Unit,
     onInvite: () -> Unit,
     onEditBudget: () -> Unit,
@@ -82,6 +99,21 @@ fun GroupPlanScreen(
     onViewResult: () -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
+    var confirmRemove by rememberSaveable { mutableStateOf(false) }
+    if (confirmRemove) {
+        ConfirmDialog(
+            title = stringResource(if (trip.isOwner) R.string.trip_delete_title else R.string.group_leave_title),
+            text = stringResource(if (trip.isOwner) R.string.trip_delete_text else R.string.group_leave_text),
+            confirmLabel = stringResource(if (trip.isOwner) R.string.group_delete else R.string.group_leave),
+            dismissLabel = stringResource(R.string.action_cancel),
+            onConfirm = {
+                confirmRemove = false
+                onRemove()
+            },
+            onDismiss = { confirmRemove = false },
+            confirmColor = colors.error,
+        )
+    }
     Scaffold(
         topBar = {
             TripFairTopBar(title = trip.name ?: trip.city, onBack = onBack) {
@@ -177,6 +209,17 @@ fun GroupPlanScreen(
                 OutlineButton(text = stringResource(R.string.plan_view_result), onClick = onViewResult, trailingIcon = R.drawable.ic_arrow_right)
             }
             PrimaryButton(text = stringResource(R.string.plan_start_vote), onClick = onStartVote, height = 52.dp)
+            error?.let { Text(text = stringResource(it), style = MaterialTheme.typography.bodySmall, color = colors.error) }
+            Text(
+                text = stringResource(if (trip.isOwner) R.string.group_delete else R.string.group_leave),
+                style = MaterialTheme.typography.labelLarge,
+                color = colors.error,
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .clip(MaterialTheme.shapes.extraSmall)
+                    .clickable(role = Role.Button) { confirmRemove = true }
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
+            )
         }
     }
 }
@@ -185,6 +228,6 @@ fun GroupPlanScreen(
 @Composable
 private fun GroupPlanScreenPreview() {
     TripFairTheme {
-        GroupPlanScreen(trip = SampleTripPlan.trip, onBack = {}, onInvite = {}, onEditBudget = {}, onStartVote = {}, onViewResult = {})
+        GroupPlanScreen(trip = SampleTripPlan.trip, error = null, onRemove = {}, onBack = {}, onInvite = {}, onEditBudget = {}, onStartVote = {}, onViewResult = {})
     }
 }

@@ -8,9 +8,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavKey
@@ -59,12 +56,10 @@ import com.tripfair.app.ui.screens.profile.SettingsScreen
 import com.tripfair.app.ui.screens.profile.SupportScreen
 import com.tripfair.app.ui.screens.sos.ContactFormRoute
 import com.tripfair.app.ui.screens.sos.EmergencyContactsRoute
-import com.tripfair.app.ui.screens.sos.SosScreen
-import com.tripfair.app.ui.screens.sos.rememberLocationPermission
+import com.tripfair.app.ui.screens.sos.SosRoute
 import com.tripfair.app.ui.screens.trip.CreateTripNext
 import com.tripfair.app.ui.screens.trip.CreateTripRoute
 import com.tripfair.app.ui.screens.trip.upcoming
-import com.tripfair.app.data.places.LocationDto
 import com.tripfair.app.data.trips.TripSummaryDto
 import com.tripfair.app.ui.screens.trip.ItineraryEditorRoute
 import com.tripfair.app.ui.screens.trip.ItineraryRoute
@@ -370,6 +365,7 @@ private fun TripFairNavHost(container: AppContainer, startSignedIn: Boolean) {
                     onEditBudget = { backStack.add(EditBudget(route.tripId)) },
                     onStartVote = { backStack.add(VoteList(route.tripId)) },
                     onViewResult = { backStack.add(OptimizationResult(route.tripId)) },
+                    onRemoved = { selectTab(MainTab.Trips) },
                 )
             }
             entry<EditBudget> { route ->
@@ -454,6 +450,7 @@ private fun TripFairNavHost(container: AppContainer, startSignedIn: Boolean) {
                     onEdit = { backStack.add(ItineraryEditor(route.tripId)) },
                     onPlace = { backStack.add(PlaceDetail(it)) },
                     onPlan = { group -> backStack.replaceTop(Optimizing(route.tripId, group)) },
+                    onDeleted = { selectTab(MainTab.Trips) },
                 )
             }
             entry<ItineraryEditor> { route ->
@@ -485,17 +482,10 @@ private fun TripFairNavHost(container: AppContainer, startSignedIn: Boolean) {
                 )
             }
             entry<Sos> {
-                val location = rememberLocationPermission()
-                // Read once location is allowed; the map's blue dot keeps following the phone.
-                var position by remember { mutableStateOf<LocationDto?>(null) }
-                LaunchedEffect(location.granted) {
-                    if (location.granted) position = container.locationProvider.current()
-                }
-                SosScreen(
+                SosRoute(
                     contacts = sosContacts,
-                    hasLocationPermission = location.granted,
-                    location = position,
-                    onRequestLocation = location.request,
+                    userName = account?.fullName.orEmpty(),
+                    locationProvider = container.locationProvider,
                     onBack = { backStack.goBack() },
                     onContacts = { backStack.add(EmergencyContacts) },
                 )

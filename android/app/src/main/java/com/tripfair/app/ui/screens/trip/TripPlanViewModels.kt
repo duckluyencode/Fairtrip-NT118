@@ -175,6 +175,19 @@ class ItineraryViewModel(private val trips: TripsRepository) : ViewModel() {
 
     private var tripId = 0
 
+    /** The trip was deleted; the screen then goes back to the list. */
+    var deleted by mutableStateOf(false)
+        private set
+
+    fun deleteTrip() {
+        viewModelScope.launch {
+            when (val result = trips.delete(tripId)) {
+                is ApiResult.Success -> deleted = true
+                is ApiResult.Failure -> saveError = result.error
+            }
+        }
+    }
+
     /** "Tự thiết kế lộ trình": saves the places of each day in the order given. */
     fun design(days: List<DayPlacesDto>) {
         if (saving) return

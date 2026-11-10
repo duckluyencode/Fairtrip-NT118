@@ -6,6 +6,7 @@ import android.provider.ContactsContract
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -34,9 +35,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -45,6 +48,7 @@ import com.tripfair.app.R
 import com.tripfair.app.data.contacts.ContactInput
 import com.tripfair.app.data.contacts.EmergencyContact
 import com.tripfair.app.ui.AppViewModelProvider
+import com.tripfair.app.ui.components.ConfirmDialog
 import com.tripfair.app.ui.components.LabeledTextField
 import com.tripfair.app.ui.components.OutlineButton
 import com.tripfair.app.ui.components.PrimaryButton
@@ -69,6 +73,7 @@ fun ContactFormRoute(
         contact = remember(contactId) { viewModel.contact(contactId) },
         onBack = onBack,
         onSave = { viewModel.save(contactId, it) },
+        onDelete = contactId?.let { id -> { viewModel.delete(id) } },
         saving = viewModel.saving,
         phoneError = viewModel.phoneError,
         error = viewModel.error,
@@ -84,6 +89,7 @@ fun ContactFormScreen(
     contact: EmergencyContact?,
     onBack: () -> Unit,
     onSave: (ContactInput) -> Unit,
+    onDelete: (() -> Unit)? = null,
     saving: Boolean = false,
     @StringRes phoneError: Int? = null,
     @StringRes error: Int? = null,
@@ -94,6 +100,22 @@ fun ContactFormScreen(
     var phone by rememberSaveable { mutableStateOf(contact?.displayPhone.orEmpty()) }
     var relation by rememberSaveable { mutableStateOf(contact?.relation ?: SampleSos.relations.first()) }
     var receivesSos by rememberSaveable { mutableStateOf(contact?.receivesSos ?: true) }
+    var confirmDelete by rememberSaveable { mutableStateOf(false) }
+
+    if (confirmDelete && contact != null && onDelete != null) {
+        ConfirmDialog(
+            title = stringResource(R.string.contacts_delete_title),
+            text = stringResource(R.string.contacts_delete_text, contact.name),
+            confirmLabel = stringResource(R.string.contacts_delete),
+            dismissLabel = stringResource(R.string.action_cancel),
+            onConfirm = {
+                confirmDelete = false
+                onDelete()
+            },
+            onDismiss = { confirmDelete = false },
+            confirmColor = colors.error,
+        )
+    }
 
     val pickContact = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         val uri = result.data?.data
@@ -141,6 +163,18 @@ fun ContactFormScreen(
                     height = 52.dp,
                     enabled = !saving && name.isNotBlank() && phone.isNotBlank(),
                 )
+                if (contact != null && onDelete != null) {
+                    Text(
+                        text = stringResource(R.string.contacts_delete),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = colors.error,
+                        modifier = Modifier
+                            .align(Alignment.CenterHorizontally)
+                            .clip(MaterialTheme.shapes.extraSmall)
+                            .clickable(role = Role.Button, enabled = !saving) { confirmDelete = true }
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                    )
+                }
             }
         },
     ) { innerPadding ->

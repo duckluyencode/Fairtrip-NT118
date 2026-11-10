@@ -452,6 +452,13 @@
     <string name="trip_date_range">%1$d tháng %2$d – %3$d tháng %4$d</string>
     <string name="trip_length_day">1 ngày</string>
     <string name="trip_length_nights">%1$d ngày %2$d đêm</string>
+    <string name="trip_delete">Xóa chuyến đi</string>
+    <string name="trip_delete_title">Xóa chuyến đi này?</string>
+    <string name="trip_delete_text">Lộ trình, bình chọn và ngân sách của chuyến sẽ bị xóa với mọi thành viên. Không khôi phục được.</string>
+    <string name="group_delete">Xóa nhóm</string>
+    <string name="group_leave">Rời nhóm</string>
+    <string name="group_leave_title">Rời nhóm này?</string>
+    <string name="group_leave_text">Bạn sẽ không còn thấy chuyến đi của nhóm. Muốn vào lại cần mã mời.</string>
     <string name="trip_error_city_missing">Nhập điểm đến.</string>
     <string name="trip_error_dates_missing">Chọn ngày đi và ngày về.</string>
     <string name="trip_error_dates_too_long">Chuyến đi dài tối đa 15 ngày.</string>
@@ -620,6 +627,12 @@
     <string name="sos_hold_button">Giữ 3 giây để gửi SOS</string>
     <string name="sos_sent_title">Đã gửi vị trí</string>
     <string name="sos_sent_text">SMS kèm vị trí đã gửi cho %1$s.</string>
+    <string name="sos_opened_title">Đã soạn sẵn tin nhắn</string>
+    <string name="sos_opened_text">Ứng dụng tin nhắn đã mở với nội dung gửi cho %1$s. Bấm gửi trong ứng dụng tin nhắn để hoàn tất.</string>
+    <string name="sos_failed_title">Chưa gửi được</string>
+    <string name="sos_failed_text">Máy này không gửi được SMS. Hãy gọi 113, 114, 115 hoặc gọi người thân.</string>
+    <string name="sos_message">SOS! %1$s cần trợ giúp khẩn cấp. Vị trí hiện tại: %2$s (%3$s). Gửi từ TripFair.</string>
+    <string name="sos_message_no_location">SOS! %1$s cần trợ giúp khẩn cấp. Chưa xác định được vị trí. Hãy gọi lại ngay. Gửi từ TripFair.</string>
     <string name="sos_permission_title">Chưa có quyền vị trí</string>
     <string name="sos_permission_text">TripFair cần vị trí để gửi tọa độ cho người thân. Bạn vẫn gọi được 113, 114, 115 khi chưa cấp quyền.</string>
     <string name="sos_permission_action">Cấp quyền vị trí</string>
@@ -642,6 +655,9 @@
     </plurals>
     <string name="contacts_receivers_none">Chưa chọn ai. Đánh dấu ít nhất một người để gửi được SOS.</string>
     <string name="cd_edit_contact">Sửa %1$s</string>
+    <string name="contacts_delete">Xóa liên hệ</string>
+    <string name="contacts_delete_title">Xóa liên hệ này?</string>
+    <string name="contacts_delete_text">%1$s sẽ không còn nhận tin SOS của bạn.</string>
     <string name="contacts_error_limit">Mỗi tài khoản lưu tối đa 5 liên hệ khẩn cấp.</string>
     <string name="contacts_error_not_found">Liên hệ này không còn trong danh sách. Hãy mở lại màn hình.</string>
     <string name="contacts_error_phone">Số điện thoại chưa đúng. Số Việt Nam gồm 10 chữ số; số nước ngoài bắt đầu bằng + và mã quốc gia.</string>

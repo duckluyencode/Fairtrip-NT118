@@ -56,7 +56,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.remember
 import com.tripfair.app.R
+import com.tripfair.app.data.location.LocationProvider
+import com.tripfair.app.data.sos.SosMessenger
+import com.tripfair.app.data.sos.SosOutcome
+import com.tripfair.app.data.sos.mapsLink
 import com.tripfair.app.data.places.LocationDto
 import com.tripfair.app.ui.components.MapPin
 import com.tripfair.app.ui.components.PlacesMap
@@ -72,23 +80,81 @@ import kotlin.math.abs
 import com.tripfair.app.ui.theme.extendedColors
 import kotlinx.coroutines.launch
 
-private enum class SendState { Idle, Confirming, Sent }
+private enum class SendState { Idle, Confirming }
 
 /** How long the send button has to be held, to avoid sending by mistake. */
 private const val HOLD_MILLIS = 3000
 
 /**
+ * Connects the SOS screen to the phone: reads the position once location is allowed, and
+ * sends the text by SMS. Sending directly needs the SMS permission, asked at that moment;
+ * when it is refused the SMS app opens with the recipients and the text filled in.
+ */
+@Composable
+fun SosRoute(
+    contacts: List<EmergencyContact>,
+    userName: String,
+    locationProvider: LocationProvider,
+    onBack: () -> Unit,
+    onContacts: () -> Unit,
+) {
+    val context = LocalContext.current
+    val permission = rememberLocationPermission()
+    var position by remember { mutableStateOf<LocationDto?>(null) }
+    LaunchedEffect(permission.granted) {
+        if (permission.granted) position = locationProvider.current()
+    }
+
+    val messenger = remember { SosMessenger(context) }
+    var outcome by rememberSaveable { mutableStateOf<SosOutcome?>(null) }
+    val numbers = contacts.filter { it.receivesSos }.map { it.phone }
+    val place = position
+    val message = if (place != null) {
+        stringResource(R.string.sos_message, userName, mapsLink(place), coordinatesText(place))
+    } else {
+        stringResource(R.string.sos_message_no_location, userName)
+    }
+    val deliver: (Boolean) -> Unit = { direct ->
+        outcome = if (direct && messenger.sendDirectly(numbers, message)) {
+            SosOutcome.Sent
+        } else {
+            try {
+                context.startActivity(messenger.smsAppIntent(numbers, message))
+                SosOutcome.OpenedSmsApp
+            } catch (_: ActivityNotFoundException) {
+                SosOutcome.Failed
+            }
+        }
+    }
+    val smsPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted -> deliver(granted) }
+
+    SosScreen(
+        contacts = contacts,
+        hasLocationPermission = permission.granted,
+        location = position,
+        outcome = outcome,
+        onRequestLocation = permission.request,
+        onSend = { if (messenger.canSendDirectly()) deliver(true) else smsPermission.launch(Manifest.permission.SEND_SMS) },
+        onCloseOutcome = { outcome = null },
+        onBack = onBack,
+        onContacts = onContacts,
+    )
+}
+
+/**
  * "SOS khẩn cấp": current location, the SMS to the chosen contacts (confirmed by holding a
  * button for 3 seconds) and quick calls. Without location permission the map is replaced by
  * a card asking for it ("SOS · chưa có quyền vị trí"); calls still work.
- * Until SmsManager and the location provider are connected, the location and the sending are samples.
  */
 @Composable
 fun SosScreen(
     contacts: List<EmergencyContact>,
     hasLocationPermission: Boolean,
     location: LocationDto?,
+    outcome: SosOutcome?,
     onRequestLocation: () -> Unit,
+    onSend: () -> Unit,
+    onCloseOutcome: () -> Unit,
     onBack: () -> Unit,
     onContacts: () -> Unit,
     initiallyConfirming: Boolean = false,
@@ -110,8 +176,8 @@ fun SosScreen(
     }
 
     // The confirmation and result cards sit under the quick calls, so bring them into view.
-    LaunchedEffect(state) {
-        if (state != SendState.Idle) scroll.animateScrollTo(scroll.maxValue)
+    LaunchedEffect(state, outcome) {
+        if (state != SendState.Idle || outcome != null) scroll.animateScrollTo(scroll.maxValue)
     }
 
     Scaffold(
@@ -173,14 +239,16 @@ fun SosScreen(
                     }
                 }
             }
-            when (state) {
-                SendState.Confirming -> ConfirmCard(
+            when {
+                outcome != null -> SentCard(outcome = outcome, recipientNames = recipientNames, onClose = onCloseOutcome)
+                state == SendState.Confirming -> ConfirmCard(
                     recipientNames = recipientNames,
                     onCancel = { state = SendState.Idle },
-                    onSent = { state = SendState.Sent },
+                    onSent = {
+                        state = SendState.Idle
+                        onSend()
+                    },
                 )
-                SendState.Sent -> SentCard(recipientNames = recipientNames, onClose = { state = SendState.Idle })
-                SendState.Idle -> Unit
             }
         }
     }
@@ -433,15 +501,26 @@ private fun HoldToSendButton(enabled: Boolean, onSent: () -> Unit, modifier: Mod
 
 /** Result shown in place after sending (not designed in Figma; follows the confirmation card). */
 @Composable
-private fun SentCard(recipientNames: String, onClose: () -> Unit) {
+private fun SentCard(outcome: SosOutcome, recipientNames: String, onClose: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     val success = MaterialTheme.extendedColors.success
+    val failed = outcome == SosOutcome.Failed
     AlertCard(
-        icon = R.drawable.ic_check,
-        iconTint = success,
-        iconBackground = colors.primaryContainer,
-        title = stringResource(R.string.sos_sent_title),
-        text = stringResource(R.string.sos_sent_text, recipientNames),
+        icon = if (failed) R.drawable.ic_circle_alert else R.drawable.ic_check,
+        iconTint = if (failed) colors.error else success,
+        iconBackground = if (failed) colors.errorContainer else colors.primaryContainer,
+        title = stringResource(
+            when (outcome) {
+                SosOutcome.Sent -> R.string.sos_sent_title
+                SosOutcome.OpenedSmsApp -> R.string.sos_opened_title
+                SosOutcome.Failed -> R.string.sos_failed_title
+            },
+        ),
+        text = when (outcome) {
+            SosOutcome.Sent -> stringResource(R.string.sos_sent_text, recipientNames)
+            SosOutcome.OpenedSmsApp -> stringResource(R.string.sos_opened_text, recipientNames)
+            SosOutcome.Failed -> stringResource(R.string.sos_failed_text)
+        },
         action = { TopBarTextAction(text = stringResource(R.string.action_close), onClick = onClose) },
     )
 }
@@ -494,7 +573,10 @@ private fun SosScreenPreview() {
             contacts = SampleSos.contacts,
             hasLocationPermission = true,
             location = LocationDto(16.0544, 108.2469),
+            outcome = null,
             onRequestLocation = {},
+            onSend = {},
+            onCloseOutcome = {},
             onBack = {},
             onContacts = {},
             initiallyConfirming = true,
@@ -510,7 +592,10 @@ private fun SosNoLocationPreview() {
             contacts = SampleSos.contacts,
             hasLocationPermission = false,
             location = null,
+            outcome = null,
             onRequestLocation = {},
+            onSend = {},
+            onCloseOutcome = {},
             onBack = {},
             onContacts = {},
         )

@@ -2,6 +2,7 @@ package com.tripfair.app.data.contacts
 
 import kotlinx.serialization.Serializable
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.PATCH
 import retrofit2.http.POST
@@ -33,4 +34,7 @@ interface EmergencyContactsApi {
 
     @PATCH("me/emergency-contacts/{id}")
     suspend fun update(@Path("id") id: Int, @Body body: ContactPatch): EmergencyContact
+
+    @DELETE("me/emergency-contacts/{id}")
+    suspend fun delete(@Path("id") id: Int)
 }

@@ -31,9 +31,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.annotation.StringRes
 import com.tripfair.app.R
 import com.tripfair.app.data.trips.ItineraryWarningDto
 import com.tripfair.app.ui.AppViewModelProvider
+import com.tripfair.app.ui.components.ConfirmDialog
 import com.tripfair.app.ui.components.EmptyState
 import com.tripfair.app.ui.components.TripFairTopBar
 import com.tripfair.app.ui.sample.SampleItinerary
@@ -47,10 +49,14 @@ fun ItineraryRoute(
     onEdit: () -> Unit,
     onPlace: (placeId: String) -> Unit,
     onPlan: (group: Boolean) -> Unit,
+    onDeleted: () -> Unit,
     viewModel: ItineraryViewModel = viewModel(factory = AppViewModelProvider.Factory),
 ) {
     // Again on each return, e.g. after the itinerary was edited.
     LaunchedEffect(tripId) { viewModel.start(tripId) }
+    LaunchedEffect(viewModel.deleted) {
+        if (viewModel.deleted) onDeleted()
+    }
     val itinerary = viewModel.itinerary
     val trip = viewModel.trip
     if (itinerary == null || trip == null) {
@@ -71,9 +77,12 @@ fun ItineraryRoute(
         budget = itinerary.me.budget,
         nights = itinerary.lodging?.nights ?: 0,
         warnings = itinerary.warnings,
+        error = viewModel.saveError?.let { tripErrorMessage(it) },
         onBack = onBack,
         onEdit = onEdit,
         onPlace = onPlace,
+        // Only the owner can delete a trip; members leave from the group screen.
+        onDelete = if (trip.isOwner) viewModel::deleteTrip else null,
     )
 }
 
@@ -91,7 +100,24 @@ fun ItineraryScreen(
     onEdit: () -> Unit,
     onPlace: (placeId: String) -> Unit,
     warnings: List<ItineraryWarningDto> = emptyList(),
+    @StringRes error: Int? = null,
+    onDelete: (() -> Unit)? = null,
 ) {
+    var confirmDelete by rememberSaveable { mutableStateOf(false) }
+    if (confirmDelete && onDelete != null) {
+        ConfirmDialog(
+            title = stringResource(R.string.trip_delete_title),
+            text = stringResource(R.string.trip_delete_text),
+            confirmLabel = stringResource(R.string.trip_delete),
+            dismissLabel = stringResource(R.string.action_cancel),
+            onConfirm = {
+                confirmDelete = false
+                onDelete()
+            },
+            onDismiss = { confirmDelete = false },
+            confirmColor = MaterialTheme.colorScheme.error,
+        )
+    }
     var selected by rememberSaveable { mutableIntStateOf(0) }
     val dayIndex = selected.coerceIn(0, days.lastIndex)
     val day = days[dayIndex]
@@ -99,7 +125,7 @@ fun ItineraryScreen(
     Scaffold(
         topBar = {
             TripFairTopBar(title = title, onBack = onBack) {
-                ItineraryMenu(onEdit = onEdit)
+                ItineraryMenu(onEdit = onEdit, onDelete = onDelete?.let { { confirmDelete = true } })
             }
         },
     ) { innerPadding ->
@@ -115,6 +141,14 @@ fun ItineraryScreen(
             DayHeader(day = day)
             TripBudgetCard(days = days, day = day, editing = false, budget = budget, nights = nights)
             WarningsCard(warnings = warnings, day = day.number)
+            error?.let {
+                Text(
+                    text = stringResource(it),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(horizontal = 20.dp),
+                )
+            }
             Column(
                 modifier = Modifier.padding(start = 20.dp, end = 20.dp, bottom = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -162,9 +196,9 @@ private fun WarningsCard(warnings: List<ItineraryWarningDto>, day: Int) {
     }
 }
 
-/** "⋮" button with the "Sửa lộ trình" item. */
+/** "⋮" button with "Sửa lộ trình" and, for the trip's owner, "Xóa chuyến đi". */
 @Composable
-private fun ItineraryMenu(onEdit: () -> Unit) {
+private fun ItineraryMenu(onEdit: () -> Unit, onDelete: (() -> Unit)?) {
     var expanded by remember { mutableStateOf(false) }
     Box {
         IconButton(onClick = { expanded = true }, modifier = Modifier.size(36.dp)) {
@@ -185,6 +219,21 @@ private fun ItineraryMenu(onEdit: () -> Unit) {
                     onEdit()
                 },
             )
+            if (onDelete != null) {
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = stringResource(R.string.trip_delete),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    },
+                    onClick = {
+                        expanded = false
+                        onDelete()
+                    },
+                )
+            }
         }
     }
 }

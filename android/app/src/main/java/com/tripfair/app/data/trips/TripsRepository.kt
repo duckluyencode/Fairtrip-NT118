@@ -23,6 +23,12 @@ interface TripsRepository {
 
     suspend fun renewInviteCode(tripId: Int): ApiResult<TripDetailDto>
 
+    /** A member leaves a group; the owner deletes the trip instead. */
+    suspend fun leave(tripId: Int): ApiResult<Unit>
+
+    /** Deletes the trip for everyone; only its owner can. */
+    suspend fun delete(tripId: Int): ApiResult<Unit>
+
     suspend fun lodgingOptions(tripId: Int, guestsPerRoom: Int?): ApiResult<List<LodgingOptionDto>>
 
     /** A suggested hotel ([placeId]), or "Tự lo chỗ ở" when [placeId] is null. */
@@ -61,6 +67,10 @@ class RemoteTripsRepository(private val api: TripsApi) : TripsRepository {
         apiCall(json) { api.updateMe(tripId, MembershipPatch(budget, interests)) }
 
     override suspend fun renewInviteCode(tripId: Int) = apiCall(json) { api.renewInviteCode(tripId) }
+
+    override suspend fun leave(tripId: Int) = apiCall(json) { api.leave(tripId) }
+
+    override suspend fun delete(tripId: Int) = apiCall(json) { api.delete(tripId) }
 
     override suspend fun lodgingOptions(tripId: Int, guestsPerRoom: Int?) =
         apiCall(json) { api.lodgingOptions(tripId, guestsPerRoom) }
