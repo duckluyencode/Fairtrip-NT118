@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   Debug builds may use plain HTTP, but only to a backend on the developer's computer:
-  10.0.2.2 is that computer seen from the Android emulator. Everything else stays HTTPS.
+  localhost after `adb reverse tcp:3000 tcp:3000`, or 10.0.2.2 from an emulator running
+  Android 16 or older. Everything else stays HTTPS.
 -->
 <network-security-config>
     <base-config cleartextTrafficPermitted="false" />

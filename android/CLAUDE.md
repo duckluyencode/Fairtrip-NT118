@@ -6,7 +6,7 @@ Package `com.tripfair.app`, minSdk 26, compileSdk/targetSdk 37. AGP 9.4.1 (Kotli
 ## Thiết lập lần đầu
 - Mở thư mục `android/` bằng Android Studio; Studio tự tạo `local.properties` chứa `sdk.dir`.
 - Chạy Gradle từ dòng lệnh cần `JAVA_HOME` trỏ tới JDK 17 trở lên (vd. JDK đi kèm Android Studio, thư mục `jbr`) và `local.properties` có `sdk.dir`.
-- Địa chỉ backend: thêm `tripfair.apiBaseUrl=...` vào `local.properties` (kết thúc bằng `/api/v1/`). Không khai báo thì dùng `http://10.0.2.2:3000/api/v1/`, tức backend đang chạy trên chính máy tính khi app chạy trong máy ảo. Bản debug cho phép HTTP tới `10.0.2.2` và `localhost`; mọi địa chỉ khác phải là HTTPS.
+- Địa chỉ backend: thêm `tripfair.apiBaseUrl=...` vào `local.properties` (kết thúc bằng `/api/v1/`). Không khai báo thì dùng `http://localhost:3000/api/v1/`, tức backend đang chạy trên chính máy tính; trước khi mở app chạy `adb reverse tcp:3000 tcp:3000` (dùng được cho cả máy ảo và điện thoại cắm USB, chạy lại mỗi lần khởi động thiết bị). Không dùng `10.0.2.2`: Android 17 chặn app gọi địa chỉ mạng nội bộ khi chưa có quyền mạng cục bộ, còn `localhost` thì không bị chặn. Bản debug cho phép HTTP tới `localhost` và `10.0.2.2`; mọi địa chỉ khác phải là HTTPS.
 
 ## Lệnh thường dùng (chạy trong `android/`)
 - `./gradlew assembleDebug`: build APK debug ra `app/build/outputs/apk/debug/`

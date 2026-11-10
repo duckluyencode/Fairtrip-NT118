@@ -275,7 +275,26 @@ private fun TripDatesDialog(
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
         },
     ) {
-        DateRangePicker(state = state, modifier = Modifier.weight(1f))
+        val first = state.selectedStartDateMillis?.toLocalDate()
+        val last = state.selectedEndDateMillis?.toLocalDate()
+        DateRangePicker(
+            state = state,
+            modifier = Modifier.weight(1f),
+            // The default headline ("Ngày bắt đầu - Ngày kết thúc") wraps at this width.
+            title = null,
+            headline = {
+                Text(
+                    text = when {
+                        first != null && last != null -> tripDateRange(first, last)
+                        first != null -> stringResource(R.string.trip_dates_pick_end, tripDateRange(first, first))
+                        else -> stringResource(R.string.trip_dates_pick)
+                    },
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.padding(start = 24.dp, end = 12.dp, top = 20.dp, bottom = 12.dp),
+                )
+            },
+            showModeToggle = false,
+        )
     }
 }
 

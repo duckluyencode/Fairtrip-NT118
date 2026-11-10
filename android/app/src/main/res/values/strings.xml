@@ -446,6 +446,7 @@
     <string name="trip_continue_plan">Lập lộ trình</string>
     <string name="trip_destination_hint">Ví dụ: Đà Nẵng</string>
     <string name="trip_dates_pick">Chọn ngày đi và ngày về</string>
+    <string name="trip_dates_pick_end">%1$s – chọn ngày về</string>
     <string name="trip_date_single">%1$d tháng %2$d</string>
     <string name="trip_date_range_month">%1$d – %2$d tháng %3$d</string>
     <string name="trip_date_range">%1$d tháng %2$d – %3$d tháng %4$d</string>
