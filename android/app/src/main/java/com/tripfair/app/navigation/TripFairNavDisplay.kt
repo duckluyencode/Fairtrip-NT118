@@ -8,6 +8,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavKey
@@ -61,6 +64,7 @@ import com.tripfair.app.ui.screens.sos.rememberLocationPermission
 import com.tripfair.app.ui.screens.trip.CreateTripNext
 import com.tripfair.app.ui.screens.trip.CreateTripRoute
 import com.tripfair.app.ui.screens.trip.upcoming
+import com.tripfair.app.data.places.LocationDto
 import com.tripfair.app.data.trips.TripSummaryDto
 import com.tripfair.app.ui.screens.trip.ItineraryEditorRoute
 import com.tripfair.app.ui.screens.trip.ItineraryRoute
@@ -482,9 +486,15 @@ private fun TripFairNavHost(container: AppContainer, startSignedIn: Boolean) {
             }
             entry<Sos> {
                 val location = rememberLocationPermission()
+                // Read once location is allowed; the map's blue dot keeps following the phone.
+                var position by remember { mutableStateOf<LocationDto?>(null) }
+                LaunchedEffect(location.granted) {
+                    if (location.granted) position = container.locationProvider.current()
+                }
                 SosScreen(
                     contacts = sosContacts,
                     hasLocationPermission = location.granted,
+                    location = position,
                     onRequestLocation = location.request,
                     onBack = { backStack.goBack() },
                     onContacts = { backStack.add(EmergencyContacts) },

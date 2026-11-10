@@ -602,8 +602,10 @@
     <!-- SOS -->
     <string name="sos_contacts_action">Liên hệ</string>
     <string name="sos_warning">Chỉ dùng khi cần trợ giúp khẩn cấp. Hệ thống sẽ chia sẻ vị trí GPS hiện tại.</string>
-    <string name="sos_gps">GPS chính xác %1$s</string>
-    <string name="sos_updated">%1$s · cập nhật vừa xong</string>
+    <string name="sos_your_position">Vị trí của bạn</string>
+    <string name="sos_locating">Đang xác định vị trí…</string>
+    <string name="map_no_key">Chưa cấu hình khóa Google Maps (MAPS_API_KEY) nên bản đồ chưa hiển thị.</string>
+    <string name="results_use_my_location">Dùng vị trí của tôi</string>
     <string name="sos_send_sms">Gửi SMS vị trí cho người thân</string>
     <string name="sos_quick_call">Gọi nhanh</string>
     <string name="sos_tap_to_choose">Chạm để chọn</string>

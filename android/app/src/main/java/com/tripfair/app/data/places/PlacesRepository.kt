@@ -1,5 +1,6 @@
 package com.tripfair.app.data.places
 
+import com.tripfair.app.data.location.LocationProvider
 import com.tripfair.app.data.network.ApiClient
 import com.tripfair.app.data.network.ApiResult
 import com.tripfair.app.data.network.apiCall
@@ -38,16 +39,24 @@ interface PlacesRepository {
     suspend fun setFavorite(id: Int, favorite: Boolean): ApiResult<Unit>
 }
 
-class RemotePlacesRepository(private val api: PlacesApi) : PlacesRepository {
+/**
+ * With a [location] provider, searches and suggestions are sent with the user's position
+ * (when they allowed it), so results come back nearest first and with distances.
+ */
+class RemotePlacesRepository(
+    private val api: PlacesApi,
+    private val location: LocationProvider? = null,
+) : PlacesRepository {
     private val json = ApiClient.json
 
     override suspend fun search(query: String?, category: String?, cursor: PageCursor?): ApiResult<PlacePage> {
+        val near = location?.current()
         val result = apiCall(json) {
             api.search(
                 q = query?.trim()?.takeIf { it.isNotEmpty() },
                 category = category,
-                lat = null,
-                lng = null,
+                lat = near?.lat,
+                lng = near?.lng,
                 page = (cursor as? PageCursor.Number)?.page,
                 pageToken = (cursor as? PageCursor.Token)?.token,
             )
@@ -65,7 +74,10 @@ class RemotePlacesRepository(private val api: PlacesApi) : PlacesRepository {
     }
 
     override suspend fun suggestions(text: String, sessionToken: String?) =
-        apiCall(json) { api.suggestions(text, sessionToken) }
+        apiCall(json) {
+            val near = location?.current()
+            api.suggestions(text, sessionToken, near?.lat, near?.lng)
+        }
 
     override suspend fun detail(id: Int, sessionToken: String?) =
         apiCall(json) { api.detail(id, sessionToken) }

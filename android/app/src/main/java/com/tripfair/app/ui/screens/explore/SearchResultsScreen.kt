@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -23,6 +24,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -40,9 +45,12 @@ import com.tripfair.app.ui.AppViewModelProvider
 import com.tripfair.app.ui.components.EmptyState
 import com.tripfair.app.ui.components.ErrorState
 import com.tripfair.app.ui.components.LoadingState
+import com.tripfair.app.ui.components.MapPin
+import com.tripfair.app.ui.components.PlacesMap
 import com.tripfair.app.ui.components.PlacePlaceholder
 import com.tripfair.app.ui.components.TripFairChip
 import com.tripfair.app.ui.components.TripFairTopBar
+import com.tripfair.app.ui.screens.sos.rememberLocationPermission
 import com.tripfair.app.ui.theme.ThemePreviews
 import com.tripfair.app.ui.theme.TripFairTheme
 
@@ -62,8 +70,19 @@ fun SearchResultsRoute(
     viewModel: SearchResultsViewModel = viewModel(factory = AppViewModelProvider.Factory),
 ) {
     LaunchedEffect(query) { viewModel.start(query) }
+    val location = rememberLocationPermission()
+    // Once location is allowed here, search again: results come back nearest first.
+    var askedHere by remember { mutableStateOf(false) }
+    LaunchedEffect(location.granted) {
+        if (location.granted && askedHere) viewModel.reload()
+    }
     SearchResultsScreen(
         state = viewModel.state,
+        hasLocation = location.granted,
+        onUseMyLocation = {
+            askedHere = true
+            location.request()
+        },
         onEditQuery = onEditQuery,
         onCategoryChange = viewModel::onCategoryChange,
         onRetry = viewModel::reload,
@@ -73,10 +92,15 @@ fun SearchResultsRoute(
     )
 }
 
-/** Search results; lists never show prices. The map view comes with the Google Maps SDK. */
+/**
+ * Search results on a map and in a list; lists never show prices. The map shows the places
+ * loaded so far, and the user's position once they allow it.
+ */
 @Composable
 fun SearchResultsScreen(
     state: SearchResultsUiState,
+    hasLocation: Boolean,
+    onUseMyLocation: () -> Unit,
     onEditQuery: () -> Unit,
     onCategoryChange: (String?) -> Unit,
     onRetry: () -> Unit,
@@ -87,59 +111,98 @@ fun SearchResultsScreen(
     Scaffold(
         topBar = { TripFairTopBar(title = stringResource(R.string.results_title)) },
     ) { innerPadding ->
-        LazyColumn(
+        val pins = state.items.mapNotNull { place ->
+            place.location?.let { MapPin(id = place.id.toString(), position = it, title = place.name, detail = place.area) }
+        }
+        Column(
             modifier = Modifier
                 .padding(innerPadding)
-                .fillMaxSize(),
-            contentPadding = PaddingValues(start = 18.dp, end = 18.dp, bottom = 18.dp),
+                .fillMaxSize()
+                .padding(horizontal = 18.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            item { QueryBox(query = state.query, onClick = onEditQuery) }
-            item {
-                Row(
-                    modifier = Modifier.horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+            QueryBox(query = state.query, onClick = onEditQuery)
+            Row(
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Filters.forEach { (category, label) ->
+                    TripFairChip(
+                        text = stringResource(label),
+                        selected = state.category == category,
+                        onClick = { onCategoryChange(category) },
+                    )
+                }
+            }
+            // The map stays in place while the list scrolls under it.
+            if (pins.isNotEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(220.dp)
+                        .clip(MaterialTheme.shapes.medium),
                 ) {
-                    Filters.forEach { (category, label) ->
-                        TripFairChip(
-                            text = stringResource(label),
-                            selected = state.category == category,
-                            onClick = { onCategoryChange(category) },
+                    PlacesMap(
+                        pins = pins,
+                        modifier = Modifier.fillMaxSize(),
+                        showMyLocation = hasLocation,
+                        onPinClick = { pin -> pin.id.toIntOrNull()?.let(onPlace) },
+                    )
+                    if (!hasLocation) {
+                        Text(
+                            text = stringResource(R.string.results_use_my_location),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(10.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.surfaceContainerLowest)
+                                .clickable(role = Role.Button, onClick = onUseMyLocation)
+                                .padding(horizontal = 12.dp, vertical = 8.dp),
                         )
                     }
                 }
             }
-            when {
-                state.loading -> item { LoadingState() }
-                state.error != null -> item { ErrorState(message = stringResource(state.error), onRetry = onRetry) }
-                state.items.isEmpty() -> item { EmptyState(text = stringResource(R.string.results_empty)) }
-                else -> {
-                    items(state.items, key = { it.id }) { place ->
-                        ResultRow(
-                            place = place,
-                            onToggleFavorite = { onToggleFavorite(place.id) },
-                            onClick = { onPlace(place.id) },
-                            modifier = Modifier.animateItem(),
-                        )
-                    }
-                    if (state.next != null) {
-                        item {
-                            if (state.loadingMore) {
-                                LoadingState()
-                            } else {
-                                TextButton(onClick = onLoadMore, modifier = Modifier.fillMaxWidth()) {
-                                    Text(text = stringResource(R.string.results_load_more), style = MaterialTheme.typography.labelLarge)
+            LazyColumn(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentPadding = PaddingValues(bottom = 18.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                when {
+                    state.loading -> item { LoadingState() }
+                    state.error != null -> item { ErrorState(message = stringResource(state.error), onRetry = onRetry) }
+                    state.items.isEmpty() -> item { EmptyState(text = stringResource(R.string.results_empty)) }
+                    else -> {
+                        items(state.items, key = { it.id }) { place ->
+                            ResultRow(
+                                place = place,
+                                onToggleFavorite = { onToggleFavorite(place.id) },
+                                onClick = { onPlace(place.id) },
+                                modifier = Modifier.animateItem(),
+                            )
+                        }
+                        if (state.next != null) {
+                            item {
+                                if (state.loadingMore) {
+                                    LoadingState()
+                                } else {
+                                    TextButton(onClick = onLoadMore, modifier = Modifier.fillMaxWidth()) {
+                                        Text(text = stringResource(R.string.results_load_more), style = MaterialTheme.typography.labelLarge)
+                                    }
                                 }
                             }
                         }
-                    }
-                    state.items.firstNotNullOfOrNull { it.attribution }?.let { source ->
-                        item {
-                            Text(
-                                text = stringResource(R.string.detail_source, source),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                        state.items.firstNotNullOfOrNull { it.attribution }?.let { source ->
+                            item {
+                                Text(
+                                    text = stringResource(R.string.detail_source, source),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         }
                     }
                 }
@@ -237,6 +300,8 @@ private val PreviewPlaces = listOf(
 private fun SearchResultsScreenPreview() {
     TripFairTheme {
         SearchResultsScreen(
+            hasLocation = false,
+            onUseMyLocation = {},
             state = SearchResultsUiState(query = "Đà Nẵng", items = PreviewPlaces),
             onEditQuery = {},
             onCategoryChange = {},

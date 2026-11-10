@@ -34,7 +34,10 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalInspectionMode
+import com.tripfair.app.BuildConfig
 import com.tripfair.app.R
+import com.tripfair.app.ui.components.PlacesMap
 import com.tripfair.app.ui.components.ProgressBar
 import com.tripfair.app.ui.components.TripFairChip
 import com.tripfair.app.ui.components.formatVnd
@@ -172,11 +175,28 @@ internal fun TripBudgetCard(days: List<ItineraryDay>, day: ItineraryDay, editing
     }
 }
 
-/** The day's stops as numbered coral markers joined in visiting order ("Bản đồ lộ trình"). */
+/**
+ * The day's stops joined in visiting order ("Bản đồ lộ trình"): on Google Maps when the stops
+ * have coordinates and the app has a Maps key, else (previews, builds without a key) as
+ * numbered markers on a plain background.
+ */
 @Composable
-internal fun RouteMap(day: ItineraryDay) {
+internal fun RouteMap(day: ItineraryDay, onPlace: ((placeId: String) -> Unit)? = null) {
     val colors = MaterialTheme.colorScheme
     val description = stringResource(R.string.cd_itinerary_map, day.number)
+    if (day.pins.isNotEmpty() && BuildConfig.HAS_MAPS_KEY && !LocalInspectionMode.current) {
+        // The real map: numbered stops joined in visiting order.
+        PlacesMap(
+            pins = day.pins,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(220.dp)
+                .semantics { contentDescription = description },
+            route = true,
+            onPinClick = onPlace?.let { open -> { pin -> open(pin.id) } },
+        )
+        return
+    }
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxWidth()

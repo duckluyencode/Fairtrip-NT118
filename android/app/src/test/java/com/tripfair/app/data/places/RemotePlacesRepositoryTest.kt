@@ -1,5 +1,6 @@
 package com.tripfair.app.data.places
 
+import com.tripfair.app.data.location.LocationProvider
 import com.tripfair.app.data.network.ApiClient
 import com.tripfair.app.data.network.ApiResult
 import kotlinx.coroutines.test.runTest
@@ -61,6 +62,26 @@ class RemotePlacesRepositoryTest {
 
         server.takeRequest()
         assertEquals("2", server.takeRequest().url.queryParameter("page"))
+    }
+
+    @Test
+    fun `searches and suggestions carry the user's position once it is known`() = runTest {
+        val here = object : LocationProvider {
+            override fun hasPermission() = true
+            override suspend fun current() = LocationDto(16.0544, 108.2469)
+        }
+        val near = RemotePlacesRepository(ApiClient.retrofit(server.url("/api/v1/").toString(), ApiClient.httpClient()).create(PlacesApi::class.java), here)
+        respond(200, """{"items":[],"page":1,"limit":20,"total":0}""")
+        respond(200, "[]")
+
+        near.search("cà phê", null)
+        near.suggestions("cà", "session-1")
+
+        server.takeRequest().url.let {
+            assertEquals("16.0544", it.queryParameter("lat"))
+            assertEquals("108.2469", it.queryParameter("lng"))
+        }
+        assertEquals("16.0544", server.takeRequest().url.queryParameter("lat"))
     }
 
     @Test

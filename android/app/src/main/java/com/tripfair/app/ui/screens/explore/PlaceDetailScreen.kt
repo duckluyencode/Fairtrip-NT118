@@ -40,6 +40,8 @@ import com.tripfair.app.ui.components.ErrorState
 import com.tripfair.app.ui.components.LoadingState
 import com.tripfair.app.ui.components.PlacePlaceholder
 import com.tripfair.app.ui.components.PrimaryButton
+import com.tripfair.app.ui.components.MapPin
+import com.tripfair.app.ui.components.PlacesMap
 import com.tripfair.app.ui.components.QuickFact
 import com.tripfair.app.ui.components.TripFairTopBar
 import com.tripfair.app.ui.theme.ThemePreviews
@@ -179,6 +181,15 @@ private fun PlaceContent(
             QuickFact(label = priceLabel(place.price), value = priceValue(place.price))
             QuickFact(label = stringResource(R.string.detail_duration), value = durationText(place.visitMinutes))
             QuickFact(label = stringResource(R.string.detail_hours), value = hoursText(place.openingHours))
+        }
+        place.location?.let { position ->
+            PlacesMap(
+                pins = listOf(MapPin(id = place.id.toString(), position = position, title = place.name, detail = place.area)),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp)
+                    .clip(MaterialTheme.shapes.medium),
+            )
         }
         if (place.mapsUri != null || place.attribution != null) {
             Row(

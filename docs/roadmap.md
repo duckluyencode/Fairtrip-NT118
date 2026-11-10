@@ -47,7 +47,7 @@ Các bước AN4–AN6 là đề xuất, chỉnh lại khi tới.
 | AN3 Logic form tài khoản | ViewModel + repository mẫu, kiểm tra input, đếm ngược gửi lại mã | 🔄 chờ review | #7 | |
 | AN4 Logic các màn còn lại | ViewModel cho tìm kiếm, nhóm, bình chọn, lộ trình | ➡️ gộp vào AN5: ViewModel viết thẳng trên dữ liệu backend, không qua bản mẫu | | |
 | AN5 Nối backend | Retrofit thay repository mẫu: tài khoản, tìm kiếm, lịch sử, yêu thích trước; lộ trình, nhóm sau khi backend xong | 🔄 nhánh `feat/android-backend` (xây trên PR #7): code xong mọi mảng (tài khoản, địa điểm, liên hệ khẩn cấp, chuyến đi, chỗ ở, lộ trình, nhóm, bình chọn), 72 unit test đạt, lint không lỗi. Còn lại: chạy thử trên máy ảo hoặc điện thoại với backend thật (backend của chuyến đi nằm ở nhánh `feat/backend-readiness`, chưa merge); đổi email/số điện thoại bằng OTP; thêm địa điểm vào lộ trình từ màn sửa lộ trình; ảnh địa điểm (cần thư viện tải ảnh) | | |
-| AN6 Tính năng thiết bị | Google Maps SDK, vị trí cho SOS, camera thật, lưu lộ trình offline | ⛔ [Camera], [Offline] | | |
+| AN6 Tính năng thiết bị | Google Maps SDK, vị trí cho SOS, camera thật, lưu lộ trình offline | 🔄 nhánh `feat/android-backend`: bản đồ Google ở kết quả tìm kiếm, chi tiết địa điểm, lộ trình và SOS; tìm kiếm theo vị trí của người dùng. Còn lại: kiểm tra hiển thị bản đồ khi có khóa Maps; gửi tin SOS thật; camera thật ⛔ [Camera]; lưu lộ trình offline ⛔ [Offline] | | |
 
 ## Backend: giai đoạn A (chạy trên máy)
 
@@ -106,3 +106,4 @@ Nội dung đầy đủ ở mục "Câu hỏi mở" của [CLAUDE.md](../CLAUDE.
 - **2026-11-05:** Thêm file lộ trình này.
 - **2026-11-08:** Bắt đầu AN5 trên nhánh `feat/android-backend`, xây chồng lên PR #7: lớp mạng Retrofit/OkHttp, đọc lỗi theo `code` của backend, địa chỉ backend cấu hình trong `local.properties`.
 - **2026-11-10:** AN5: app Android gọi backend cho mọi mảng. Phiên đăng nhập lưu mã hóa và tự làm mới token; liên hệ khẩn cấp có bản sao trên máy để SOS dùng khi mất mạng; chuyến đi một mình và nhóm đi trọn luồng tạo → chỗ ở → lập lộ trình → xem và sửa lộ trình; nhóm có mã mời, ngân sách riêng tư và bình chọn. Sơ đồ ngày vẽ theo tọa độ điểm, chưa phải bản đồ thật (Google Maps SDK thuộc AN6).
+- **2026-11-10:** Chạy thử app trên máy ảo Android 17 với backend trên máy: đăng nhập, tìm kiếm, tạo chuyến và lập lộ trình chạy trọn luồng. Sửa hai lỗi lộ ra khi chạy thật (app không gọi được `10.0.2.2` trên Android 17; hộp chọn ngày hiện tiếng Anh). Bắt đầu AN6: thêm Google Maps SDK và vị trí.

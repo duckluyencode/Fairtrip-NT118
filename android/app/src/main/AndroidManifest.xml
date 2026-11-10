@@ -4,7 +4,7 @@
     <!-- Every feature except SOS and the saved itinerary talks to the TripFair backend. -->
     <uses-permission android:name="android.permission.INTERNET" />
 
-    <!-- SOS shares the current GPS position with emergency contacts. -->
+    <!-- SOS shares the current GPS position with emergency contacts; maps and search use it to show what is near. -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
@@ -17,6 +17,10 @@
         android:networkSecurityConfig="@xml/network_security_config"
         android:supportsRtl="true"
         android:theme="@style/Theme.TripFair">
+        <!-- Google Maps SDK key, from MAPS_API_KEY in local.properties. -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="${MAPS_API_KEY}" />
         <activity
             android:name=".MainActivity"
             android:exported="true">

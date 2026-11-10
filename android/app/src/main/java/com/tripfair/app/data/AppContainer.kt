@@ -9,6 +9,8 @@ import com.tripfair.app.data.contacts.EmergencyContactsApi
 import com.tripfair.app.data.contacts.EmergencyContactsRepository
 import com.tripfair.app.data.contacts.RemoteEmergencyContactsRepository
 import com.tripfair.app.data.contacts.contactsDataStore
+import com.tripfair.app.data.location.FusedLocationProvider
+import com.tripfair.app.data.location.LocationProvider
 import com.tripfair.app.data.network.ApiClient
 import com.tripfair.app.data.network.AuthApi
 import com.tripfair.app.data.network.MeApi
@@ -66,8 +68,10 @@ class AppContainer(context: Context) {
     val authApi: AuthApi by lazy { publicRetrofit.create(AuthApi::class.java) }
     val meApi: MeApi by lazy { retrofit.create(MeApi::class.java) }
 
+    val locationProvider: LocationProvider by lazy { FusedLocationProvider(appContext) }
+
     val placesRepository: PlacesRepository by lazy {
-        RemotePlacesRepository(retrofit.create(PlacesApi::class.java))
+        RemotePlacesRepository(retrofit.create(PlacesApi::class.java), locationProvider)
     }
 
     val tripsRepository: TripsRepository by lazy { RemoteTripsRepository(retrofit.create(TripsApi::class.java)) }

@@ -9,9 +9,6 @@ import com.tripfair.app.data.contacts.EmergencyContact
 data class Hotline(val number: String, @param:StringRes val label: Int, @param:DrawableRes val icon: Int)
 
 object SampleSos {
-    const val GPS_ACCURACY = "± 8 m"
-    const val ADDRESS = "Bãi biển Mỹ Khê, Đà Nẵng"
-    const val COORDINATES = "16.0544° N, 108.2469° E"
     const val TRIP_NOTE = "Duy Đức đang đi cùng nhóm 4 người trong chuyến Đà Nẵng 3 ngày."
 
     val relations = listOf("Gia đình", "Bạn bè", "Đồng nghiệp", "Khác")

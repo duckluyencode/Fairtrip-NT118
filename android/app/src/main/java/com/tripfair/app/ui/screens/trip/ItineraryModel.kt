@@ -7,6 +7,7 @@ import com.tripfair.app.data.places.LocationDto
 import com.tripfair.app.data.trips.ItineraryDto
 import com.tripfair.app.data.trips.LodgingDto
 import com.tripfair.app.data.trips.StopPriceDto
+import com.tripfair.app.ui.components.MapPin
 import com.tripfair.app.ui.screens.explore.categoryLabel
 import com.tripfair.app.ui.screens.explore.distanceText
 import com.tripfair.app.ui.screens.explore.durationText
@@ -54,6 +55,8 @@ data class ItineraryDay(
     val markers: List<MapMarker>,
     /** Marker numbers joined by the route line. */
     val route: List<Int> = emptyList(),
+    /** The stops with coordinates, numbered in visiting order, for the real map. */
+    val pins: List<MapPin> = emptyList(),
 )
 
 /**
@@ -121,6 +124,16 @@ fun itineraryDays(itinerary: ItineraryDto): List<ItineraryDay> = itinerary.days.
         )
     }
     val locations = day.stops.mapNotNull { it.location }
+    val fallbackName = stringResource(R.string.itinerary_place_fallback)
+    val pins = day.stops.filter { it.location != null }.mapIndexed { index, stop ->
+        MapPin(
+            id = stop.placeId.toString(),
+            position = stop.location ?: LocationDto(0.0, 0.0),
+            title = stop.name ?: fallbackName,
+            detail = stop.time,
+            number = index + 1,
+        )
+    }
     ItineraryDay(
         number = day.day,
         date = "${date.dayOfMonth}/${date.monthValue}",
@@ -129,6 +142,7 @@ fun itineraryDays(itinerary: ItineraryDto): List<ItineraryDay> = itinerary.days.
         stops = listOfNotNull(lodgingRow) + places,
         markers = markersFor(locations),
         route = locations.indices.map { it + 1 },
+        pins = pins,
     )
 }
 

@@ -111,7 +111,7 @@ fun ItineraryScreen(
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             DayChips(days = days, selected = dayIndex, onSelect = { selected = it })
-            if (day.markers.isNotEmpty()) RouteMap(day = day)
+            if (day.markers.isNotEmpty()) RouteMap(day = day, onPlace = onPlace)
             DayHeader(day = day)
             TripBudgetCard(days = days, day = day, editing = false, budget = budget, nights = nights)
             WarningsCard(warnings = warnings, day = day.number)
