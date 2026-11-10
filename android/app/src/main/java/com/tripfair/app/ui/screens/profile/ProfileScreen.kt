@@ -1,7 +1,6 @@
 package com.tripfair.app.ui.screens.profile
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -17,7 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -31,7 +29,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -50,6 +47,12 @@ import com.tripfair.app.ui.components.MainTabBar
 import com.tripfair.app.ui.components.TripFairTopBar
 import com.tripfair.app.data.auth.Account
 import com.tripfair.app.data.contacts.EmergencyContact
+import com.tripfair.app.data.trips.TripSummaryDto
+import com.tripfair.app.ui.screens.group.IconTile
+import com.tripfair.app.ui.screens.trip.title
+import com.tripfair.app.ui.screens.trip.tripDateRange
+import com.tripfair.app.ui.screens.trip.tripLength
+import java.time.LocalDate
 import com.tripfair.app.ui.sample.SampleAccount
 import com.tripfair.app.ui.sample.SampleSos
 import com.tripfair.app.ui.sample.SampleTrip
@@ -61,6 +64,7 @@ import com.tripfair.app.ui.theme.extendedColors
 fun ProfileScreen(
     account: Account?,
     emergencyContacts: List<EmergencyContact>,
+    latestTrip: TripSummaryDto?,
     onEditProfile: () -> Unit,
     onTrip: () -> Unit,
     onFavorites: () -> Unit,
@@ -108,7 +112,7 @@ fun ProfileScreen(
                 )
             }
             ListCard {
-                TripHistoryRow(onClick = onTrip)
+                TripHistoryRow(trip = latestTrip, onClick = onTrip)
                 ListDivider()
                 ListRow(icon = R.drawable.ic_heart, title = stringResource(R.string.profile_favorites), onClick = onFavorites)
             }
@@ -226,7 +230,7 @@ private fun ProfileCard(account: Account?, onEdit: () -> Unit) {
 }
 
 @Composable
-private fun TripHistoryRow(onClick: () -> Unit) {
+private fun TripHistoryRow(trip: TripSummaryDto?, onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     Row(
         modifier = Modifier
@@ -236,28 +240,34 @@ private fun TripHistoryRow(onClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Image(
-            painter = painterResource(R.drawable.sample_trip_da_nang),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .size(width = 54.dp, height = 66.dp)
-                .clip(RoundedCornerShape(10.dp)),
-        )
+        IconTile(icon = R.drawable.ic_calendar_days, size = 54.dp, iconSize = 24.dp)
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(text = stringResource(R.string.profile_trip_history), style = MaterialTheme.typography.titleSmall)
+            if (trip == null) {
+                Text(
+                    text = stringResource(R.string.profile_trip_none),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = colors.onSurfaceVariant,
+                )
+                return@Column
+            }
+            val start = LocalDate.parse(trip.startDate)
+            val end = LocalDate.parse(trip.endDate)
             Text(
-                text = SampleTrip.NAME,
+                text = trip.title(),
                 style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
                 color = colors.primary,
             )
             Text(
-                text = pluralStringResource(R.plurals.profile_trip_members, SampleTrip.MEMBER_COUNT, SampleTrip.DATE_RANGE, SampleTrip.MEMBER_COUNT),
+                text = pluralStringResource(R.plurals.profile_trip_members, trip.memberCount, tripDateRange(start, end), trip.memberCount),
                 style = MaterialTheme.typography.labelSmall,
                 color = colors.onSurfaceVariant,
             )
             Text(
-                text = stringResource(R.string.profile_trip_status),
+                text = stringResource(
+                    if (end.isBefore(LocalDate.now())) R.string.profile_trip_past else R.string.profile_trip_upcoming,
+                    tripLength(trip.days),
+                ),
                 style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, lineHeight = 13.sp),
                 color = colors.primary,
             )
@@ -300,6 +310,7 @@ private fun ProfileScreenPreview() {
         ProfileScreen(
             account = SampleAccount,
             emergencyContacts = SampleSos.contacts,
+            latestTrip = SampleTrip.summaries.first(),
             onEditProfile = {},
             onTrip = {},
             onFavorites = {},

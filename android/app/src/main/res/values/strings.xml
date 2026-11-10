@@ -145,6 +145,7 @@
     <!-- Search -->
     <string name="search_title">Tìm kiếm</string>
     <string name="action_cancel">Hủy</string>
+    <string name="action_done">Xong</string>
     <string name="action_save">Lưu</string>
     <string name="action_close">Đóng</string>
     <string name="list_and">%1$s và %2$s</string>
@@ -204,7 +205,9 @@
     <plurals name="profile_trip_members">
         <item quantity="other">%1$s · %2$d người</item>
     </plurals>
-    <string name="profile_trip_status">Sắp tới · 3 ngày 2 đêm</string>
+    <string name="profile_trip_upcoming">Sắp tới · %1$s</string>
+    <string name="profile_trip_past">Đã kết thúc · %1$s</string>
+    <string name="profile_trip_none">Chưa có chuyến đi nào</string>
     <string name="profile_favorites">Địa điểm yêu thích</string>
     <string name="profile_sos">Liên hệ khẩn cấp SOS</string>
     <string name="profile_settings">Cài đặt</string>
@@ -303,6 +306,14 @@
     <string name="trips_empty_text">Tạo chuyến đi một mình hoặc rủ bạn bè lập nhóm. TripFair sẽ gợi ý lộ trình hợp ngân sách.</string>
     <string name="trips_create">Tạo chuyến đi</string>
     <string name="trips_join_link">Có mã nhóm? Tham gia nhóm</string>
+    <string name="trips_list">Chuyến đi đã tạo và tham gia</string>
+    <plurals name="trips_count">
+        <item quantity="other">%1$d chuyến</item>
+    </plurals>
+    <string name="groups_budgets_of">Xem lựa chọn của các thành viên %1$s</string>
+    <string name="trip_status_planned">Đã có lộ trình. Mở để xem chi phí từng điểm.</string>
+    <string name="trip_status_group_draft">Đang chờ thành viên đặt ngân sách và bình chọn.</string>
+    <string name="trip_status_solo_draft">Chưa lập lộ trình.</string>
 
     <!-- Create or join group -->
     <string name="group_choice_title">Nhóm chuyến đi</string>
@@ -327,6 +338,10 @@
     <string name="member_invited">Đã mời</string>
     <string name="create_group_hint">Đã mời 3 người. Mỗi người tự đặt ngân sách và sở thích khi tham gia; ngân sách được giữ kín.</string>
     <string name="create_group_continue">Tiếp tục lập kế hoạch nhóm</string>
+    <string name="create_group_name_hint">Ví dụ: Nhóm Đà Nẵng</string>
+    <string name="create_group_error_name">Đặt tên cho nhóm.</string>
+    <string name="create_group_owner_budget">Ngân sách: %1$s · chỉ bạn thấy</string>
+    <string name="create_group_hint_new">Sau khi tạo nhóm, gửi mã mời cho bạn bè. Mỗi người tự đặt ngân sách và sở thích khi tham gia; ngân sách được giữ kín.</string>
 
     <!-- Join group -->
     <string name="join_group_title">Nhập mã nhóm</string>
@@ -426,6 +441,30 @@
     <string name="trip_continue_group">Tiếp tục lập nhóm</string>
     <string name="trip_continue_lodging">Tiếp tục chọn chỗ ở</string>
     <string name="trip_continue_plan">Lập lộ trình</string>
+    <string name="trip_destination_hint">Ví dụ: Đà Nẵng</string>
+    <string name="trip_dates_pick">Chọn ngày đi và ngày về</string>
+    <string name="trip_date_single">%1$d tháng %2$d</string>
+    <string name="trip_date_range_month">%1$d – %2$d tháng %3$d</string>
+    <string name="trip_date_range">%1$d tháng %2$d – %3$d tháng %4$d</string>
+    <string name="trip_length_day">1 ngày</string>
+    <string name="trip_length_nights">%1$d ngày %2$d đêm</string>
+    <string name="trip_error_city_missing">Nhập điểm đến.</string>
+    <string name="trip_error_dates_missing">Chọn ngày đi và ngày về.</string>
+    <string name="trip_error_dates_too_long">Chuyến đi dài tối đa 15 ngày.</string>
+    <string name="trip_error_not_found">Không tìm thấy chuyến đi này, hoặc bạn không còn trong nhóm.</string>
+    <string name="trip_error_not_owner">Chỉ trưởng nhóm làm được việc này.</string>
+    <string name="trip_error_dates">Ngày đi và ngày về chưa hợp lệ.</string>
+    <string name="trip_error_code_not_found">Không có nhóm nào với mã này. Kiểm tra lại mã mời.</string>
+    <string name="trip_error_already_member">Bạn đã ở trong nhóm này.</string>
+    <string name="trip_error_hotel_not_found">Khách sạn này không còn trong gợi ý. Hãy chọn lại.</string>
+    <string name="trip_error_lodging_over_budget">Tiền phòng vượt ngân sách của một thành viên. Chọn phòng rẻ hơn hoặc tự lo chỗ ở.</string>
+    <string name="trip_error_lodging_not_chosen">Chưa chọn chỗ ở. Hãy chọn khách sạn hoặc tự lo chỗ ở trước khi lập lộ trình.</string>
+    <string name="trip_error_option_not_found">Địa điểm này không còn trong danh sách bình chọn.</string>
+    <string name="trip_error_voting_closed">Đã hết hạn bình chọn.</string>
+    <string name="trip_error_ballot_sent">Bạn đã gửi phiếu nên không đổi được bình chọn nữa.</string>
+    <string name="trip_error_no_places">Chưa tìm được địa điểm nào để lập lộ trình cho điểm đến này.</string>
+    <string name="trip_error_invalid_itinerary">Lộ trình có ngày nằm ngoài chuyến đi hoặc một địa điểm bị lặp.</string>
+    <string name="trip_error_itinerary_not_ready">Chuyến đi chưa có lộ trình, hoặc thông tin đã đổi từ lần lập trước.</string>
 
     <!-- Lodging -->
     <string name="lodging_title">Chọn chỗ ở</string>

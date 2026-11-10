@@ -37,11 +37,12 @@ import com.tripfair.app.ui.screens.explore.PlaceReviewsScreen
 import com.tripfair.app.ui.screens.explore.SearchHistoryRoute
 import com.tripfair.app.ui.screens.explore.SearchResultsRoute
 import com.tripfair.app.ui.screens.explore.SearchRoute
-import com.tripfair.app.ui.screens.group.CreateGroupScreen
+import com.tripfair.app.ui.screens.group.CreateGroupRoute
 import com.tripfair.app.ui.screens.group.CreateOrJoinGroupScreen
 import com.tripfair.app.ui.screens.group.EditBudgetScreen
 import com.tripfair.app.ui.screens.group.GroupPlanScreen
-import com.tripfair.app.ui.screens.group.GroupsScreen
+import com.tripfair.app.ui.screens.group.TripsRoute
+import com.tripfair.app.ui.screens.group.TripsViewModel
 import com.tripfair.app.ui.screens.group.InviteFriendsScreen
 import com.tripfair.app.ui.screens.group.JoinGroupScreen
 import com.tripfair.app.ui.screens.home.HomeScreen
@@ -61,7 +62,10 @@ import com.tripfair.app.ui.screens.sos.ContactFormRoute
 import com.tripfair.app.ui.screens.sos.EmergencyContactsRoute
 import com.tripfair.app.ui.screens.sos.SosScreen
 import com.tripfair.app.ui.screens.sos.rememberLocationPermission
-import com.tripfair.app.ui.screens.trip.CreateTripScreen
+import com.tripfair.app.ui.screens.trip.CreateTripNext
+import com.tripfair.app.ui.screens.trip.CreateTripRoute
+import com.tripfair.app.ui.screens.trip.upcoming
+import com.tripfair.app.data.trips.TripSummaryDto
 import com.tripfair.app.ui.screens.trip.ItineraryEditorScreen
 import com.tripfair.app.ui.screens.trip.ItineraryScreen
 import com.tripfair.app.ui.screens.trip.LodgingScreen
@@ -119,8 +123,23 @@ private fun TripFairNavHost(container: AppContainer, startSignedIn: Boolean) {
     val sosContacts by container.emergencyContactsRepository.contacts.collectAsState()
 
     // Shows the itinerary, going back to it if it is already open below.
-    val showItinerary: () -> Unit = {
-        if (DayItinerary in backStack) backStack.popUpTo(DayItinerary) else backStack.add(DayItinerary)
+    val showItinerary: (tripId: Int) -> Unit = { tripId ->
+        val route = DayItinerary(tripId)
+        if (route in backStack) backStack.popUpTo(route) else backStack.add(route)
+    }
+
+    // A group opens on its members and votes; a solo trip on its itinerary, planned first if needed.
+    val openTrip: (TripSummaryDto) -> Unit = { trip ->
+        backStack.add(
+            when {
+                trip.isGroup -> GroupPlan(trip.id)
+                trip.isPlanned -> DayItinerary(trip.id)
+                else -> Optimizing(trip.id, group = false)
+            },
+        )
+    }
+    val scheduleTrip: (TripSummaryDto) -> Unit = { trip ->
+        if (trip.isPlanned) backStack.add(DayItinerary(trip.id)) else openTrip(trip)
     }
 
     // Switching tabs starts a fresh history at that tab's root screen.
@@ -196,10 +215,11 @@ private fun TripFairNavHost(container: AppContainer, startSignedIn: Boolean) {
                 HomeScreen(
                     userName = account?.fullName.orEmpty(),
                     suggestions = home.suggestions,
+                    upcomingTrip = home.upcomingTrip,
                     onSearch = { backStack.add(Search) },
                     onSos = { backStack.add(Sos) },
                     onCamera = { backStack.add(CameraScan) },
-                    onTrip = { backStack.add(DayItinerary) },
+                    onTrip = openTrip,
                     onSeeAllSuggestions = { backStack.add(SearchResults(SampleSearch.QUERY)) },
                     onPlace = { backStack.add(PlaceDetail(it.toString())) },
                     onHistory = { backStack.add(SearchHistory) },
@@ -207,15 +227,14 @@ private fun TripFairNavHost(container: AppContainer, startSignedIn: Boolean) {
                 )
             }
             entry<Trips> {
-                GroupsScreen(
-                    onNewGroup = { backStack.add(GroupChoice) },
-                    onOpenGroup = { backStack.add(GroupPlan) },
-                    onInvite = { backStack.add(InviteFriends) },
-                    onSchedule = { backStack.add(DayItinerary) },
-                    onVote = { backStack.add(Ballot) },
-                    onPlaces = { backStack.add(SearchResults(SampleSearch.QUERY)) },
+                TripsRoute(
                     onCreateTrip = { backStack.add(CreateTrip) },
                     onJoinGroup = { backStack.add(JoinGroup) },
+                    onOpenTrip = openTrip,
+                    onSchedule = scheduleTrip,
+                    onInvite = { backStack.add(InviteFriends(it)) },
+                    onVote = { backStack.add(Ballot(it)) },
+                    onPlaces = { backStack.add(SearchResults(SampleSearch.QUERY)) },
                     onTabSelect = selectTab,
                 )
             }
@@ -227,11 +246,14 @@ private fun TripFairNavHost(container: AppContainer, startSignedIn: Boolean) {
                 )
             }
             entry<Profile> {
+                val trips: TripsViewModel = viewModel(factory = AppViewModelProvider.Factory)
+                LaunchedEffect(Unit) { trips.load() }
                 ProfileScreen(
                     account = account,
                     emergencyContacts = sosContacts,
+                    latestTrip = trips.items.upcoming(),
                     onEditProfile = { backStack.add(EditProfile) },
-                    onTrip = { backStack.add(DayItinerary) },
+                    onTrip = { selectTab(MainTab.Trips) },
                     onFavorites = { selectTab(MainTab.Favorites) },
                     onEmergencyContacts = { backStack.add(EmergencyContacts) },
                     onSettings = { backStack.add(Settings) },
@@ -308,27 +330,33 @@ private fun TripFairNavHost(container: AppContainer, startSignedIn: Boolean) {
             entry<GroupChoice> {
                 CreateOrJoinGroupScreen(
                     onBack = { backStack.goBack() },
-                    onCreate = { backStack.add(CreateGroup) },
+                    onCreate = { backStack.add(CreateTrip) },
                     onJoin = { backStack.add(JoinGroup) },
                 )
             }
-            entry<CreateGroup> {
-                CreateGroupScreen(
+            entry<CreateGroup> { route ->
+                CreateGroupRoute(
+                    draft = route.draft,
+                    ownerName = account?.fullName.orEmpty(),
                     onBack = { backStack.goBack() },
-                    onInvite = { backStack.add(InviteFriends) },
-                    onContinue = { backStack.add(GroupPlan) },
+                    onCreated = { created ->
+                        // The group exists now: Back from it skips the two forms that made it.
+                        backStack.removeAll { it is CreateTrip || it is CreateGroup || it is GroupChoice }
+                        backStack.add(GroupPlan(created.tripId))
+                        if (created.invite) backStack.add(InviteFriends(created.tripId))
+                    },
                 )
             }
             entry<JoinGroup> {
                 JoinGroupScreen(onBack = { backStack.goBack() }, onJoin = { selectTab(MainTab.Trips) })
             }
             entry<InviteFriends> { InviteFriendsScreen(onBack = { backStack.goBack() }) }
-            entry<GroupPlan> {
+            entry<GroupPlan> { route ->
                 GroupPlanScreen(
                     onBack = { backStack.goBack() },
-                    onInvite = { backStack.add(InviteFriends) },
-                    onEditBudget = { backStack.add(EditBudget) },
-                    onStartVote = { backStack.add(VoteList) },
+                    onInvite = { backStack.add(InviteFriends(route.tripId)) },
+                    onEditBudget = { backStack.add(EditBudget(route.tripId)) },
+                    onStartVote = { backStack.add(VoteList(route.tripId)) },
                 )
             }
             entry<EditBudget> {
@@ -341,11 +369,11 @@ private fun TripFairNavHost(container: AppContainer, startSignedIn: Boolean) {
                     place = SamplePlaces.byId(route.placeId),
                     onBack = { backStack.goBack() },
                     onBackToDetail = { backStack.goBack() },
-                    onAdd = { backStack.replaceTop(VoteList) },
+                    onAdd = { backStack.goBack() },
                 )
             }
-            entry<VoteList> {
-                VoteListScreen(onBack = { backStack.goBack() }, onFinish = { backStack.add(LodgingChoice(group = true)) })
+            entry<VoteList> { route ->
+                VoteListScreen(onBack = { backStack.goBack() }, onFinish = { backStack.add(LodgingChoice(route.tripId, group = true)) })
             }
             entry<Ballot> {
                 BallotScreen(onBack = { backStack.goBack() }, onAddPlace = { backStack.add(Search) })
@@ -353,16 +381,21 @@ private fun TripFairNavHost(container: AppContainer, startSignedIn: Boolean) {
 
             // 05 Trip & optimization, 10 Solo trip & lodging
             entry<CreateTrip> {
-                CreateTripScreen(
+                CreateTripRoute(
                     onBack = { backStack.goBack() },
                     onProfile = { selectTab(MainTab.Profile) },
-                    onContinueGroup = { backStack.add(CreateGroup) },
-                    onChooseLodging = { backStack.add(LodgingChoice(group = false)) },
-                    onPlanWithoutLodging = { backStack.add(Optimizing(group = false)) },
+                    onNext = { next ->
+                        when (next) {
+                            is CreateTripNext.NameGroup -> backStack.add(CreateGroup(next.draft))
+                            // The solo trip exists now, so the form is not kept below the next screen.
+                            is CreateTripNext.ChooseLodging -> backStack.replaceTop(LodgingChoice(next.tripId, group = false))
+                            is CreateTripNext.Plan -> backStack.replaceTop(Optimizing(next.tripId, group = false))
+                        }
+                    },
                 )
             }
             entry<LodgingChoice> { route ->
-                LodgingScreen(onBack = { backStack.goBack() }, onConfirm = { backStack.add(Optimizing(route.group)) })
+                LodgingScreen(onBack = { backStack.goBack() }, onConfirm = { backStack.add(Optimizing(route.tripId, route.group)) })
             }
             entry<Optimizing> { route ->
                 OptimizingScreen(
@@ -370,26 +403,26 @@ private fun TripFairNavHost(container: AppContainer, startSignedIn: Boolean) {
                     onDone = {
                         itinerary = SampleItinerary.days
                         // The progress screen is replaced, so Back does not return to it.
-                        backStack.replaceTop(if (route.group) OptimizationResult else DayItinerary)
+                        backStack.replaceTop(if (route.group) OptimizationResult(route.tripId) else DayItinerary(route.tripId))
                     },
                 )
             }
-            entry<OptimizationResult> {
+            entry<OptimizationResult> { route ->
                 OptimizationResultScreen(
                     onBack = { backStack.goBack() },
                     onProfile = { selectTab(MainTab.Profile) },
-                    onViewItinerary = showItinerary,
+                    onViewItinerary = { showItinerary(route.tripId) },
                 )
             }
-            entry<DayItinerary> {
+            entry<DayItinerary> { route ->
                 ItineraryScreen(
                     days = itinerary,
                     onBack = { backStack.goBack() },
-                    onEdit = { backStack.add(ItineraryEditor) },
+                    onEdit = { backStack.add(ItineraryEditor(route.tripId)) },
                     onPlace = { backStack.add(PlaceDetail(it)) },
                 )
             }
-            entry<ItineraryEditor> {
+            entry<ItineraryEditor> { route ->
                 ItineraryEditorScreen(
                     initialDays = SampleItinerary.editDraft(itinerary),
                     onBack = { backStack.goBack() },
@@ -398,7 +431,7 @@ private fun TripFairNavHost(container: AppContainer, startSignedIn: Boolean) {
                         backStack.goBack()
                     },
                     onAddPlace = { backStack.add(Search) },
-                    onReoptimize = { backStack.replaceTop(Optimizing(group = true)) },
+                    onReoptimize = { backStack.replaceTop(Optimizing(route.tripId, group = true)) },
                 )
             }
 
@@ -416,7 +449,7 @@ private fun TripFairNavHost(container: AppContainer, startSignedIn: Boolean) {
                     onBack = { backStack.goBack() },
                     onRetake = { backStack.popUpTo(CameraScan) },
                     onPlace = { backStack.add(PlaceDetail(it)) },
-                    onViewTrip = showItinerary,
+                    onViewTrip = { selectTab(MainTab.Trips) },
                     onSearchByName = { backStack.add(Search) },
                 )
             }

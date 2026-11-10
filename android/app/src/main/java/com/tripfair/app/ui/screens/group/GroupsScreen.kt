@@ -1,7 +1,7 @@
 package com.tripfair.app.ui.screens.group
 
 import androidx.annotation.DrawableRes
-import androidx.compose.foundation.Image
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -15,17 +15,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -34,7 +33,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tripfair.app.R
+import com.tripfair.app.data.trips.TripSummaryDto
+import com.tripfair.app.ui.AppViewModelProvider
+import com.tripfair.app.ui.components.ErrorState
+import com.tripfair.app.ui.components.LoadingState
 import com.tripfair.app.ui.components.Chevron
 import com.tripfair.app.ui.components.ListCard
 import com.tripfair.app.ui.components.ListDivider
@@ -44,35 +48,67 @@ import com.tripfair.app.ui.components.MainTabBar
 import com.tripfair.app.ui.components.PrimaryButton
 import com.tripfair.app.ui.components.SectionHeader
 import com.tripfair.app.ui.components.TripFairTopBar
-import com.tripfair.app.ui.sample.SampleGroup
 import com.tripfair.app.ui.sample.SampleTrip
+import com.tripfair.app.ui.screens.trip.title
+import com.tripfair.app.ui.screens.trip.tripDatesLine
 import com.tripfair.app.ui.theme.ThemePreviews
 import com.tripfair.app.ui.theme.TripFairTheme
 
+@Composable
+fun TripsRoute(
+    onCreateTrip: () -> Unit,
+    onJoinGroup: () -> Unit,
+    onOpenTrip: (TripSummaryDto) -> Unit,
+    onSchedule: (TripSummaryDto) -> Unit,
+    onInvite: (tripId: Int) -> Unit,
+    onVote: (tripId: Int) -> Unit,
+    onPlaces: () -> Unit,
+    onTabSelect: (MainTab) -> Unit,
+    viewModel: TripsViewModel = viewModel(factory = AppViewModelProvider.Factory),
+) {
+    // Each time the tab opens or the user comes back to it: trips may have been created or joined.
+    LaunchedEffect(Unit) { viewModel.load() }
+    GroupsScreen(
+        trips = viewModel.items,
+        loading = viewModel.loading,
+        error = viewModel.error,
+        onRetry = viewModel::load,
+        onCreateTrip = onCreateTrip,
+        onJoinGroup = onJoinGroup,
+        onOpenTrip = onOpenTrip,
+        onSchedule = onSchedule,
+        onInvite = onInvite,
+        onVote = onVote,
+        onPlaces = onPlaces,
+        onTabSelect = onTabSelect,
+    )
+}
+
 /**
- * Root of the "Chuyến đi" tab. Shows the user's groups, or the empty state
- * ("Chuyến đi · chưa có" in Figma) when [hasGroups] is false.
+ * Root of the "Chuyến đi" tab: the user's solo and group trips, or the empty state
+ * ("Chuyến đi · chưa có" in Figma) when there are none.
  */
 @Composable
 fun GroupsScreen(
-    onNewGroup: () -> Unit,
-    onOpenGroup: () -> Unit,
-    onInvite: () -> Unit,
-    onSchedule: () -> Unit,
-    onVote: () -> Unit,
-    onPlaces: () -> Unit,
+    trips: List<TripSummaryDto>,
+    loading: Boolean,
+    @StringRes error: Int?,
+    onRetry: () -> Unit,
     onCreateTrip: () -> Unit,
     onJoinGroup: () -> Unit,
+    onOpenTrip: (TripSummaryDto) -> Unit,
+    onSchedule: (TripSummaryDto) -> Unit,
+    onInvite: (tripId: Int) -> Unit,
+    onVote: (tripId: Int) -> Unit,
+    onPlaces: () -> Unit,
     onTabSelect: (MainTab) -> Unit,
-    hasGroups: Boolean = true,
 ) {
     val colors = MaterialTheme.colorScheme
     val sectionStyle = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, lineHeight = 26.sp)
+    val firstGroup = trips.firstOrNull { it.isGroup }
 
     Scaffold(
-        topBar = {
-            TripFairTopBar(title = stringResource(if (hasGroups) R.string.groups_title else R.string.trips_empty_screen_title))
-        },
+        topBar = { TripFairTopBar(title = stringResource(R.string.trips_empty_screen_title)) },
         bottomBar = { MainTabBar(selected = MainTab.Trips, onSelect = onTabSelect) },
     ) { innerPadding ->
         Column(
@@ -84,52 +120,79 @@ fun GroupsScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Text(
-                text = stringResource(if (hasGroups) R.string.groups_intro else R.string.trips_empty_intro),
+                text = stringResource(if (trips.isEmpty()) R.string.trips_empty_intro else R.string.groups_intro),
                 style = MaterialTheme.typography.bodyLarge,
                 color = colors.onSurfaceVariant,
             )
-            if (!hasGroups) {
-                EmptyTrips(onCreateTrip = onCreateTrip, onJoinGroup = onJoinGroup)
-                return@Column
-            }
-            PrimaryButton(text = stringResource(R.string.groups_new), onClick = onNewGroup, height = 52.dp)
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(text = stringResource(R.string.groups_joined), style = sectionStyle, modifier = Modifier.weight(1f))
+            when {
+                trips.isEmpty() && loading -> LoadingState()
+                trips.isEmpty() && error != null -> ErrorState(message = stringResource(error), onRetry = onRetry)
+                trips.isEmpty() -> EmptyTrips(onCreateTrip = onCreateTrip, onJoinGroup = onJoinGroup)
+                else -> {
+                    PrimaryButton(text = stringResource(R.string.trips_create), onClick = onCreateTrip, height = 52.dp)
                     Text(
-                        text = pluralStringResource(R.plurals.groups_count, 1, 1),
-                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                        text = stringResource(R.string.trips_join_link),
+                        style = MaterialTheme.typography.titleSmall,
                         color = colors.primary,
+                        modifier = Modifier
+                            .align(Alignment.CenterHorizontally)
+                            .clickable(role = Role.Button, onClick = onJoinGroup)
+                            .padding(4.dp),
                     )
-                }
-                GroupCard(onOpen = onOpenGroup, onInvite = onInvite, onSchedule = onSchedule, onVote = onVote)
-            }
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(text = stringResource(R.string.groups_prepare), style = sectionStyle)
-                ListCard(contentPadding = PaddingValues(14.dp)) {
-                    ListRow(
-                        icon = R.drawable.ic_map_pin,
-                        title = stringResource(R.string.groups_places),
-                        subtitle = stringResource(R.string.groups_places_detail),
-                        onClick = onPlaces,
-                        contentPadding = PaddingValues(vertical = 6.dp),
-                    )
-                    ListDivider()
-                    ListRow(
-                        icon = R.drawable.ic_wallet,
-                        title = stringResource(R.string.groups_budgets),
-                        subtitle = stringResource(R.string.groups_budgets_detail),
-                        onClick = onOpenGroup,
-                        contentPadding = PaddingValues(vertical = 6.dp),
-                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(text = stringResource(R.string.trips_list), style = sectionStyle, modifier = Modifier.weight(1f))
+                            Text(
+                                text = pluralStringResource(R.plurals.trips_count, trips.size, trips.size),
+                                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                                color = colors.primary,
+                            )
+                        }
+                        // A failed reload keeps the list and says so above it.
+                        error?.let {
+                            Text(text = stringResource(it), style = MaterialTheme.typography.bodySmall, color = colors.error)
+                        }
+                        trips.forEach { trip ->
+                            TripCard(
+                                trip = trip,
+                                onOpen = { onOpenTrip(trip) },
+                                onSchedule = { onSchedule(trip) },
+                                onInvite = { onInvite(trip.id) },
+                                onVote = { onVote(trip.id) },
+                            )
+                        }
+                    }
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text(text = stringResource(R.string.groups_prepare), style = sectionStyle)
+                        ListCard(contentPadding = PaddingValues(14.dp)) {
+                            ListRow(
+                                icon = R.drawable.ic_map_pin,
+                                title = stringResource(R.string.groups_places),
+                                subtitle = stringResource(R.string.groups_places_detail),
+                                onClick = onPlaces,
+                                contentPadding = PaddingValues(vertical = 6.dp),
+                            )
+                            if (firstGroup != null) {
+                                ListDivider()
+                                ListRow(
+                                    icon = R.drawable.ic_wallet,
+                                    title = stringResource(R.string.groups_budgets),
+                                    subtitle = stringResource(R.string.groups_budgets_of, firstGroup.title()),
+                                    onClick = { onOpenTrip(firstGroup) },
+                                    contentPadding = PaddingValues(vertical = 6.dp),
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
     }
 }
 
+/** One trip: what it is, when, and what is left to do; group trips add invite and vote. */
 @Composable
-private fun GroupCard(onOpen: () -> Unit, onInvite: () -> Unit, onSchedule: () -> Unit, onVote: () -> Unit) {
+private fun TripCard(trip: TripSummaryDto, onOpen: () -> Unit, onSchedule: () -> Unit, onInvite: () -> Unit, onVote: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     Column(
         modifier = Modifier
@@ -143,39 +206,26 @@ private fun GroupCard(onOpen: () -> Unit, onInvite: () -> Unit, onSchedule: () -
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Image(
-                painter = painterResource(R.drawable.sample_trip_da_nang),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .size(width = 58.dp, height = 68.dp)
-                    .clip(RoundedCornerShape(10.dp)),
-            )
+            IconTile(icon = if (trip.isGroup) R.drawable.ic_users else R.drawable.ic_map_pin, size = 48.dp, iconSize = 22.dp)
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(text = SampleGroup.NAME, style = MaterialTheme.typography.titleSmall.copy(fontSize = 17.sp, lineHeight = 24.sp))
+                Text(text = trip.title(), style = MaterialTheme.typography.titleSmall.copy(fontSize = 17.sp, lineHeight = 24.sp))
                 Text(
-                    text = SampleTrip.NAME,
+                    text = if (trip.isGroup) trip.city else stringResource(R.string.trip_type_solo),
                     style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
                     color = colors.primary,
                 )
-                Text(text = SampleTrip.DATES, style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
+                Text(text = tripDatesLine(trip), style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
             }
             Chevron()
         }
-        ListDivider()
-        SectionHeader(
-            title = pluralStringResource(R.plurals.groups_member_count, SampleGroup.members.size, SampleGroup.members.size),
-            titleStyle = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
-            actionLabel = stringResource(R.string.groups_invite),
-            onAction = onInvite,
-        )
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            SampleGroup.members.forEachIndexed { index, member ->
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    MemberAvatar(index = index, size = 22.dp)
-                    Text(text = member.name, style = MaterialTheme.typography.labelSmall)
-                }
-            }
+        if (trip.isGroup) {
+            ListDivider()
+            SectionHeader(
+                title = pluralStringResource(R.plurals.groups_member_count, trip.memberCount, trip.memberCount),
+                titleStyle = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                actionLabel = stringResource(R.string.groups_invite),
+                onAction = onInvite,
+            )
         }
         Row(
             modifier = Modifier
@@ -186,16 +236,26 @@ private fun GroupCard(onOpen: () -> Unit, onInvite: () -> Unit, onSchedule: () -
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Icon(
-                painter = painterResource(R.drawable.ic_circle_check),
+                painter = painterResource(if (trip.isPlanned) R.drawable.ic_circle_check else R.drawable.ic_calendar_days),
                 contentDescription = null,
                 tint = colors.primary,
                 modifier = Modifier.size(17.dp),
             )
-            Text(text = stringResource(R.string.groups_ready), style = MaterialTheme.typography.labelSmall, color = colors.primary)
+            val status = when {
+                trip.isPlanned -> R.string.trip_status_planned
+                trip.isGroup -> R.string.trip_status_group_draft
+                else -> R.string.trip_status_solo_draft
+            }
+            Text(text = stringResource(status), style = MaterialTheme.typography.labelSmall, color = colors.primary)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Shortcut(R.drawable.ic_calendar_days, stringResource(R.string.groups_schedule), onSchedule, Modifier.weight(1f))
-            Shortcut(R.drawable.ic_vote, stringResource(R.string.groups_vote), onVote, Modifier.weight(1f))
+            Shortcut(
+                R.drawable.ic_calendar_days,
+                stringResource(if (trip.isPlanned) R.string.groups_schedule else R.string.trip_continue_plan),
+                onSchedule,
+                Modifier.weight(1f),
+            )
+            if (trip.isGroup) Shortcut(R.drawable.ic_vote, stringResource(R.string.groups_vote), onVote, Modifier.weight(1f))
         }
     }
 }
@@ -271,8 +331,9 @@ private fun EmptyTrips(onCreateTrip: () -> Unit, onJoinGroup: () -> Unit) {
 private fun GroupsScreenPreview() {
     TripFairTheme {
         GroupsScreen(
-            onNewGroup = {}, onOpenGroup = {}, onInvite = {}, onSchedule = {}, onVote = {},
-            onPlaces = {}, onCreateTrip = {}, onJoinGroup = {}, onTabSelect = {},
+            trips = SampleTrip.summaries, loading = false, error = null, onRetry = {},
+            onCreateTrip = {}, onJoinGroup = {}, onOpenTrip = {}, onSchedule = {}, onInvite = {}, onVote = {},
+            onPlaces = {}, onTabSelect = {},
         )
     }
 }
@@ -282,8 +343,9 @@ private fun GroupsScreenPreview() {
 private fun TripsEmptyPreview() {
     TripFairTheme {
         GroupsScreen(
-            onNewGroup = {}, onOpenGroup = {}, onInvite = {}, onSchedule = {}, onVote = {},
-            onPlaces = {}, onCreateTrip = {}, onJoinGroup = {}, onTabSelect = {}, hasGroups = false,
+            trips = emptyList(), loading = false, error = null, onRetry = {},
+            onCreateTrip = {}, onJoinGroup = {}, onOpenTrip = {}, onSchedule = {}, onInvite = {}, onVote = {},
+            onPlaces = {}, onTabSelect = {},
         )
     }
 }

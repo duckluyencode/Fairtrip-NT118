@@ -23,6 +23,9 @@ import com.tripfair.app.data.session.SessionManager
 import com.tripfair.app.data.session.TokenAuthenticator
 import com.tripfair.app.data.session.SessionState
 import com.tripfair.app.data.session.sessionDataStore
+import com.tripfair.app.data.trips.RemoteTripsRepository
+import com.tripfair.app.data.trips.TripsApi
+import com.tripfair.app.data.trips.TripsRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -66,6 +69,8 @@ class AppContainer(context: Context) {
     val placesRepository: PlacesRepository by lazy {
         RemotePlacesRepository(retrofit.create(PlacesApi::class.java))
     }
+
+    val tripsRepository: TripsRepository by lazy { RemoteTripsRepository(retrofit.create(TripsApi::class.java)) }
 
     val emergencyContactsRepository: EmergencyContactsRepository by lazy {
         RemoteEmergencyContactsRepository(

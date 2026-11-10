@@ -1,5 +1,6 @@
 package com.tripfair.app.ui.sample
 
+import com.tripfair.app.data.trips.TripSummaryDto
 import androidx.annotation.DrawableRes
 import com.tripfair.app.R
 
@@ -144,4 +145,10 @@ object SampleTrip {
     /** Dates as the "Tạo chuyến đi" form shows them. */
     const val FORM_DATES = "12 – 14 tháng 10 · 3 ngày"
     const val MEMBER_COUNT = 4
+
+    /** Trips as the backend lists them, for previews. */
+    val summaries = listOf(
+        TripSummaryDto(1, "GROUP", "Nhóm Đà Nẵng", "Đà Nẵng", "2026-12-12", "2026-12-14", 3, "DRAFT", 4, "OWNER"),
+        TripSummaryDto(2, "SOLO", null, "Hội An", "2026-12-20", "2026-12-21", 2, "PLANNED", 1, "OWNER"),
+    )
 }

@@ -20,6 +20,9 @@ import com.tripfair.app.ui.screens.profile.DeleteAccountViewModel
 import com.tripfair.app.ui.screens.profile.FavoritesViewModel
 import com.tripfair.app.ui.screens.profile.EditProfileViewModel
 import com.tripfair.app.ui.screens.sos.ContactFormViewModel
+import com.tripfair.app.ui.screens.group.CreateGroupViewModel
+import com.tripfair.app.ui.screens.group.TripsViewModel
+import com.tripfair.app.ui.screens.trip.CreateTripViewModel
 import com.tripfair.app.ui.screens.sos.EmergencyContactsViewModel
 
 /** Creates every ViewModel with the repositories it needs from the [AppContainer]. */
@@ -32,7 +35,7 @@ object AppViewModelProvider {
         initializer { NewPasswordViewModel(container().authRepository) }
         initializer { EditProfileViewModel(container().authRepository) }
         initializer { DeleteAccountViewModel(container().authRepository) }
-        initializer { HomeViewModel(container().placesRepository) }
+        initializer { HomeViewModel(container().placesRepository, container().tripsRepository) }
         initializer { SearchViewModel(container().placesRepository) }
         initializer { SearchResultsViewModel(container().placesRepository) }
         initializer { PlaceDetailViewModel(container().placesRepository) }
@@ -40,6 +43,9 @@ object AppViewModelProvider {
         initializer { FavoritesViewModel(container().placesRepository) }
         initializer { EmergencyContactsViewModel(container().emergencyContactsRepository) }
         initializer { ContactFormViewModel(container().emergencyContactsRepository) }
+        initializer { TripsViewModel(container().tripsRepository) }
+        initializer { CreateTripViewModel(container().tripsRepository) }
+        initializer { CreateGroupViewModel(container().tripsRepository) }
     }
 }
 
