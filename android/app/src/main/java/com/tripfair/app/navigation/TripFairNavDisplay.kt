@@ -8,6 +8,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavKey
@@ -60,6 +63,7 @@ import com.tripfair.app.ui.screens.sos.SosRoute
 import com.tripfair.app.ui.screens.trip.CreateTripNext
 import com.tripfair.app.ui.screens.trip.CreateTripRoute
 import com.tripfair.app.ui.screens.trip.upcoming
+import com.tripfair.app.data.places.SuggestionDto
 import com.tripfair.app.data.trips.TripSummaryDto
 import com.tripfair.app.ui.screens.trip.ItineraryEditorRoute
 import com.tripfair.app.ui.screens.trip.ItineraryRoute
@@ -114,6 +118,8 @@ private fun TripFairNavHost(container: AppContainer, startSignedIn: Boolean) {
     }
 
     val sosContacts by container.emergencyContactsRepository.contacts.collectAsState()
+    // A place chosen on the picker screen, on its way back to the itinerary editor.
+    var pickedPlace by remember { mutableStateOf<SuggestionDto?>(null) }
 
     // Shows the itinerary, going back to it if it is already open below.
     val showItinerary: (tripId: Int) -> Unit = { tripId ->
@@ -458,8 +464,22 @@ private fun TripFairNavHost(container: AppContainer, startSignedIn: Boolean) {
                     tripId = route.tripId,
                     onBack = { backStack.goBack() },
                     onSaved = { backStack.goBack() },
-                    onAddPlace = { backStack.add(Search) },
+                    onAddPlace = { backStack.add(PickPlace) },
                     onReoptimize = { group -> backStack.replaceTop(Optimizing(route.tripId, group)) },
+                    picked = pickedPlace,
+                    onPickedConsumed = { pickedPlace = null },
+                )
+            }
+            entry<PickPlace> {
+                SearchRoute(
+                    onBack = { backStack.goBack() },
+                    onSearch = {},
+                    onPlace = { _, _ -> },
+                    onHistory = { backStack.add(SearchHistory) },
+                    onPick = { place ->
+                        pickedPlace = place
+                        backStack.goBack()
+                    },
                 )
             }
 

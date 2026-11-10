@@ -52,6 +52,7 @@ internal fun List<ItineraryDay>.costBefore(index: Int): Long = take(index).total
 @Composable
 internal fun ItineraryStop.costLabel(): String = when {
     skipped -> stringResource(R.string.itinerary_not_going)
+    pricePending -> stringResource(R.string.itinerary_price_pending)
     cost == 0L -> stringResource(R.string.itinerary_free)
     estimated -> "~" + formatVnd(cost)
     else -> formatVnd(cost)

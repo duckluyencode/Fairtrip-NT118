@@ -50,6 +50,7 @@ import androidx.annotation.StringRes
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tripfair.app.R
+import com.tripfair.app.data.places.SuggestionDto
 import com.tripfair.app.data.trips.DayPlacesDto
 import com.tripfair.app.ui.AppViewModelProvider
 import com.tripfair.app.ui.components.OutlineButton
@@ -67,6 +68,8 @@ fun ItineraryEditorRoute(
     onSaved: () -> Unit,
     onAddPlace: () -> Unit,
     onReoptimize: (group: Boolean) -> Unit,
+    picked: SuggestionDto?,
+    onPickedConsumed: () -> Unit,
     viewModel: ItineraryViewModel = viewModel(factory = AppViewModelProvider.Factory),
 ) {
     LaunchedEffect(tripId) { viewModel.start(tripId) }
@@ -85,15 +88,31 @@ fun ItineraryEditorRoute(
         )
         return
     }
+    val current = itineraryDays(itinerary)
+    LaunchedEffect(itinerary) { viewModel.startEditing(current) }
+    // A place chosen on the picker screen arrives here once, when this screen shows again.
+    val pendingDetail = stringResource(R.string.itinerary_new_detail)
+    var notice by rememberSaveable { mutableStateOf<Int?>(null) }
+    LaunchedEffect(picked, viewModel.editorDays != null) {
+        if (picked != null && viewModel.editorDays != null) {
+            notice = if (viewModel.addPlace(picked.id, picked.name, pendingDetail)) null else R.string.itinerary_already_added
+            onPickedConsumed()
+        }
+    }
     ItineraryEditorScreen(
-        initialDays = itineraryDays(itinerary),
+        days = viewModel.editorDays ?: current,
+        onDaysChange = viewModel::onEditorChange,
         budget = itinerary.me.budget,
         nights = itinerary.lodging?.nights ?: 0,
         saving = viewModel.saving,
-        error = viewModel.saveError?.let { tripErrorMessage(it) },
+        error = viewModel.saveError?.let { tripErrorMessage(it) } ?: notice,
         onBack = onBack,
         onSave = { days -> viewModel.design(days.toDayPlaces()) },
-        onAddPlace = onAddPlace,
+        onAddPlace = { dayIndex ->
+            notice = null
+            viewModel.onAddPlaceTo(dayIndex)
+            onAddPlace()
+        },
         onReoptimize = { onReoptimize(trip.isGroup) },
     )
 }
@@ -110,23 +129,23 @@ internal fun List<ItineraryDay>.toDayPlaces(): List<DayPlacesDto> = map { day ->
  */
 @Composable
 fun ItineraryEditorScreen(
-    initialDays: List<ItineraryDay>,
+    days: List<ItineraryDay>,
+    onDaysChange: (List<ItineraryDay>) -> Unit,
     budget: Long,
     nights: Int,
     onBack: () -> Unit,
     onSave: (List<ItineraryDay>) -> Unit,
-    onAddPlace: () -> Unit,
+    onAddPlace: (dayIndex: Int) -> Unit,
     onReoptimize: () -> Unit,
     saving: Boolean = false,
     @StringRes error: Int? = null,
 ) {
-    var days by remember { mutableStateOf(initialDays) }
     var selected by rememberSaveable { mutableIntStateOf(0) }
     val dayIndex = selected.coerceIn(0, days.lastIndex)
     val day = days[dayIndex]
 
     fun setStops(stops: List<ItineraryStop>) {
-        days = days.toMutableList().also { it[dayIndex] = it[dayIndex].copy(stops = stops) }
+        onDaysChange(days.toMutableList().also { it[dayIndex] = it[dayIndex].copy(stops = stops) })
     }
 
     // Times belong to the slots of the day: a moved stop takes the time of its new slot.
@@ -189,7 +208,7 @@ fun ItineraryEditorScreen(
                     onMove = ::moveStop,
                     onRemove = { id -> setStops(days[dayIndex].stops.filterNot { it.id == id }) },
                 )
-                AddPlaceButton(onClick = onAddPlace)
+                AddPlaceButton(onClick = { onAddPlace(dayIndex) })
             }
         }
     }
@@ -333,7 +352,8 @@ private fun AddPlaceButton(onClick: () -> Unit) {
 private fun ItineraryEditorScreenPreview() {
     TripFairTheme {
         ItineraryEditorScreen(
-            initialDays = SampleItinerary.editDraft(SampleItinerary.days),
+            days = SampleItinerary.editDraft(SampleItinerary.days),
+            onDaysChange = {},
             budget = SampleItinerary.BUDGET,
             nights = SampleItinerary.NIGHTS,
             onBack = {},

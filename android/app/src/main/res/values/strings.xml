@@ -550,6 +550,9 @@
     <string name="itinerary_lodging_detail">Lưu trú · %1$d đêm · %2$s</string>
     <string name="itinerary_skipped">Bạn không đi điểm này</string>
     <string name="itinerary_not_going">Không đi</string>
+    <string name="itinerary_price_pending">Tính khi lưu</string>
+    <string name="itinerary_new_detail">Giờ và chi phí được tính khi bạn lưu lộ trình</string>
+    <string name="itinerary_already_added">Địa điểm này đã có trong lộ trình.</string>
     <string name="itinerary_day_empty">Ngày này chưa có điểm nào.</string>
     <string name="itinerary_warning_day_too_long">Ngày này dài hơn khung giờ đi chơi.</string>
     <string name="itinerary_warning_place_closed">Có điểm có thể đóng cửa vào ngày này. Kiểm tra giờ mở cửa trước khi đi.</string>

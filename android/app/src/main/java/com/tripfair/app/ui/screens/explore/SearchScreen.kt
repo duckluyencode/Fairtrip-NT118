@@ -63,13 +63,16 @@ fun SearchRoute(
     onPlace: (placeId: Int, sessionToken: String) -> Unit,
     onHistory: () -> Unit,
     viewModel: SearchViewModel = viewModel(factory = AppViewModelProvider.Factory),
+    onPick: ((SuggestionDto) -> Unit)? = null,
 ) {
     SearchScreen(
         state = viewModel.state,
         onQueryChange = viewModel::onQueryChange,
         onBack = onBack,
-        onSearch = onSearch,
-        onSuggestion = { onPlace(it.id, viewModel.sessionToken) },
+        // When picking a place for an itinerary, a submitted or recent query only fills the
+        // box: the choice is made from the suggestions under it.
+        onSearch = if (onPick != null) viewModel::onQueryChange else onSearch,
+        onSuggestion = { if (onPick != null) onPick(it) else onPlace(it.id, viewModel.sessionToken) },
         onHistory = onHistory,
     )
 }

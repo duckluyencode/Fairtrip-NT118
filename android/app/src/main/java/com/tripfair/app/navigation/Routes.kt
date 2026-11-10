@@ -135,6 +135,10 @@ data class DayItinerary(val tripId: Int) : NavKey
 @Serializable
 data class ItineraryEditor(val tripId: Int) : NavKey
 
+/** Search used to pick a place for the itinerary being edited. */
+@Serializable
+data object PickPlace : NavKey
+
 // 06 Camera & SOS
 
 @Serializable

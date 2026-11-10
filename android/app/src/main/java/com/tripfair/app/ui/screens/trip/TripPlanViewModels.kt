@@ -175,6 +175,50 @@ class ItineraryViewModel(private val trips: TripsRepository) : ViewModel() {
 
     private var tripId = 0
 
+    /**
+     * The days being edited in "Tự thiết kế lộ trình". Kept here, not in the screen, so the
+     * draft is still there after picking a place on another screen.
+     */
+    var editorDays by mutableStateOf<List<ItineraryDay>?>(null)
+        private set
+
+    /** The day (index) a picked place goes to. */
+    private var addingToDay = 0
+
+    fun startEditing(days: List<ItineraryDay>) {
+        if (editorDays == null) editorDays = days
+    }
+
+    fun onEditorChange(days: List<ItineraryDay>) {
+        editorDays = days
+    }
+
+    fun onAddPlaceTo(dayIndex: Int) {
+        addingToDay = dayIndex
+    }
+
+    /**
+     * Adds the picked place at the end of the day chosen with [onAddPlaceTo]. A place can be
+     * visited once per trip, so one already in the itinerary is not added again.
+     */
+    fun addPlace(placeId: Int, name: String, detail: String): Boolean {
+        val days = editorDays ?: return false
+        if (days.any { day -> day.stops.any { it.placeId == placeId.toString() } }) return false
+        val index = addingToDay.coerceIn(0, days.lastIndex)
+        val stop = ItineraryStop(
+            id = "new-$placeId",
+            time = "",
+            name = name,
+            detail = detail,
+            cost = 0,
+            placeId = placeId.toString(),
+            isNew = true,
+            pricePending = true,
+        )
+        editorDays = days.toMutableList().also { it[index] = it[index].copy(stops = it[index].stops + stop) }
+        return true
+    }
+
     /** The trip was deleted; the screen then goes back to the list. */
     var deleted by mutableStateOf(false)
         private set

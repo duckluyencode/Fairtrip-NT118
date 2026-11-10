@@ -40,6 +40,8 @@ data class ItineraryStop(
     val runningTotal: Long? = null,
     /** In a group, you do not go to this stop and pay nothing for it. */
     val skipped: Boolean = false,
+    /** Just added in the editor: its price and time come from the backend when saved. */
+    val pricePending: Boolean = false,
 )
 
 /** Numbered stop on the day's diagram; [x] and [y] are fractions of its size. */

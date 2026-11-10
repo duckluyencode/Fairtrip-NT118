@@ -138,6 +138,24 @@ class TripPlanViewModelsTest {
     }
 
     @Test
+    fun `a picked place joins the chosen day once, with its price left to the backend`() {
+        val days = listOf(
+            ItineraryDay(1, "12/12", "", "", listOf(ItineraryStop("a", "08:00", "A", "", 0, placeId = "101")), emptyList()),
+            ItineraryDay(2, "13/12", "", "", emptyList(), emptyList()),
+        )
+        val viewModel = ItineraryViewModel(trips)
+        viewModel.startEditing(days)
+        viewModel.onAddPlaceTo(1)
+
+        assertTrue(viewModel.addPlace(205, "Chợ Hàn", "pending"))
+        assertEquals(false, viewModel.addPlace(101, "A", "pending"))
+
+        val added = viewModel.editorDays!![1].stops.single()
+        assertTrue(added.pricePending && added.isNew)
+        assertEquals(listOf(DayPlacesDto(1, listOf(101)), DayPlacesDto(2, listOf(205))), viewModel.editorDays!!.toDayPlaces())
+    }
+
+    @Test
     fun `stops keep their relative positions inside the margins`() {
         val north = LocationDto(16.10, 108.20)
         val south = LocationDto(16.00, 108.30)
