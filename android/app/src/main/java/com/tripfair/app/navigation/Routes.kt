@@ -90,6 +90,10 @@ data class CreateGroup(val draft: TripDraft) : NavKey
 @Serializable
 data object JoinGroup : NavKey
 
+/** Last step of joining: the budget and interests sent with [inviteCode]. */
+@Serializable
+data class JoinGroupBudget(val inviteCode: String) : NavKey
+
 @Serializable
 data class InviteFriends(val tripId: Int) : NavKey
 

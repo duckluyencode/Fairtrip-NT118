@@ -39,11 +39,11 @@ import com.tripfair.app.ui.screens.explore.SearchResultsRoute
 import com.tripfair.app.ui.screens.explore.SearchRoute
 import com.tripfair.app.ui.screens.group.CreateGroupRoute
 import com.tripfair.app.ui.screens.group.CreateOrJoinGroupScreen
-import com.tripfair.app.ui.screens.group.EditBudgetScreen
-import com.tripfair.app.ui.screens.group.GroupPlanScreen
+import com.tripfair.app.ui.screens.group.EditBudgetRoute
+import com.tripfair.app.ui.screens.group.GroupPlanRoute
 import com.tripfair.app.ui.screens.group.TripsRoute
 import com.tripfair.app.ui.screens.group.TripsViewModel
-import com.tripfair.app.ui.screens.group.InviteFriendsScreen
+import com.tripfair.app.ui.screens.group.InviteFriendsRoute
 import com.tripfair.app.ui.screens.group.JoinGroupScreen
 import com.tripfair.app.ui.screens.home.HomeScreen
 import com.tripfair.app.ui.screens.home.HomeViewModel
@@ -348,19 +348,40 @@ private fun TripFairNavHost(container: AppContainer, startSignedIn: Boolean) {
                 )
             }
             entry<JoinGroup> {
-                JoinGroupScreen(onBack = { backStack.goBack() }, onJoin = { selectTab(MainTab.Trips) })
+                JoinGroupScreen(onBack = { backStack.goBack() }, onJoin = { code -> backStack.add(JoinGroupBudget(code)) })
             }
-            entry<InviteFriends> { InviteFriendsScreen(onBack = { backStack.goBack() }) }
+            entry<JoinGroupBudget> { route ->
+                EditBudgetRoute(
+                    tripId = null,
+                    inviteCode = route.inviteCode,
+                    memberName = account?.fullName.orEmpty(),
+                    onBack = { backStack.goBack() },
+                    onSaved = { tripId ->
+                        // Joined: Back from the group skips the screens that led into it.
+                        backStack.removeAll { it is JoinGroup || it is JoinGroupBudget || it is GroupChoice }
+                        backStack.add(GroupPlan(tripId))
+                    },
+                )
+            }
+            entry<InviteFriends> { route -> InviteFriendsRoute(tripId = route.tripId, onBack = { backStack.goBack() }) }
             entry<GroupPlan> { route ->
-                GroupPlanScreen(
+                GroupPlanRoute(
+                    tripId = route.tripId,
                     onBack = { backStack.goBack() },
                     onInvite = { backStack.add(InviteFriends(route.tripId)) },
                     onEditBudget = { backStack.add(EditBudget(route.tripId)) },
                     onStartVote = { backStack.add(VoteList(route.tripId)) },
+                    onViewResult = { backStack.add(OptimizationResult(route.tripId)) },
                 )
             }
-            entry<EditBudget> {
-                EditBudgetScreen(onBack = { backStack.goBack() }, onSave = { backStack.goBack() })
+            entry<EditBudget> { route ->
+                EditBudgetRoute(
+                    tripId = route.tripId,
+                    inviteCode = null,
+                    memberName = account?.fullName.orEmpty(),
+                    onBack = { backStack.goBack() },
+                    onSaved = { backStack.goBack() },
+                )
             }
 
             // 04 Votes

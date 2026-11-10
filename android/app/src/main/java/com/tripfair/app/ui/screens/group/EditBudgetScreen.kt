@@ -1,5 +1,6 @@
 package com.tripfair.app.ui.screens.group
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -23,10 +24,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,26 +35,83 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tripfair.app.R
+import com.tripfair.app.data.trips.Interest
+import com.tripfair.app.ui.AppViewModelProvider
 import com.tripfair.app.ui.components.BudgetField
 import com.tripfair.app.ui.components.PrimaryButton
 import com.tripfair.app.ui.components.TripFairTopBar
-import com.tripfair.app.ui.sample.SampleGroup
-import com.tripfair.app.ui.sample.TravelPreference
 import com.tripfair.app.ui.theme.ThemePreviews
 import com.tripfair.app.ui.theme.TripFairTheme
 
+/**
+ * Edits your budget and interests in the trip [tripId], or, when [inviteCode] is given, joins
+ * that group with them. [onSaved] gets the trip that was saved to or joined.
+ */
 @Composable
-fun EditBudgetScreen(onBack: () -> Unit, onSave: () -> Unit) {
+fun EditBudgetRoute(
+    tripId: Int?,
+    inviteCode: String?,
+    memberName: String,
+    onBack: () -> Unit,
+    onSaved: (tripId: Int) -> Unit,
+    viewModel: EditBudgetViewModel = viewModel(factory = AppViewModelProvider.Factory),
+) {
+    LaunchedEffect(tripId, inviteCode) {
+        if (inviteCode != null) viewModel.startJoin(inviteCode) else if (tripId != null) viewModel.startEdit(tripId)
+    }
+    LaunchedEffect(viewModel.savedTripId) {
+        viewModel.savedTripId?.let {
+            onSaved(it)
+            viewModel.onNavigated()
+        }
+    }
+    EditBudgetScreen(
+        memberName = memberName,
+        groupLine = viewModel.groupName ?: inviteCode?.let { stringResource(R.string.budget_group_code, it) }.orEmpty(),
+        joining = inviteCode != null,
+        budget = viewModel.budget,
+        interests = viewModel.interests,
+        busy = viewModel.loading || viewModel.saving,
+        error = viewModel.error,
+        onBudgetChange = viewModel::onBudgetChange,
+        onToggleInterest = viewModel::toggle,
+        onBack = onBack,
+        onSave = viewModel::save,
+    )
+}
+
+@Composable
+fun EditBudgetScreen(
+    memberName: String,
+    groupLine: String,
+    joining: Boolean,
+    budget: String,
+    interests: Set<String>,
+    busy: Boolean,
+    @StringRes error: Int?,
+    onBudgetChange: (String) -> Unit,
+    onToggleInterest: (String) -> Unit,
+    onBack: () -> Unit,
+    onSave: () -> Unit,
+) {
     val colors = MaterialTheme.colorScheme
-    var budget by rememberSaveable { mutableStateOf(SampleGroup.YOUR_BUDGET) }
-    var selected by rememberSaveable { mutableStateOf(SampleGroup.yourPreferences) }
 
     Scaffold(
         topBar = { TripFairTopBar(title = stringResource(R.string.budget_title), onBack = onBack) },
         bottomBar = {
-            Box(modifier = Modifier.navigationBarsPadding().padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 20.dp)) {
-                PrimaryButton(text = stringResource(R.string.edit_profile_save), onClick = onSave, trailingIcon = R.drawable.ic_arrow_right)
+            Column(
+                modifier = Modifier.navigationBarsPadding().padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                error?.let { Text(text = stringResource(it), style = MaterialTheme.typography.bodySmall, color = colors.error) }
+                PrimaryButton(
+                    text = stringResource(if (joining) R.string.group_join else R.string.edit_profile_save),
+                    onClick = onSave,
+                    trailingIcon = R.drawable.ic_arrow_right,
+                    enabled = !busy,
+                )
             }
         },
     ) { innerPadding ->
@@ -78,13 +133,15 @@ fun EditBudgetScreen(onBack: () -> Unit, onSave: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                MemberAvatar(index = 0, size = 40.dp)
+                MemberAvatar(index = 0, size = 40.dp, initial = memberName.trim().split(" ").lastOrNull()?.take(1))
                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
-                        text = stringResource(R.string.budget_member, SampleGroup.members.first().name),
+                        text = stringResource(R.string.budget_member, memberName),
                         style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
                     )
-                    Text(text = SampleGroup.NAME, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+                    if (groupLine.isNotEmpty()) {
+                        Text(text = groupLine, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+                    }
                 }
                 Icon(painter = painterResource(R.drawable.ic_person_tick), contentDescription = null, tint = colors.onSurface, modifier = Modifier.size(18.dp))
             }
@@ -96,7 +153,7 @@ fun EditBudgetScreen(onBack: () -> Unit, onSave: () -> Unit) {
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 Text(text = stringResource(R.string.budget_label), style = MaterialTheme.typography.titleSmall)
-                BudgetField(digits = budget, onDigitsChange = { budget = it })
+                BudgetField(digits = budget, onDigitsChange = onBudgetChange)
                 Text(text = stringResource(R.string.budget_helper), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
             }
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -104,22 +161,20 @@ fun EditBudgetScreen(onBack: () -> Unit, onSave: () -> Unit) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(text = stringResource(R.string.budget_preferences), style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
                         Text(
-                            text = pluralStringResource(R.plurals.budget_preferences_selected, selected.size, selected.size),
+                            text = pluralStringResource(R.plurals.budget_preferences_selected, interests.size, interests.size),
                             style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
                             color = colors.primary,
                         )
                     }
                     Text(text = stringResource(R.string.budget_preferences_intro), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
                 }
-                SampleGroup.preferences.chunked(2).forEach { row ->
+                interestOptions.chunked(2).forEach { row ->
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        row.forEach { preference ->
+                        row.forEach { option ->
                             PreferenceOption(
-                                preference = preference,
-                                selected = preference.label in selected,
-                                onToggle = {
-                                    selected = if (preference.label in selected) selected - preference.label else selected + preference.label
-                                },
+                                option = option,
+                                selected = option.code in interests,
+                                onToggle = { onToggleInterest(option.code) },
                                 modifier = Modifier.weight(1f),
                             )
                         }
@@ -134,7 +189,7 @@ fun EditBudgetScreen(onBack: () -> Unit, onSave: () -> Unit) {
 
 @Composable
 private fun PreferenceOption(
-    preference: TravelPreference,
+    option: InterestOption,
     selected: Boolean,
     onToggle: () -> Unit,
     modifier: Modifier = Modifier,
@@ -153,13 +208,13 @@ private fun PreferenceOption(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Icon(
-            painter = painterResource(preference.icon),
+            painter = painterResource(option.icon),
             contentDescription = null,
             tint = if (selected) colors.primary else colors.onSurfaceVariant,
             modifier = Modifier.size(18.dp),
         )
         Text(
-            text = preference.label,
+            text = stringResource(option.label),
             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal, fontSize = 13.sp),
             color = if (selected) colors.primary else colors.onSurface,
             modifier = Modifier.weight(1f),
@@ -177,6 +232,18 @@ private fun PreferenceOption(
 @Composable
 private fun EditBudgetScreenPreview() {
     TripFairTheme {
-        EditBudgetScreen(onBack = {}, onSave = {})
+        EditBudgetScreen(
+            memberName = "Duy Đức",
+            groupLine = "Nhóm Đà Nẵng",
+            joining = false,
+            budget = "2500000",
+            interests = setOf(Interest.FOOD, Interest.BEACH),
+            busy = false,
+            error = null,
+            onBudgetChange = {},
+            onToggleInterest = {},
+            onBack = {},
+            onSave = {},
+        )
     }
 }

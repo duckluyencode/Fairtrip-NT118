@@ -354,7 +354,8 @@
     <string name="join_group_hint">Sau khi tham gia, bạn có thể chia sẻ sở thích và bình chọn địa điểm cùng nhóm.</string>
     <string name="join_group_no_code">Chưa có mã nhóm?</string>
     <string name="join_group_no_code_text">Nhờ trưởng nhóm gửi mã hoặc liên kết mời từ màn hình Mời bạn.</string>
-    <string name="join_group_check">Kiểm tra đúng nhóm trước khi tham gia.</string>
+    <string name="join_group_check">Bước tiếp theo: đặt ngân sách và sở thích của bạn, rồi tham gia nhóm.</string>
+    <string name="join_group_continue">Tiếp tục</string>
 
     <!-- Invite friends -->
     <string name="invite_copy_code">Sao chép mã nhóm</string>
@@ -367,14 +368,23 @@
     <string name="invite_email_label">EMAIL</string>
     <string name="invite_email_placeholder">Nhập địa chỉ email</string>
     <string name="invite_send">Gửi lời mời</string>
-    <string name="invite_footer">Bạn bè có thể dùng mã hoặc liên kết để tham gia nhóm.</string>
+    <string name="invite_footer">Lời mời mở trong ứng dụng tin nhắn hoặc email của bạn; bạn bè dùng mã nhóm để tham gia.</string>
     <string name="invite_copied">Đã sao chép mã nhóm</string>
     <string name="invite_sent">Đã gửi lời mời</string>
-    <string name="invite_share_text">Tham gia %1$s trên TripFair: %2$s</string>
+    <string name="invite_share_code">Chia sẻ mã nhóm</string>
+    <string name="invite_share_code_text">Tham gia nhóm %1$s trên TripFair để cùng lên kế hoạch đi %2$s. Mở app TripFair, chọn \"Tham gia nhóm\" và nhập mã %3$s.</string>
+    <string name="invite_group_detail">%1$s · %2$s · %3$d người</string>
+    <string name="invite_no_app">Không có ứng dụng phù hợp để gửi lời mời.</string>
 
     <!-- Group plan -->
-    <string name="plan_ready_title">Đã đủ 4 thành viên</string>
-    <string name="plan_ready_text">Mỗi người đã đặt ngân sách và sở thích</string>
+    <plurals name="plan_members_title">
+        <item quantity="other">%1$d thành viên trong nhóm</item>
+    </plurals>
+    <string name="plan_members_text">Mỗi người đã đặt ngân sách và sở thích khi tham gia</string>
+    <string name="plan_alone_title">Mới có bạn trong nhóm</string>
+    <string name="plan_alone_text">Gửi mã %1$s cho bạn bè để cùng lên kế hoạch.</string>
+    <string name="plan_vote_deadline_none">Không giới hạn</string>
+    <string name="plan_view_result">Xem kết quả tối ưu</string>
     <string name="plan_budget_set">Đã đặt</string>
     <string name="plan_fairness_note">Tối ưu công bằng ưu tiên mức hài lòng chung và không để ai vượt ngân sách cá nhân. Ngân sách của mỗi người được giữ kín.</string>
     <string name="plan_vote_deadline">Hạn bình chọn</string>
@@ -385,6 +395,16 @@
     <!-- Edit budget & preferences -->
     <string name="budget_title">Chỉnh ngân sách &amp; sở thích</string>
     <string name="budget_member">%1$s · Bạn</string>
+    <string name="budget_group_code">Mã nhóm %1$s</string>
+    <string name="interest_food">Ẩm thực</string>
+    <string name="interest_beach">Biển</string>
+    <string name="interest_scenery">Cảnh đẹp</string>
+    <string name="interest_relax">Thư giãn</string>
+    <string name="interest_fun">Vui chơi</string>
+    <string name="interest_photo">Chụp ảnh</string>
+    <string name="interest_culture">Văn hóa</string>
+    <string name="interest_explore">Khám phá</string>
+    <string name="interests_none">Chưa chọn sở thích</string>
     <string name="budget_label">Ngân sách của bạn</string>
     <string name="budget_helper">Mức chi tối đa cho vé, ăn uống và lưu trú, chưa gồm di chuyển. Có thể nhập 0đ. Chỉ bạn thấy số này.</string>
     <string name="budget_preferences">Sở thích du lịch</string>
