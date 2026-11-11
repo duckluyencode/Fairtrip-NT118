@@ -111,7 +111,8 @@ fun itineraryDays(itinerary: ItineraryDto): List<ItineraryDay> = itinerary.days.
             stop.category?.let { stringResource(categoryLabel(it)) },
             durationText(stop.visitMinutes),
             stop.price.label(),
-            stop.attribution,
+            // "Giá · Google" already credits Google; other prices still credit where the place is from.
+            stop.attribution.takeIf { stop.price.source != "GOOGLE_API" },
         )
         ItineraryStop(
             id = stop.stopId.toString(),

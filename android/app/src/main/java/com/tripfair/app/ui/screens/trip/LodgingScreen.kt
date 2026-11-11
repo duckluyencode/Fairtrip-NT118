@@ -195,7 +195,8 @@ private fun HotelCard(hotel: LodgingOptionDto, selected: Boolean, onSelect: () -
             )
             Text(text = hotel.name, style = MaterialTheme.typography.labelLarge.copy(lineHeight = 19.sp))
             val rating = hotel.rating?.let { ratingText(it) }
-            val distance = hotel.distanceKm?.let { distanceText(it) }
+            // 0 km means the trip has no places yet to measure from, not "on the route".
+            val distance = hotel.distanceKm?.takeIf { it >= 0.05 }?.let { distanceText(it) }
             val place = when {
                 rating != null && distance != null -> stringResource(R.string.lodging_rating, rating, distance)
                 rating != null -> stringResource(R.string.lodging_rating_only, rating)

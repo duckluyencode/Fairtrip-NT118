@@ -246,7 +246,7 @@ private fun ResultRow(
     val detail = listOfNotNull(
         stringResource(categoryLabel(place.category)),
         place.rating?.let { "${ratingText(it)} ★" },
-        place.distanceKm?.let(::distanceText),
+        nearbyDistanceText(place.distanceKm),
     ).joinToString(" · ")
     Row(
         modifier = modifier

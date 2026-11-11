@@ -20,6 +20,12 @@ fun ratingText(rating: Double): String = String.format(Vietnamese, "%.1f", ratin
 /** 2.5 -> "2,5 km" */
 fun distanceText(km: Double): String = String.format(Vietnamese, "%.1f km", km)
 
+/** Beyond this, "how far from me" says nothing useful about a place (the user is not there yet). */
+private const val NEARBY_KM = 300.0
+
+/** The distance from the user for a list row, or null when unknown or too far to matter. */
+fun nearbyDistanceText(km: Double?): String? = km?.takeIf { it <= NEARBY_KM }?.let(::distanceText)
+
 /** 12450 -> "12.450" */
 fun countText(count: Int): String = String.format(Vietnamese, "%,d", count)
 
