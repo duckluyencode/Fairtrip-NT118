@@ -5,6 +5,7 @@ import { Public } from './auth.decorators.js';
 import { AuthService } from './auth.service.js';
 import {
   ForgotPasswordDto,
+  GoogleSignInDto,
   LoginDto,
   RefreshTokenDto,
   RegisterDto,
@@ -52,6 +53,13 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   login(@Body() dto: LoginDto): Promise<SessionResponse> {
     return this.auth.login(dto.contact, dto.password);
+  }
+
+  /** Signs in with a Google account; the first time creates or joins an account by email. */
+  @Post('google')
+  @HttpCode(HttpStatus.OK)
+  google(@Body() dto: GoogleSignInDto): Promise<SessionResponse> {
+    return this.auth.googleSignIn(dto.idToken);
   }
 
   /** Swaps a refresh token for new tokens; the old refresh token stops working. */

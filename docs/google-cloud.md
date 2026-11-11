@@ -90,3 +90,20 @@ Backend gửi mã OTP **từ một tài khoản Gmail của dự án** tới ema
 5. Trên AWS: tạo `/tripfair/prod/SMTP_USER` và `/tripfair/prod/SMTP_FROM` (String), `/tripfair/prod/SMTP_PASSWORD` (SecureString) trong Parameter Store; `SMTP_HOST`, `SMTP_PORT` đã có. Deploy lại.
 
 Gmail giới hạn khoảng 500 email/ngày cho tài khoản thường, đủ cho đồ án. Khi cần gửi nhiều hơn, đổi sang Amazon SES hoặc nhà cung cấp khác chỉ cần sửa các biến `SMTP_*`.
+
+## 6. OAuth client ID (đăng nhập bằng Google)
+
+Đăng nhập bằng Google không dùng API key ở trên mà dùng **OAuth client ID**. Cần hai client trong cùng project; cả hai đều không phải bí mật.
+
+1. Google Cloud Console → **APIs & Services** → **OAuth consent screen** (Google Auth Platform): chọn **External**, điền tên app "TripFair", email hỗ trợ và email liên hệ. Khi còn ở trạng thái Testing, thêm các tài khoản Google sẽ dùng thử vào **Test users**.
+2. **Credentials** → **Create credentials** → **OAuth client ID** → loại **Web application**, tên "TripFair server". Không cần điền redirect URI. Chép **Client ID** (kết thúc bằng `.apps.googleusercontent.com`).
+3. Tạo thêm một client loại **Android**: package `com.tripfair.app`, SHA-1 của chứng chỉ ký (xem bằng `./gradlew :app:signingReport` trong `android/`). Client này không điền vào đâu cả; Google dùng nó để nhận ra app. Mỗi chứng chỉ ký (debug trên từng máy, release) cần một client Android riêng.
+4. Trên máy, trong `backend/.env`:
+
+   ```
+   GOOGLE_CLIENT_ID=<client ID loại Web application>
+   ```
+
+5. Trên AWS: tạo `/tripfair/prod/GOOGLE_CLIENT_ID` (String) trong Parameter Store rồi deploy lại.
+
+App Android xin Google một ID token dành cho client Web này rồi gửi lên `POST /auth/google`; backend kiểm tra chữ ký bằng khóa công khai của Google và chỉ nhận token cấp cho đúng client đó. Chưa đặt `GOOGLE_CLIENT_ID` thì route trả 503 `GOOGLE_SIGN_IN_UNAVAILABLE`, các cách đăng nhập khác không bị ảnh hưởng.

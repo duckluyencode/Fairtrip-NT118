@@ -4,6 +4,10 @@ import { JwtModule } from '@nestjs/jwt';
 import { AuthController } from './auth.controller.js';
 import { AuthGuard } from './auth.guard.js';
 import { AuthService } from './auth.service.js';
+import {
+  GoogleIdTokenVerifier,
+  HttpGoogleIdTokenVerifier,
+} from './google/google-id-token.verifier.js';
 import { DefaultOtpDelivery } from './otp/default-otp-delivery.js';
 import { OtpDelivery } from './otp/otp-delivery.js';
 import { OtpService } from './otp/otp.service.js';
@@ -27,7 +31,8 @@ import { TokenService } from './token.service.js';
     TokenService,
     AuthGuard,
     { provide: OtpDelivery, useClass: DefaultOtpDelivery },
+    { provide: GoogleIdTokenVerifier, useClass: HttpGoogleIdTokenVerifier },
   ],
-  exports: [AuthGuard],
+  exports: [AuthGuard, GoogleIdTokenVerifier],
 })
 export class AuthModule {}

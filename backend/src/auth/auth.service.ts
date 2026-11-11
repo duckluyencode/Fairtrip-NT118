@@ -6,6 +6,10 @@ import { OtpPurpose } from '../generated/prisma/enums.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { UserResponse } from '../users/user.response.js';
 import { contactWhere, parseContact, type Contact } from './contact.js';
+import {
+  GoogleIdTokenVerifier,
+  type GoogleIdentity,
+} from './google/google-id-token.verifier.js';
 import type {
   CodeSentResponse,
   ResetTokenResponse,
@@ -30,6 +34,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly otp: OtpService,
     private readonly tokens: TokenService,
+    private readonly google: GoogleIdTokenVerifier,
   ) {}
 
   async register(
@@ -42,11 +47,7 @@ export class AuthService {
       where: contactWhere(contact),
     });
     if (existing?.verifiedAt) {
-      throw new AppError(
-        HttpStatus.CONFLICT,
-        ErrorCode.AccountExists,
-        'An account with this contact already exists',
-      );
+      throw accountExists();
     }
     if (existing) {
       await this.otp.assertCanSend(existing.id, OtpPurpose.REGISTER);
@@ -105,7 +106,8 @@ export class AuthService {
       ? await this.prisma.user.findUnique({ where: contactWhere(contact) })
       : null;
     let valid = false;
-    if (user?.verifiedAt) {
+    // An account that only signs in with Google has no password to match.
+    if (user?.verifiedAt && user.passwordHash) {
       valid = await verifyPassword(password, user.passwordHash);
     } else {
       await verifyPassword(password, await this.dummyHash);
@@ -118,6 +120,57 @@ export class AuthService {
       );
     }
     return this.session(user.id, UserResponse.from(user));
+  }
+
+  /**
+   * Signs in with a Google ID token. A Google account seen before signs in to its
+   * account; a new one joins the account that uses its email (Google has verified the
+   * email), or gets a new account without a password.
+   */
+  async googleSignIn(idToken: string): Promise<SessionResponse> {
+    const identity = await this.google.verify(idToken);
+    if (!identity) {
+      throw new AppError(
+        HttpStatus.UNAUTHORIZED,
+        ErrorCode.InvalidGoogleToken,
+        'Google sign-in could not be verified',
+      );
+    }
+    const linked = await this.prisma.user.findUnique({
+      where: { googleSub: identity.sub },
+    });
+    if (linked) {
+      return this.session(linked.id, UserResponse.from(linked));
+    }
+    const existing = await this.prisma.user.findUnique({
+      where: { email: identity.email },
+    });
+    if (!existing) {
+      const created = await this.createGoogleUser(identity);
+      return this.session(created.id, UserResponse.from(created));
+    }
+    if (existing.googleSub) {
+      // The email now belongs to another Google account than the one linked before.
+      throw accountExists();
+    }
+    const joined = await this.prisma.$transaction(async (tx) => {
+      if (!existing.verifiedAt) {
+        await tx.otpCode.deleteMany({ where: { userId: existing.id } });
+      }
+      return tx.user.update({
+        where: { id: existing.id },
+        data: {
+          googleSub: identity.sub,
+          avatarUrl: existing.avatarUrl ?? avatarOf(identity),
+          // A sign-up that was never verified did not prove it owns the email, so its
+          // password may be someone else's: it is dropped and Google's proof takes over.
+          ...(existing.verifiedAt
+            ? {}
+            : { verifiedAt: new Date(), passwordHash: null }),
+        },
+      });
+    });
+    return this.session(joined.id, UserResponse.from(joined));
   }
 
   refresh(refreshToken: string): Promise<TokensResponse> {
@@ -209,15 +262,59 @@ export class AuthService {
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2002'
       ) {
-        throw new AppError(
-          HttpStatus.CONFLICT,
-          ErrorCode.AccountExists,
-          'An account with this contact already exists',
-        );
+        throw accountExists();
       }
       throw error;
     }
   }
+
+  private async createGoogleUser(identity: GoogleIdentity) {
+    const name = identity.name?.trim() || identity.email.split('@')[0];
+    try {
+      return await this.prisma.user.create({
+        data: {
+          email: identity.email,
+          googleSub: identity.sub,
+          fullName: name.slice(0, FULL_NAME_MAX),
+          avatarUrl: avatarOf(identity),
+          verifiedAt: new Date(),
+        },
+      });
+    } catch (error) {
+      // The same Google account signed in twice at once; the other request created it.
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        const user = await this.prisma.user.findUnique({
+          where: { googleSub: identity.sub },
+        });
+        if (user) {
+          return user;
+        }
+        throw accountExists();
+      }
+      throw error;
+    }
+  }
+}
+
+/** Column sizes of users.full_name and users.avatar_url. */
+const FULL_NAME_MAX = 100;
+const AVATAR_URL_MAX = 2048;
+
+function avatarOf(identity: GoogleIdentity): string | null {
+  return identity.picture && identity.picture.length <= AVATAR_URL_MAX
+    ? identity.picture
+    : null;
+}
+
+function accountExists(): AppError {
+  return new AppError(
+    HttpStatus.CONFLICT,
+    ErrorCode.AccountExists,
+    'An account with this contact already exists',
+  );
 }
 
 // DTOs already validated the contact; this only narrows the type.

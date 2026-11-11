@@ -75,7 +75,7 @@ Lệnh này tạo migration từ thay đổi trong `schema.prisma`, áp dụng v
 
 - Đăng ký → gửi OTP 6 số (HMAC-SHA256 với `JWT_SECRET`, chỉ lưu hash) → xác minh → đăng nhập. Mã sống 15 phút, gửi lại sau 60 giây, khóa sau 5 lần sai (đếm bằng một câu `UPDATE` nguyên tử để hai request song song không vượt giới hạn).
 - Mật khẩu hash bằng `scrypt` có sẵn trong Node (N = 2^17), không thêm thư viện.
-- Xóa tài khoản (`DELETE /me`, nhập lại mật khẩu): chuyển quyền các nhóm còn người khác, xóa phần còn lại; `AuthGuard` từ chối token của tài khoản đã xóa.
+- Xóa tài khoản (`DELETE /me`, nhập lại mật khẩu, hoặc đăng nhập Google lại với tài khoản không có mật khẩu): chuyển quyền các nhóm còn người khác, xóa phần còn lại; `AuthGuard` từ chối token của tài khoản đã xóa.
 - Access token JWT HS256 15 phút; refresh token là chuỗi ngẫu nhiên, lưu SHA-256, đổi mới mỗi lần dùng; dùng lại token cũ thì thu hồi mọi phiên của người đó (dấu hiệu bị lộ).
 - `AuthGuard` toàn cục: route nào cũng cần `Authorization: Bearer`, trừ route gắn `@Public()`; `@CurrentUser()` lấy người dùng.
 - Giới hạn 120 request/phút mỗi IP, route `auth/*` 10 request/phút.
@@ -145,7 +145,7 @@ Mọi route dưới `/api/v1` và cần access token, trừ nhóm auth và `/hea
 | Nhóm | Route |
 | --- | --- |
 | Sức khỏe | `GET /health` |
-| Tài khoản (public) | `POST /auth/register`, `/auth/register/verify`, `/auth/code/resend`, `/auth/login`, `/auth/refresh`, `/auth/logout`, `/auth/password/forgot`, `/auth/password/verify`, `/auth/password/reset` |
+| Tài khoản (public) | `POST /auth/register`, `/auth/register/verify`, `/auth/code/resend`, `/auth/login`, `/auth/google`, `/auth/refresh`, `/auth/logout`, `/auth/password/forgot`, `/auth/password/verify`, `/auth/password/reset` |
 | Hồ sơ | `GET /me`, `PATCH /me`, `DELETE /me` (xóa tài khoản) |
 | Lịch sử tìm kiếm | `GET /me/search-history`, `DELETE /me/search-history/:id`, `DELETE /me/search-history` |
 | Yêu thích | `GET /me/favorites`, `PUT /me/favorites/:placeId`, `DELETE /me/favorites/:placeId` |

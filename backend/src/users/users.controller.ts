@@ -45,7 +45,7 @@ export class UsersController {
   }
 
   /**
-   * Deletes the account after checking the password again. Groups others are still in
+   * Deletes the account after checking the password (or a Google sign-in) again. Groups others are still in
    * pass to the member who joined first; everything else of the account is deleted.
    */
   @Delete()
@@ -54,6 +54,6 @@ export class UsersController {
     @CurrentUser() me: AuthUser,
     @Body() dto: DeleteAccountDto,
   ): Promise<void> {
-    return this.deletion.delete(me.id, dto.password);
+    return this.deletion.delete(me.id, dto);
   }
 }

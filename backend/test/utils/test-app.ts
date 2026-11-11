@@ -5,6 +5,10 @@ import { App } from 'supertest/types.js';
 import { AppModule } from '../../src/app.module.js';
 import { configureApp } from '../../src/app.setup.js';
 import {
+  GoogleIdTokenVerifier,
+  type GoogleIdentity,
+} from '../../src/auth/google/google-id-token.verifier.js';
+import {
   OtpDelivery,
   type OtpMessage,
 } from '../../src/auth/otp/otp-delivery.js';
@@ -39,6 +43,16 @@ export class FakeOtpDelivery extends OtpDelivery {
       throw new Error(`No code was sent to ${contact}`);
     }
     return message.code;
+  }
+}
+
+/** Google sign-in stand-in: a token is valid when a test registered an account for it. */
+export class FakeGoogleIdTokenVerifier extends GoogleIdTokenVerifier {
+  readonly enabled = true;
+  readonly accounts = new Map<string, GoogleIdentity>();
+
+  verify(idToken: string): Promise<GoogleIdentity | null> {
+    return Promise.resolve(this.accounts.get(idToken) ?? null);
   }
 }
 
@@ -150,17 +164,19 @@ export interface TestApp {
   google: FakeGooglePlacesClient;
   routes: FakeRoutesClient;
   vision: FakeVisionClient;
+  googleSignIn: FakeGoogleIdTokenVerifier;
 }
 
 /**
  * Starts the whole app with the same HTTP setup as main.ts, with fakes for sending
- * codes, Google Places, Routes and Cloud Vision so tests never reach the network.
+ * codes, Google sign-in, Google Places, Routes and Cloud Vision so tests never reach the network.
  */
 export async function createTestApp(): Promise<TestApp> {
   const otp = new FakeOtpDelivery();
   const google = new FakeGooglePlacesClient();
   const routes = new FakeRoutesClient();
   const vision = new FakeVisionClient();
+  const googleSignIn = new FakeGoogleIdTokenVerifier();
   const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(OtpDelivery)
     .useValue(otp)
@@ -170,6 +186,8 @@ export async function createTestApp(): Promise<TestApp> {
     .useValue(routes)
     .overrideProvider(VisionClient)
     .useValue(vision)
+    .overrideProvider(GoogleIdTokenVerifier)
+    .useValue(googleSignIn)
     .compile();
   const app = moduleRef.createNestApplication<INestApplication<App>>();
   configureApp(app);
@@ -181,6 +199,7 @@ export async function createTestApp(): Promise<TestApp> {
     google,
     routes,
     vision,
+    googleSignIn,
   };
 }
 

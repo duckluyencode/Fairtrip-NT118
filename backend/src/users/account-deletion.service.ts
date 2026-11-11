@@ -1,4 +1,5 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
+import { GoogleIdTokenVerifier } from '../auth/google/google-id-token.verifier.js';
 import { verifyPassword } from '../auth/password.js';
 import { AppError } from '../common/errors/app-error.js';
 import { ErrorCode } from '../common/errors/error-code.js';
@@ -17,18 +18,42 @@ import { resetPlan } from '../trips/trip-access.js';
  */
 @Injectable()
 export class AccountDeletionService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly google: GoogleIdTokenVerifier,
+  ) {}
 
-  async delete(userId: number, password: string): Promise<void> {
+  /** The account's password, or an ID token of the Google account linked to it. */
+  private async proves(
+    user: { passwordHash: string | null; googleSub: string | null },
+    proof: { password?: string; googleIdToken?: string },
+  ): Promise<boolean> {
+    if (proof.password !== undefined) {
+      return (
+        user.passwordHash !== null &&
+        (await verifyPassword(proof.password, user.passwordHash))
+      );
+    }
+    if (proof.googleIdToken === undefined || user.googleSub === null) {
+      return false;
+    }
+    const identity = await this.google.verify(proof.googleIdToken);
+    return identity?.sub === user.googleSub;
+  }
+
+  async delete(
+    userId: number,
+    proof: { password?: string; googleIdToken?: string },
+  ): Promise<void> {
     const user = await this.prisma.user.findUniqueOrThrow({
       where: { id: userId },
     });
     // Asked again so a phone left unlocked cannot delete the account.
-    if (!(await verifyPassword(password, user.passwordHash))) {
+    if (!(await this.proves(user, proof))) {
       throw new AppError(
         HttpStatus.FORBIDDEN,
         ErrorCode.WrongCredentials,
-        'Wrong password',
+        'Wrong password or Google account',
       );
     }
     const memberships = await this.prisma.tripMember.findMany({
