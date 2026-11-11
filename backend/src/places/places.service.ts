@@ -2,6 +2,7 @@ import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { AppError } from '../common/errors/app-error.js';
 import { ErrorCode } from '../common/errors/error-code.js';
 import type { Place } from '../generated/prisma/client.js';
+import type { PlaceCategory } from '../generated/prisma/enums.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { SearchHistoryService } from '../search-history/search-history.service.js';
 import type {
@@ -35,6 +36,13 @@ const DISCOVER_QUERY = 'điểm tham quan';
 const NEAR_RADIUS_METERS = 30_000;
 // Google pages read at most per search when the category filter leaves a page empty.
 const MAX_EXTRA_PAGES = 2;
+// What a category means next to a searched name: "<this> gần <name>".
+const NEARBY_QUERY: Record<PlaceCategory, string> = {
+  FOOD: 'quán ăn',
+  FUN: 'điểm vui chơi',
+  SCENIC: 'điểm tham quan',
+};
+const NEARBY_TOKEN_PREFIX = 'near:';
 
 export function placeNotFound(): AppError {
   return new AppError(
@@ -103,34 +111,55 @@ export class PlacesService {
         nextPageToken: null,
       };
     }
-    const request = {
-      query: text || DISCOVER_QUERY,
-      pageSize: query.limit,
-      includedType: query.category === 'FOOD' ? 'restaurant' : undefined,
-      near: origin
-        ? { ...origin, radiusMeters: NEAR_RADIUS_METERS }
-        : undefined,
-    };
     const inCategory = (place: GooglePlace) =>
       !query.category ||
       googleCategories(place.types).categories.includes(query.category);
     // Google cannot filter FUN or SCENIC itself, so a page may hold none of them: read
     // a few more pages before answering with an empty one.
-    let result = await this.google.search({
-      ...request,
-      pageToken: query.pageToken,
-    });
-    let found = result.places.filter(inCategory);
-    for (
-      let extra = 0;
-      found.length === 0 && result.nextPageToken && extra < MAX_EXTRA_PAGES;
-      extra++
-    ) {
-      result = await this.google.search({
-        ...request,
-        pageToken: result.nextPageToken,
-      });
-      found = result.places.filter(inCategory);
+    const run = async (searchText: string, pageToken: string | undefined) => {
+      const request = {
+        query: searchText,
+        pageSize: query.limit,
+        includedType: query.category === 'FOOD' ? 'restaurant' : undefined,
+        near: origin
+          ? { ...origin, radiusMeters: NEAR_RADIUS_METERS }
+          : undefined,
+      };
+      let result = await this.google.search({ ...request, pageToken });
+      let places = result.places.filter(inCategory);
+      for (
+        let extra = 0;
+        places.length === 0 && result.nextPageToken && extra < MAX_EXTRA_PAGES;
+        extra++
+      ) {
+        result = await this.google.search({
+          ...request,
+          pageToken: result.nextPageToken,
+        });
+        places = result.places.filter(inCategory);
+      }
+      return { places, nextPageToken: result.nextPageToken };
+    };
+    // A name with a category ("Cầu Rồng" + FOOD) finds the place itself, which the
+    // filter then removes. The category then means "places of this kind near it".
+    const nearbyText =
+      text && query.category
+        ? `${NEARBY_QUERY[query.category]} gần ${text}`
+        : null;
+    // Google only accepts a page token with the query that produced it, so the token
+    // of a nearby search is marked.
+    let nearby = Boolean(
+      nearbyText && query.pageToken?.startsWith(NEARBY_TOKEN_PREFIX),
+    );
+    let { places: found, nextPageToken } = await run(
+      nearby && nearbyText ? nearbyText : text || DISCOVER_QUERY,
+      nearby
+        ? query.pageToken?.slice(NEARBY_TOKEN_PREFIX.length)
+        : query.pageToken,
+    );
+    if (found.length === 0 && nearbyText && !query.pageToken) {
+      nearby = true;
+      ({ places: found, nextPageToken } = await run(nearbyText, undefined));
     }
     const ids = await this.storeGoogleIds(found.map((place) => place.id));
     return {
@@ -142,7 +171,10 @@ export class PlacesService {
       limit: query.limit,
       // Google does not say how many results there are; follow nextPageToken instead.
       total: null,
-      nextPageToken: result.nextPageToken,
+      nextPageToken:
+        nearby && nextPageToken
+          ? NEARBY_TOKEN_PREFIX + nextPageToken
+          : nextPageToken,
     };
   }
 

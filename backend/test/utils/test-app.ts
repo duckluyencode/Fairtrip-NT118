@@ -50,6 +50,8 @@ export class FakeOtpDelivery extends OtpDelivery {
 export class FakeGooglePlacesClient extends GooglePlacesClient {
   enabled = false;
   places: GooglePlace[] = [];
+  /** Places found for one exact query text, instead of `places`. */
+  placesForQuery = new Map<string, GooglePlace[]>();
   /** Every Text Search request, to check what was asked. */
   readonly searches: TextSearchRequest[] = [];
 
@@ -58,7 +60,9 @@ export class FakeGooglePlacesClient extends GooglePlacesClient {
       return Promise.reject(new Error('Google is disabled in this test'));
     }
     this.searches.push(request);
-    const found = this.places.filter(
+    const found = (
+      this.placesForQuery.get(request.query) ?? this.places
+    ).filter(
       (p) => !request.includedType || p.types.includes(request.includedType),
     );
     return Promise.resolve({
@@ -90,6 +94,7 @@ export class FakeGooglePlacesClient extends GooglePlacesClient {
   reset(): void {
     this.enabled = false;
     this.places = [];
+    this.placesForQuery.clear();
     this.searches.length = 0;
   }
 }
