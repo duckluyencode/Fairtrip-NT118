@@ -6,7 +6,7 @@ Mô tả chi tiết: [docs/project-overview.md](docs/project-overview.md). Đây
 Thiết kế UI: [Figma](https://www.figma.com/design/o0VGZR03n46tcJonTQ8nQ9/NT118.R13_Group12A).
 
 ## Tech stack
-- Android: Kotlin, Jetpack Compose, Google Maps SDK, Retrofit/OkHttp, Room, CameraX, FusedLocationProviderClient, SmsManager
+- Android: Kotlin, Jetpack Compose, Google Maps SDK, Retrofit/OkHttp, DataStore, FusedLocationProviderClient; Room và CameraX chưa dùng (xem Câu hỏi mở)
 - Backend: NestJS (Node.js), JWT, Docker
 - Database: MySQL trên Amazon RDS
 - Dịch vụ ngoài: Google Places API (New), Google Cloud Vision API, Klook/GetYourGuide/Tiqets API (vé), Agoda API (lưu trú)
@@ -18,7 +18,7 @@ Khi đề xuất tạo thư mục hoặc module mới: giải thích vai trò c�
 Khi có `android/` và `backend/`: lệnh build/test và quy ước riêng của từng phần đặt trong `android/CLAUDE.md` và `backend/CLAUDE.md`; file này chỉ giữ phần dùng chung.
 
 ```
-.github/     GitHub Actions (CI backend)
+.github/     GitHub Actions (CI backend, CI Android)
 android/     App Android Kotlin + Jetpack Compose, xem android/CLAUDE.md
 backend/     API server NestJS (TypeScript), xem backend/CLAUDE.md
 docs/        Tài liệu dự án (mô tả tổng quan, thiết kế database, lộ trình và tiến độ)
@@ -79,12 +79,17 @@ README.md
 - 2026-10-19: App Android: package com.tripfair.app, minSdk 26, compileSdk/targetSdk 37; AGP 9.4.1 (Kotlin tích hợp, 2.2.10), Gradle 9.6.0, Compose BOM 2026.09.00 (Material 3).
 - 2026-10-19: Giao diện có chế độ sáng (theo Figma) và tối (tự thiết kế từ màu Figma, đạt WCAG AA), theo cài đặt của điện thoại; không dùng màu động Material You. Font Inter đóng gói trong app (file biến thiên, giấy phép OFL).
 - 2026-10-20: Điều hướng Android dùng Navigation 3 (1.2.0) + kotlinx-serialization. Icon lấy từ Figma (bộ Lucide) chuyển sang VectorDrawable, không dùng thư viện icon. Màn hình làm theo Figma với dữ liệu mẫu trước, nối backend sau.
+- 2026-10-21: Android dùng ViewModel (lifecycle 2.11.0) và repository; dữ liệu mẫu qua repository giả lập trong bộ nhớ cho tới khi nối backend; unit test bằng JUnit 4.
 - 2026-11-04: Thiết kế database ở [docs/database.md](docs/database.md); bảng được tạo dần theo từng module backend. Tiền lưu bằng số nguyên VND theo người; thuật toán dùng price_max khi điểm có khoảng giá. Đánh giá địa điểm lấy từ Google Places (không có bảng reviews). Liên hệ khẩn cấp lưu trên server, Android giữ bản sao để SOS chạy khi mất mạng.
 - 2026-11-04: API backend nằm dưới `/api/v1`; lỗi trả dạng `{ statusCode, code, message, details? }` với `code` ổn định để Android xử lý; tài liệu Swagger ở `/docs`. GitHub Actions chạy lint, build, unit test và e2e test cho mọi PR chạm `backend/`.
 - 2026-11-04: OTP email gửi qua SMTP (Gmail App Password khi chạy trên máy; đổi nhà cung cấp, vd. Amazon SES, chỉ cần sửa `.env`). Đăng nhập trả access token JWT 15 phút và refresh token 30 ngày (đổi mới mỗi lần dùng); mật khẩu hash bằng scrypt.
 - 2026-11-04: Địa điểm kết hợp danh mục riêng của TripFair (dữ liệu mẫu Đà Nẵng, có thời gian ghé và giá) với Google Places (New): tìm kiếm bổ sung kết quả Google khi có `GOOGLE_MAPS_API_KEY`; điểm từ Google chỉ lưu `place_id` (theo điều khoản Google), chi tiết lấy trực tiếp và ghi nguồn "Google Maps".
 - 2026-11-04: Giá điểm không có vé đối tác: `priceRange` của Google → loại điểm thường miễn phí (bãi biển, công viên, chùa, cầu…) = 0đ ước tính → bảng quy đổi theo price_level → mức mặc định theo nhóm. Điểm nằm trong khu có bán vé (vd. Le Jardin trong Bà Nà Hills) dùng giá vé của khu; trong lộ trình tính 0đ nếu vé khu đã có trong lộ trình.
 - 2026-11-05: Dữ liệu người dùng thật chỉ nằm trên AWS (RDS); database trên máy chỉ dùng để phát triển và chạy test. Làm B1–B4 trước A8. Backend đóng gói thành hai image Docker: API và migration (`backend/Dockerfile`).
+- 2026-11-10: Bản đồ trong app dùng Google Maps SDK qua maps-compose 8.3.1 (bản mới nhất còn build bằng Kotlin 2.3, đọc được bởi Kotlin 2.2.10 của dự án) và vị trí qua play-services-location 21.4.0. Khóa Android đặt trong `android/local.properties` (`MAPS_API_KEY`), khóa server trong `backend/.env` (`GOOGLE_MAPS_API_KEY`); hai khóa tách riêng và giới hạn theo đúng API.
+- 2026-11-10: Khi phát triển, app gọi backend trên máy tính qua `http://localhost:3000` cùng `adb reverse tcp:3000 tcp:3000`, vì Android 17 chặn app gọi địa chỉ mạng nội bộ (`10.0.2.2`) khi chưa có quyền mạng cục bộ.
+- 2026-11-10: SOS gửi tin bằng cách mở ứng dụng tin nhắn của máy với người nhận và nội dung (tên, liên kết bản đồ, tọa độ) soạn sẵn, không dùng `SmsManager`: Android 17 từ chối app không phải ứng dụng SMS dù đã cấp quyền `SEND_SMS`, và cách này không cần quyền nào.
+- 2026-11-10: Nhận diện ảnh chụp bằng ứng dụng camera của máy hoặc chọn bằng bộ chọn ảnh của hệ thống (không cần quyền camera, không thêm CameraX), rồi gửi lên `POST /places/recognize`.
 
 ## Câu hỏi mở
 Mỗi mục ghi rõ cần chốt trước khi làm phần nào. Chưa tới phần đó thì để nguyên.
@@ -92,7 +97,7 @@ Mỗi mục ghi rõ cần chốt trước khi làm phần nào. Chưa tới ph�
 - [Trip] Lộ trình cá nhân dùng chung pipeline với nhóm (n = 1) hay thuật toán riêng? "Thời gian giữa các lần đi chơi" nghĩa là gì?
 - [Trip] Thời gian và quãng đường giữa các điểm lấy bằng ước tính đường chim bay hay Google Routes API? Cần cho ràng buộc tổng thời gian ≤ T.
 - [Rủi ro] Kiểm tra sớm điều kiện cấp Partner API của Klook, GetYourGuide, Tiqets, Agoda và độ phủ ở Việt Nam. Tất cả đều cần duyệt đối tác; đồ án sinh viên có thể không được duyệt.
-- [Camera] Có thêm CameraX (dependency lớn) để khung ngắm dùng camera thật không? Hiện màn nhận diện dùng ảnh mẫu. Chốt trước khi làm nhận diện ảnh thật.
+- [Camera] Có thêm CameraX (dependency lớn) để có khung ngắm trực tiếp trong app không? Hiện app mở ứng dụng camera của máy để chụp. Chốt khi muốn khung ngắm riêng.
 - [Offline] Giao diện offline trong Figma (mất mạng, cần mạng, có mạng lại) đang tạm bỏ qua. Chốt phạm vi trước khi làm lưu lộ trình bằng Room.
 
 ## Ngôn ngữ

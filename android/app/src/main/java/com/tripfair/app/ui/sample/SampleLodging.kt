@@ -1,94 +1,86 @@
 package com.tripfair.app.ui.sample
 
-import androidx.annotation.DrawableRes
-import com.tripfair.app.R
+import com.tripfair.app.data.places.LocationDto
+import com.tripfair.app.data.trips.ItineraryDayDto
+import com.tripfair.app.data.trips.ItineraryDto
+import com.tripfair.app.data.trips.ItineraryStopDto
+import com.tripfair.app.data.trips.LodgingDto
+import com.tripfair.app.data.trips.LodgingOptionDto
+import com.tripfair.app.data.trips.MemberCostDto
+import com.tripfair.app.data.trips.MyCostsDto
+import com.tripfair.app.data.trips.StopParticipantDto
+import com.tripfair.app.data.trips.StopPriceDto
+import com.tripfair.app.data.trips.TripDetailDto
+import com.tripfair.app.data.trips.TripMemberDto
 
-/** A hotel suggested from Agoda. Prices are per room and night, in dong. */
-data class SampleHotel(
-    val id: String,
-    /** "Cân bằng", "Rẻ nhất" or "Gần lộ trình nhất". */
-    val tag: String,
-    val name: String,
-    /** Name used on the confirm button, e.g. "Biển Xanh". */
-    val shortName: String,
-    val rating: String,
-    val distanceToRoute: String,
-    val pricePerNight: Long,
-    @param:DrawableRes val image: Int,
-)
-
+/** Hotels as the backend suggests them, for previews. Prices are per room and night. */
 object SampleLodging {
-    const val TRIP_LINE = "Đà Nẵng · 12–14 tháng 10 · 2 đêm · 2 người/phòng"
-    const val FETCHED_AT = "09:35"
-    const val PEOPLE_PER_ROOM = 2
-
-    val hotels = listOf(
-        SampleHotel(
-            id = "bien-xanh",
-            tag = "Cân bằng",
-            name = "Khách sạn Biển Xanh",
-            shortName = "Biển Xanh",
-            rating = "8,6/10",
-            distanceToRoute = "1,2 km",
-            pricePerNight = 600_000,
-            image = R.drawable.sample_my_khe,
-        ),
-        SampleHotel(
-            id = "song-han",
-            tag = "Rẻ nhất",
-            name = "Nhà nghỉ Sông Hàn",
-            shortName = "Sông Hàn",
-            rating = "7,9/10",
-            distanceToRoute = "3,4 km",
-            pricePerNight = 400_000,
-            image = R.drawable.sample_trip_da_nang,
-        ),
-        SampleHotel(
-            id = "my-khe-view",
-            tag = "Gần lộ trình nhất",
-            name = "Mỹ Khê View Hotel",
-            shortName = "Mỹ Khê View",
-            rating = "9,0/10",
-            distanceToRoute = "0,3 km",
-            pricePerNight = 900_000,
-            image = R.drawable.sample_my_khe_sunset,
-        ),
+    private fun option(tag: String, id: Int, name: String, rating: Double, km: Double, price: Long) = LodgingOptionDto(
+        tag = tag,
+        placeId = id,
+        name = name,
+        rating = rating,
+        distanceKm = km,
+        pricePerNight = price,
+        priceSource = "ESTIMATED",
+        provider = "TripFair",
+        isEstimate = true,
+        nights = 2,
+        rooms = 2,
+        guestsPerRoom = 2,
+        myShare = price,
+        leftForPlaces = 2_500_000 - price,
+        attribution = "Google Maps",
     )
 
-    /** Your share of the room for the whole stay; people sharing a room split it evenly. */
-    fun yourShare(hotel: SampleHotel): Long = hotel.pricePerNight * SampleItinerary.NIGHTS / PEOPLE_PER_ROOM
+    val options = listOf(
+        option("BALANCED", 41, "Khách sạn Biển Xanh", 4.3, 1.2, 600_000),
+        option("CHEAPEST", 42, "Nhà nghỉ Sông Hàn", 3.9, 3.4, 400_000),
+        option("NEAREST", 43, "Mỹ Khê View Hotel", 4.5, 0.3, 900_000),
+    )
 }
 
-/** One member's line in "Chia chi phí & mức hài lòng". */
-data class MemberResult(
-    val name: String,
-    val isYou: Boolean,
-    val spent: Long,
-    /** Satisfaction in percent. */
-    val satisfaction: Int,
-)
+/** A planned group trip and its itinerary, for previews of the result and itinerary screens. */
+object SampleTripPlan {
+    private fun member(id: Int, name: String, me: Boolean = false) =
+        TripMemberDto(id, name, if (me) "OWNER" else "MEMBER", isMe = me, budget = if (me) 2_500_000 else null)
 
-/** One place in "Chi phí theo điểm · mỗi người". */
-data class CostLine(val name: String, val detail: String, val price: String)
-
-/** "Kết quả tối ưu công bằng" from Figma. */
-object SampleOptimization {
-    const val SATISFACTION = 90
-    const val SUMMARY = "6 địa điểm và lưu trú · 3 ngày · cân bằng sở thích của cả 4 người"
-
-    val members = listOf(
-        MemberResult(name = "Đức", isYou = true, spent = 1_920_000, satisfaction = 92),
-        MemberResult(name = "An", isYou = false, spent = 1_020_000, satisfaction = 81),
-        MemberResult(name = "Linh", isYou = false, spent = 1_920_000, satisfaction = 95),
-        MemberResult(name = "Khoa", isYou = false, spent = 1_920_000, satisfaction = 90),
+    val trip = TripDetailDto(
+        id = 1, type = "GROUP", name = "Nhóm Đà Nẵng", city = "Đà Nẵng", startDate = "2026-12-12", endDate = "2026-12-14",
+        days = 3, status = "PLANNED", memberCount = 3, myRole = "OWNER", lodgingMode = "HOTEL", inviteCode = "DN1214",
+        members = listOf(member(1, "Duy Đức", me = true), member(2, "An"), member(3, "Linh")),
     )
 
-    val costs = listOf(
-        CostLine("Khách sạn Biển Xanh · 2 đêm", "Cả nhóm · 2 phòng, chia đều · Agoda", "600.000đ"),
-        CostLine("Cầu Vàng · Bà Nà Hills", "Đức, Linh, Khoa · vé chính thức", "900.000đ"),
-        CostLine("Chợ đêm Sơn Trà", "Cả nhóm · ước tính", "~250.000đ"),
-        CostLine("Phố cổ Hội An", "Cả nhóm · vé chính thức", "120.000đ"),
-        CostLine("Mì Quảng Bà Mua", "Cả nhóm · Google", "~50.000đ"),
-        CostLine("Bãi biển Mỹ Khê, Cầu Rồng & Sơn Trà", "Cả nhóm", "Miễn phí"),
+    private val everyone = trip.members.map { StopParticipantDto(it.memberId, it.fullName) }
+
+    private fun stop(id: Int, time: String, name: String, category: String, minutes: Int, price: Long, source: String, provider: String, lat: Double, lng: Double, running: Long) =
+        ItineraryStopDto(
+            stopId = id, position = id, time = time, visitMinutes = minutes, placeId = 100 + id, name = name, category = category,
+            location = LocationDto(lat, lng), price = StopPriceDto(price, source, provider, isEstimate = source != "PARTNER_API"),
+            myCost = price, participants = everyone, runningTotal = running, remaining = 2_500_000 - running,
+        )
+
+    val itinerary = ItineraryDto(
+        tripId = 1,
+        status = "PLANNED",
+        lodging = LodgingDto(
+            placeId = 41, name = "Khách sạn Biển Xanh", checkIn = "2026-12-12", checkOut = "2026-12-14", nights = 2, rooms = 2,
+            guestsPerRoom = 2, pricePerNight = 600_000, priceSource = "ESTIMATED", provider = "TripFair", isEstimate = true, myShare = 600_000,
+        ),
+        days = listOf(
+            ItineraryDayDto(
+                day = 1,
+                date = "2026-12-12",
+                stops = listOf(
+                    stop(1, "08:00", "Mì Quảng Bà Mua", "FOOD", 45, 50_000, "GOOGLE_API", "Google", 16.0678, 108.2208, 650_000),
+                    stop(2, "09:30", "Bãi biển Mỹ Khê", "SCENIC", 120, 0, "ESTIMATED", "TripFair", 16.0544, 108.2469, 650_000),
+                    stop(3, "14:00", "Bà Nà Hills", "FUN", 240, 900_000, "PARTNER_API", "Klook", 15.9977, 107.9881, 1_550_000),
+                ),
+            ),
+            ItineraryDayDto(day = 2, date = "2026-12-13", stops = emptyList()),
+        ),
+        me = MyCostsDto(budget = 2_500_000, lodgingShare = 600_000, spentOnPlaces = 950_000, total = 1_550_000, remaining = 950_000),
+        members = listOf(MemberCostDto(1, "Duy Đức", 1_550_000, 92), MemberCostDto(2, "An", 1_550_000, 81), MemberCostDto(3, "Linh", 1_550_000, 95)),
+        fairness = 0.99,
     )
 }

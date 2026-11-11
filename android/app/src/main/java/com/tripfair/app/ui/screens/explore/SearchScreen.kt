@@ -46,22 +46,46 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tripfair.app.R
+import com.tripfair.app.data.places.SuggestionDto
+import com.tripfair.app.ui.AppViewModelProvider
 import com.tripfair.app.ui.components.SectionHeader
 import com.tripfair.app.ui.components.TopBarTextAction
 import com.tripfair.app.ui.components.TripFairTopBar
-import com.tripfair.app.ui.sample.SampleSearch
-import com.tripfair.app.ui.sample.SearchSuggestion
 import com.tripfair.app.ui.theme.ThemePreviews
 import com.tripfair.app.ui.theme.TripFairTheme
 
 @Composable
-fun SearchScreen(
+fun SearchRoute(
     onBack: () -> Unit,
     onSearch: (query: String) -> Unit,
+    onPlace: (placeId: Int, sessionToken: String) -> Unit,
+    onHistory: () -> Unit,
+    viewModel: SearchViewModel = viewModel(factory = AppViewModelProvider.Factory),
+    onPick: ((SuggestionDto) -> Unit)? = null,
+) {
+    SearchScreen(
+        state = viewModel.state,
+        onQueryChange = viewModel::onQueryChange,
+        onBack = onBack,
+        // When picking a place for an itinerary, a submitted or recent query only fills the
+        // box: the choice is made from the suggestions under it.
+        onSearch = if (onPick != null) viewModel::onQueryChange else onSearch,
+        onSuggestion = { if (onPick != null) onPick(it) else onPlace(it.id, viewModel.sessionToken) },
+        onHistory = onHistory,
+    )
+}
+
+@Composable
+fun SearchScreen(
+    state: SearchUiState,
+    onQueryChange: (String) -> Unit,
+    onBack: () -> Unit,
+    onSearch: (query: String) -> Unit,
+    onSuggestion: (SuggestionDto) -> Unit,
     onHistory: () -> Unit,
 ) {
-    var query by rememberSaveable { mutableStateOf(SampleSearch.QUERY) }
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
     // Open the keyboard on the first visit only, not when coming back from results.
@@ -78,6 +102,7 @@ fun SearchScreen(
         focusManager.clearFocus()
         action()
     }
+    val submit = { if (state.query.isNotBlank()) leaveWith { onSearch(state.query.trim()) } }
 
     Scaffold(
         topBar = {
@@ -97,18 +122,30 @@ fun SearchScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             SearchInput(
-                query = query,
-                onQueryChange = { query = it },
-                onSubmit = { leaveWith { onSearch(query) } },
+                query = state.query,
+                onQueryChange = onQueryChange,
+                onSubmit = submit,
                 modifier = Modifier.focusRequester(focusRequester),
             )
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            if (state.query.isBlank()) {
                 Text(
-                    text = stringResource(R.string.search_suggestions),
-                    style = MaterialTheme.typography.titleSmall.copy(fontSize = 16.sp, lineHeight = 22.sp),
+                    text = stringResource(R.string.search_type_hint),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                SampleSearch.suggestions.forEach { suggestion ->
-                    SuggestionRow(suggestion = suggestion, onClick = { leaveWith { onSearch(suggestion.title) } })
+            } else if (state.suggestions.isNotEmpty()) {
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(
+                        text = stringResource(R.string.search_suggestions),
+                        style = MaterialTheme.typography.titleSmall.copy(fontSize = 16.sp, lineHeight = 22.sp),
+                    )
+                    state.suggestions.forEach { suggestion ->
+                        SuggestionRow(
+                            title = suggestion.name,
+                            subtitle = suggestion.area.orEmpty(),
+                            onClick = { leaveWith { onSuggestion(suggestion) } },
+                        )
+                    }
                 }
             }
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -118,11 +155,12 @@ fun SearchScreen(
                     actionLabel = stringResource(R.string.action_history),
                     onAction = { leaveWith(onHistory) },
                 )
-                SampleSearch.recent.forEach { recent ->
+                state.recent.forEach { recent ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable(role = Role.Button, onClick = { leaveWith { onSearch(recent) } }),
+                            .clickable(role = Role.Button, onClick = { leaveWith { onSearch(recent) } })
+                            .padding(vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
@@ -199,7 +237,7 @@ private fun SearchInput(
 }
 
 @Composable
-private fun SuggestionRow(suggestion: SearchSuggestion, onClick: () -> Unit) {
+private fun SuggestionRow(title: String, subtitle: String, onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     Column {
         Row(
@@ -217,7 +255,7 @@ private fun SuggestionRow(suggestion: SearchSuggestion, onClick: () -> Unit) {
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
-                    painter = painterResource(if (suggestion.isPlace) R.drawable.ic_map_pin else R.drawable.ic_search),
+                    painter = painterResource(R.drawable.ic_map_pin),
                     contentDescription = null,
                     tint = colors.primary,
                     modifier = Modifier.size(18.dp),
@@ -225,10 +263,12 @@ private fun SuggestionRow(suggestion: SearchSuggestion, onClick: () -> Unit) {
             }
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 Text(
-                    text = suggestion.title,
+                    text = title,
                     style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold, lineHeight = 20.sp),
                 )
-                Text(text = suggestion.subtitle, style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
+                if (subtitle.isNotEmpty()) {
+                    Text(text = subtitle, style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
+                }
             }
             Icon(
                 painter = painterResource(R.drawable.ic_arrow_up_left),
@@ -245,6 +285,17 @@ private fun SuggestionRow(suggestion: SearchSuggestion, onClick: () -> Unit) {
 @Composable
 private fun SearchScreenPreview() {
     TripFairTheme {
-        SearchScreen(onBack = {}, onSearch = {}, onHistory = {})
+        SearchScreen(
+            state = SearchUiState(
+                query = "cầu",
+                suggestions = listOf(SuggestionDto(1, "Cầu Vàng", "Hòa Vang, Đà Nẵng"), SuggestionDto(2, "Cầu Rồng", "Hải Châu, Đà Nẵng")),
+                recent = listOf("Bãi biển Mỹ Khê"),
+            ),
+            onQueryChange = {},
+            onBack = {},
+            onSearch = {},
+            onSuggestion = {},
+            onHistory = {},
+        )
     }
 }

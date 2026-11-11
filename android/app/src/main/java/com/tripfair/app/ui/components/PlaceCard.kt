@@ -20,6 +20,38 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
+/** Like the photo card, for places without a photo (from Google): the category's icon instead. */
+@Composable
+fun PlaceCard(
+    name: String,
+    detail: String,
+    category: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .clip(MaterialTheme.shapes.small)
+            .background(MaterialTheme.colorScheme.surfaceContainerLow)
+            .clickable(role = Role.Button, onClick = onClick),
+        verticalArrangement = Arrangement.spacedBy(9.dp),
+    ) {
+        PlacePlaceholder(category = category, modifier = Modifier.fillMaxWidth().height(112.dp))
+        Column(
+            modifier = Modifier.padding(start = 12.dp, end = 12.dp, bottom = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(3.dp),
+        ) {
+            Text(text = name, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(
+                text = detail,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+            )
+        }
+    }
+}
+
 /** Photo card with a name and one detail line ("Thẻ địa điểm" in Figma). Lists never show prices. */
 @Composable
 fun PlaceCard(

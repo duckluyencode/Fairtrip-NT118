@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 11 and older: the saved session is not backed up (its Keystore key stays on the device),
+     nor the copy of the emergency contacts (the server keeps them). -->
+<full-backup-content>
+    <exclude domain="file" path="datastore/session.preferences_pb" />
+    <exclude domain="file" path="datastore/emergency_contacts.preferences_pb" />
+</full-backup-content>

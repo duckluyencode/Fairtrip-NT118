@@ -1,5 +1,6 @@
 package com.tripfair.app.ui.screens.vote
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -19,10 +20,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,40 +32,89 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tripfair.app.R
+import com.tripfair.app.data.trips.TripDetailDto
+import com.tripfair.app.data.trips.VoteOptionDto
+import com.tripfair.app.data.trips.VoteOptionListDto
+import com.tripfair.app.ui.AppViewModelProvider
+import com.tripfair.app.ui.components.EmptyState
 import com.tripfair.app.ui.components.OutlineButton
 import com.tripfair.app.ui.components.PrimaryButton
 import com.tripfair.app.ui.components.TripFairTopBar
+import com.tripfair.app.ui.sample.SampleTripPlan
 import com.tripfair.app.ui.sample.SampleVote
+import com.tripfair.app.ui.screens.trip.TripLoadScaffold
+import com.tripfair.app.ui.screens.trip.voteDeadlineText
 import com.tripfair.app.ui.theme.ThemePreviews
 import com.tripfair.app.ui.theme.TripFairTheme
 
+@Composable
+fun BallotRoute(
+    tripId: Int,
+    onBack: () -> Unit,
+    onAddPlace: () -> Unit,
+    viewModel: VotesViewModel = viewModel(factory = AppViewModelProvider.Factory),
+) {
+    LaunchedEffect(tripId) { viewModel.start(tripId) }
+    val trip = viewModel.trip
+    val votes = viewModel.votes
+    if (trip == null || votes == null) {
+        TripLoadScaffold(
+            title = stringResource(R.string.ballot_title),
+            loading = viewModel.loading,
+            error = viewModel.error,
+            onRetry = viewModel::load,
+            onBack = onBack,
+        )
+        return
+    }
+    BallotScreen(
+        trip = trip,
+        votes = votes,
+        busy = viewModel.busy,
+        error = viewModel.error,
+        onBack = onBack,
+        onAddPlace = onAddPlace,
+        onToggle = viewModel::toggle,
+        onSend = viewModel::send,
+    )
+}
+
 /**
- * "Bình chọn": a member ticks the places they want, then sends the ballot ("chưa gửi" →
- * "đã gửi"). "Sửa phiếu của bạn" opens it again. Agreement counts are the sample numbers
- * from Figma for each state.
+ * "Bình chọn": a member ticks the places they want (each tick is saved), then sends the
+ * ballot. A sent ballot can no longer be changed.
  */
 @Composable
-fun BallotScreen(onBack: () -> Unit, onAddPlace: () -> Unit, initiallySent: Boolean = false) {
-    var sent by rememberSaveable { mutableStateOf(initiallySent) }
-    var picks by rememberSaveable { mutableStateOf(SampleVote.yourPicks) }
+fun BallotScreen(
+    trip: TripDetailDto,
+    votes: VoteOptionListDto,
+    busy: Boolean,
+    @StringRes error: Int?,
+    onBack: () -> Unit,
+    onAddPlace: () -> Unit,
+    onToggle: (VoteOptionDto) -> Unit,
+    onSend: () -> Unit,
+) {
+    val sent = votes.mySentAt != null
+    val picked = votes.items.count { it.votedByMe }
 
     Scaffold(
         topBar = { TripFairTopBar(title = stringResource(R.string.ballot_title), onBack = onBack) },
         bottomBar = {
             VoteActions(note = null) {
+                error?.let { Text(text = stringResource(it), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error) }
                 OutlineButton(
                     text = stringResource(R.string.ballot_add_place),
                     onClick = onAddPlace,
                     trailingIcon = R.drawable.ic_arrow_right,
                 )
-                if (sent) {
-                    OutlineButton(text = stringResource(R.string.ballot_edit), onClick = { sent = false })
-                } else {
+                if (!sent) {
                     PrimaryButton(
-                        text = pluralStringResource(R.plurals.ballot_send, picks.size, picks.size),
-                        onClick = { sent = true },
+                        text = pluralStringResource(R.plurals.ballot_send, picked, picked),
+                        onClick = onSend,
                         height = 52.dp,
+                        enabled = !busy,
                     )
                 }
             }
@@ -81,7 +128,7 @@ fun BallotScreen(onBack: () -> Unit, onAddPlace: () -> Unit, initiallySent: Bool
                 .padding(start = 18.dp, end = 18.dp, top = 8.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            VoteTripHeader()
+            VoteTripHeader(trip = trip)
             if (sent) {
                 VoteStatusBox(
                     icon = R.drawable.ic_circle_check,
@@ -92,23 +139,23 @@ fun BallotScreen(onBack: () -> Unit, onAddPlace: () -> Unit, initiallySent: Bool
                 VoteStatusBox(
                     icon = R.drawable.ic_circle_check,
                     title = stringResource(R.string.ballot_open_title),
-                    text = stringResource(R.string.ballot_open_text, SampleVote.DEADLINE),
+                    text = trip.voteDeadline?.let { stringResource(R.string.ballot_open_text, voteDeadlineText(it)) }
+                        ?: stringResource(R.string.ballot_open_text_none),
                 )
             }
-            VoteProgress(sent = if (sent) SampleVote.SENT_AFTER_YOU else SampleVote.SENT_BEFORE_YOU)
+            VoteProgress(sent = votes.ballotsSent, memberCount = votes.memberCount, deadline = trip.voteDeadline)
             Text(text = stringResource(R.string.ballot_options), style = MaterialTheme.typography.titleMedium)
-            SampleVote.options.forEach { option ->
+            if (votes.items.isEmpty()) EmptyState(text = stringResource(R.string.vote_empty))
+            votes.items.forEach { option ->
                 VoteOptionCard(option = option) {
                     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        AgreedText(count = if (sent) option.ballotSent else option.ballotOpen, modifier = Modifier.weight(1f))
-                        val label = stringResource(R.string.cd_vote_pick, option.name)
+                        AgreedText(count = "${option.votes}/${votes.memberCount}", modifier = Modifier.weight(1f))
+                        val label = stringResource(R.string.cd_vote_pick, option.name.orEmpty())
                         PickCircle(
-                            selected = option.placeId in picks,
-                            // A sent ballot is read-only until "Sửa phiếu của bạn".
-                            enabled = !sent,
-                            onToggle = {
-                                picks = if (option.placeId in picks) picks - option.placeId else picks + option.placeId
-                            },
+                            selected = option.votedByMe,
+                            // A sent ballot is read-only.
+                            enabled = !sent && !busy,
+                            onToggle = { onToggle(option) },
                             modifier = Modifier.semantics { contentDescription = label },
                         )
                     }
@@ -150,7 +197,10 @@ private fun PickCircle(selected: Boolean, enabled: Boolean, onToggle: () -> Unit
 @Composable
 private fun BallotScreenPreview() {
     TripFairTheme {
-        BallotScreen(onBack = {}, onAddPlace = {})
+        BallotScreen(
+            trip = SampleTripPlan.trip, votes = SampleVote.votes, busy = false, error = null,
+            onBack = {}, onAddPlace = {}, onToggle = {}, onSend = {},
+        )
     }
 }
 
@@ -158,6 +208,9 @@ private fun BallotScreenPreview() {
 @Composable
 private fun BallotSentPreview() {
     TripFairTheme {
-        BallotScreen(onBack = {}, onAddPlace = {}, initiallySent = true)
+        BallotScreen(
+            trip = SampleTripPlan.trip, votes = SampleVote.votes.copy(ballotsSent = 3, mySentAt = "2026-12-01T10:00:00.000Z"),
+            busy = false, error = null, onBack = {}, onAddPlace = {}, onToggle = {}, onSend = {},
+        )
     }
 }

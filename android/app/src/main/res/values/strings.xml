@@ -11,6 +11,9 @@
     <string name="support_card">Cần hỗ trợ? Liên hệ đội ngũ TripFair</string>
     <string name="field_contact_label">Số điện thoại hoặc email</string>
     <string name="field_password_label">Mật khẩu</string>
+    <string name="placeholder_contact">VD: user@gmail.com hoặc 0901234567</string>
+    <string name="placeholder_name">VD: Nguyễn Văn A</string>
+    <string name="placeholder_password">VD: ••••••••</string>
     <string name="password_rule_helper">Tối thiểu 8 ký tự, gồm chữ và số.</string>
     <string name="terms_of_use">Điều khoản sử dụng</string>
     <string name="privacy_policy">Chính sách bảo mật</string>
@@ -31,7 +34,6 @@
     <string name="register_full_name_label">Họ và tên</string>
     <string name="register_contact_helper">Chúng tôi sẽ gửi mã 6 chữ số để xác minh.</string>
     <string name="register_confirm_password_label">Xác nhận mật khẩu</string>
-    <string name="register_confirm_password_placeholder">Nhập lại mật khẩu</string>
     <string name="register_terms_prefix">Tôi đồng ý với</string>
     <string name="register_terms_and">và</string>
     <string name="register_terms_suffix">của TripFair.</string>
@@ -64,7 +66,6 @@
     <string name="new_password_top_title">Mật khẩu mới</string>
     <string name="new_password_title">Đặt mật khẩu mới</string>
     <string name="new_password_subtitle">Tạo mật khẩu mới để tiếp tục hành trình cùng TripFair.</string>
-    <string name="new_password_verified">Tài khoản đã được xác thực</string>
     <string name="new_password_label">Mật khẩu mới</string>
     <string name="new_password_confirm_label">Xác nhận mật khẩu mới</string>
     <string name="new_password_submit">Lưu mật khẩu mới</string>
@@ -78,6 +79,54 @@
     <string name="cd_profile">Trang cá nhân</string>
     <string name="cd_clear">Xóa</string>
     <string name="cd_favorite">Yêu thích</string>
+
+    <!-- Account errors -->
+    <string name="auth_error_contact_required">Nhập email hoặc số điện thoại.</string>
+    <string name="auth_error_contact_invalid">Email hoặc số điện thoại chưa đúng (số điện thoại gồm 10 chữ số).</string>
+    <string name="auth_error_password_required">Nhập mật khẩu.</string>
+    <string name="auth_error_wrong_credentials">Email, số điện thoại hoặc mật khẩu không đúng.</string>
+    <string name="auth_error_name_required">Nhập họ và tên.</string>
+    <string name="auth_error_password_rule">Mật khẩu cần tối thiểu 8 ký tự, gồm chữ và số.</string>
+    <string name="auth_error_confirm_required">Nhập lại mật khẩu.</string>
+    <string name="auth_error_password_mismatch">Mật khẩu nhập lại không khớp.</string>
+    <string name="auth_error_terms_required">Bạn cần đồng ý Điều khoản sử dụng và Chính sách bảo mật.</string>
+    <string name="auth_error_account_exists">Email hoặc số điện thoại này đã có tài khoản.</string>
+    <string name="auth_error_account_not_found">Không tìm thấy tài khoản với email hoặc số điện thoại này.</string>
+    <string name="auth_error_code_incomplete">Nhập đủ 6 chữ số.</string>
+    <string name="auth_error_code_wrong">Mã xác thực không đúng.</string>
+    <string name="auth_error_code_expired">Mã đã hết hạn. Hãy gửi lại mã mới.</string>
+    <string name="auth_error_session">Phiên xác thực đã hết. Hãy bắt đầu lại.</string>
+    <string name="auth_error_code_locked">Bạn đã nhập sai mã quá nhiều lần. Hãy gửi lại mã mới.</string>
+    <string name="auth_error_resend_too_soon">Vui lòng đợi một chút rồi gửi lại mã.</string>
+    <string name="auth_error_code_delivery">Chưa gửi được mã xác thực. Hãy thử lại sau ít phút.</string>
+    <string name="auth_error_too_many">Bạn thử quá nhiều lần. Hãy đợi một phút rồi thử lại.</string>
+    <string name="error_network">Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.</string>
+    <string name="error_unexpected">Có lỗi xảy ra. Hãy thử lại.</string>
+    <string name="error_place_not_found">Không tìm thấy địa điểm này.</string>
+    <string name="error_google_unavailable">Google Maps đang không phản hồi. Hãy thử lại sau ít phút.</string>
+    <string name="action_retry">Thử lại</string>
+    <string name="price_free">Miễn phí</string>
+    <string name="price_label_partner">Vé · %1$s</string>
+    <string name="price_label_google">Giá · Google</string>
+    <string name="price_label_estimated">Ước tính · %1$s</string>
+    <string name="price_label_included">Đã gồm trong vé %1$s</string>
+    <string name="hours_unknown">Chưa có giờ mở cửa</string>
+    <string name="hours_closed_today">Hôm nay đóng cửa</string>
+    <string name="hours_all_day">Mở cả ngày</string>
+    <string name="hours_range">Mở %1$s–%2$s</string>
+    <string name="duration_minutes">%1$d phút</string>
+    <string name="duration_hours">%1$d giờ</string>
+    <string name="duration_hours_minutes">%1$d giờ %2$d phút</string>
+    <string name="detail_hours">Giờ mở cửa</string>
+    <string name="detail_open_maps">Mở trên Google Maps</string>
+    <string name="detail_source">Dữ liệu: %1$s</string>
+    <string name="results_empty">Không tìm thấy địa điểm phù hợp.</string>
+    <string name="results_load_more">Xem thêm</string>
+    <string name="search_type_hint">Gõ tên địa điểm, món ăn hoặc thành phố.</string>
+    <string name="history_empty">Chưa có tìm kiếm nào.</string>
+    <string name="history_today">Hôm nay</string>
+    <string name="history_yesterday">Hôm qua</string>
+    <string name="otp_resend">Gửi lại mã</string>
 
     <!-- Home -->
     <string name="home_greeting">Chào %1$s 👋</string>
@@ -96,6 +145,7 @@
     <!-- Search -->
     <string name="search_title">Tìm kiếm</string>
     <string name="action_cancel">Hủy</string>
+    <string name="action_done">Xong</string>
     <string name="action_save">Lưu</string>
     <string name="action_close">Đóng</string>
     <string name="list_and">%1$s và %2$s</string>
@@ -104,15 +154,10 @@
 
     <!-- Search results -->
     <string name="results_title">Khám phá</string>
-    <string name="results_map">Bản đồ</string>
-    <string name="cd_filter">Bộ lọc</string>
     <string name="filter_all">Tất cả</string>
     <string name="filter_food">Ăn uống</string>
     <string name="filter_fun">Vui chơi</string>
     <string name="filter_scenic">Cảnh đẹp</string>
-    <plurals name="results_count">
-        <item quantity="other">%1$d địa điểm phù hợp</item>
-    </plurals>
 
     <!-- Search history -->
     <string name="history_title">Lịch sử tìm kiếm</string>
@@ -127,7 +172,6 @@
     <string name="detail_reviews_line">%1$s đánh giá Google · %2$s</string>
     <string name="detail_rating_chip">%1$s ★</string>
     <string name="detail_duration">Thời lượng</string>
-    <string name="detail_distance">Từ trung tâm</string>
     <string name="detail_add_to_vote">Thêm vào bình chọn nhóm</string>
 
     <!-- Place reviews -->
@@ -155,7 +199,9 @@
     <plurals name="profile_trip_members">
         <item quantity="other">%1$s · %2$d người</item>
     </plurals>
-    <string name="profile_trip_status">Sắp tới · 3 ngày 2 đêm</string>
+    <string name="profile_trip_upcoming">Sắp tới · %1$s</string>
+    <string name="profile_trip_past">Đã kết thúc · %1$s</string>
+    <string name="profile_trip_none">Chưa có chuyến đi nào</string>
     <string name="profile_favorites">Địa điểm yêu thích</string>
     <string name="profile_sos">Liên hệ khẩn cấp SOS</string>
     <string name="profile_settings">Cài đặt</string>
@@ -173,7 +219,16 @@
     <string name="edit_profile_email">Email</string>
     <string name="edit_profile_phone">Số điện thoại</string>
     <string name="edit_profile_verify_title">Đổi email hoặc số điện thoại cần xác thực</string>
-    <string name="edit_profile_verify_text">Khi đổi email hoặc số điện thoại, TripFair gửi mã 6 chữ số đến địa chỉ mới để xác nhận trước khi lưu.</string>
+    <string name="edit_profile_verify_text">Đổi email hoặc số điện thoại cần xác nhận bằng mã 6 chữ số gửi tới địa chỉ mới; tính năng này sẽ có ở bản sau.</string>
+    <string name="edit_profile_none">Chưa có</string>
+    <string name="delete_account_title">Xóa tài khoản</string>
+    <string name="delete_account_row_detail">Xóa vĩnh viễn tài khoản và dữ liệu</string>
+    <string name="delete_account_intro">Tài khoản của bạn sẽ bị xóa vĩnh viễn và không khôi phục được.</string>
+    <string name="delete_account_point_data">Hồ sơ, lịch sử tìm kiếm, địa điểm yêu thích và liên hệ khẩn cấp bị xóa.</string>
+    <string name="delete_account_point_trips">Chuyến đi chỉ có bạn bị xóa.</string>
+    <string name="delete_account_point_groups">Nhóm còn người khác vẫn tiếp tục; nếu bạn là chủ nhóm, người vào nhóm sớm nhất sẽ thành chủ nhóm.</string>
+    <string name="delete_account_password_label">Nhập mật khẩu để xác nhận</string>
+    <string name="delete_account_confirm">Xóa tài khoản vĩnh viễn</string>
     <string name="edit_profile_save">Lưu thay đổi</string>
 
     <!-- Favorites -->
@@ -221,29 +276,30 @@
     <!-- Trips tab / groups -->
     <string name="groups_title">Nhóm của bạn</string>
     <string name="groups_intro">Cùng lên kế hoạch và chọn những trải nghiệm phù hợp với cả nhóm.</string>
-    <string name="groups_new">Nhóm mới</string>
-    <string name="groups_joined">Nhóm đang tham gia</string>
-    <plurals name="groups_count">
-        <item quantity="other">%1$d nhóm</item>
-    </plurals>
     <plurals name="groups_member_count">
         <item quantity="other">%1$d thành viên</item>
     </plurals>
     <string name="groups_invite">Mời bạn</string>
-    <string name="groups_ready">Đã đủ 4 thành viên. Mỗi người đã đặt ngân sách và sở thích.</string>
     <string name="groups_schedule">Lịch trình</string>
     <string name="groups_vote">Bình chọn</string>
     <string name="groups_prepare">Cùng chuẩn bị chuyến đi</string>
     <string name="groups_places">Địa điểm muốn ghé</string>
     <string name="groups_places_detail">Gợi ý điểm đến cho cả nhóm</string>
     <string name="groups_budgets">Ngân sách &amp; sở thích</string>
-    <string name="groups_budgets_detail">Xem lựa chọn của 4 thành viên</string>
     <string name="trips_empty_screen_title">Chuyến đi của bạn</string>
     <string name="trips_empty_intro">Lập kế hoạch một mình hoặc cùng bạn bè, theo đúng ngân sách của bạn.</string>
     <string name="trips_empty_title">Chưa có chuyến đi nào</string>
     <string name="trips_empty_text">Tạo chuyến đi một mình hoặc rủ bạn bè lập nhóm. TripFair sẽ gợi ý lộ trình hợp ngân sách.</string>
     <string name="trips_create">Tạo chuyến đi</string>
     <string name="trips_join_link">Có mã nhóm? Tham gia nhóm</string>
+    <string name="trips_list">Chuyến đi đã tạo và tham gia</string>
+    <plurals name="trips_count">
+        <item quantity="other">%1$d chuyến</item>
+    </plurals>
+    <string name="groups_budgets_of">Xem lựa chọn của các thành viên %1$s</string>
+    <string name="trip_status_planned">Đã có lộ trình. Mở để xem chi phí từng điểm.</string>
+    <string name="trip_status_group_draft">Đang chờ thành viên đặt ngân sách và bình chọn.</string>
+    <string name="trip_status_solo_draft">Chưa lập lộ trình.</string>
 
     <!-- Create or join group -->
     <string name="group_choice_title">Nhóm chuyến đi</string>
@@ -260,14 +316,14 @@
     <string name="create_group_intro">Đặt tên nhóm và thêm bạn đồng hành trước khi lập kế hoạch chuyến đi.</string>
     <string name="create_group_name_label">TÊN NHÓM</string>
     <string name="create_group_members">Thành viên</string>
-    <string name="create_group_members_status">1 người · 3 đã mời</string>
     <string name="create_group_invite">Mời</string>
     <string name="member_you">%1$s (bạn)</string>
-    <string name="member_waiting">Chờ tham gia</string>
     <string name="member_leader">Trưởng nhóm</string>
-    <string name="member_invited">Đã mời</string>
-    <string name="create_group_hint">Đã mời 3 người. Mỗi người tự đặt ngân sách và sở thích khi tham gia; ngân sách được giữ kín.</string>
     <string name="create_group_continue">Tiếp tục lập kế hoạch nhóm</string>
+    <string name="create_group_name_hint">Ví dụ: Nhóm Đà Nẵng</string>
+    <string name="create_group_error_name">Đặt tên cho nhóm.</string>
+    <string name="create_group_owner_budget">Ngân sách: %1$s · chỉ bạn thấy</string>
+    <string name="create_group_hint_new">Sau khi tạo nhóm, gửi mã mời cho bạn bè. Mỗi người tự đặt ngân sách và sở thích khi tham gia; ngân sách được giữ kín.</string>
 
     <!-- Join group -->
     <string name="join_group_title">Nhập mã nhóm</string>
@@ -276,16 +332,14 @@
     <string name="join_group_code_label">MÃ NHÓM</string>
     <string name="join_group_paste">Dán mã</string>
     <string name="join_group_code_helper">Mã gồm 6 ký tự, không có khoảng trắng.</string>
-    <string name="join_group_found">NHÓM ĐƯỢC TÌM THẤY</string>
     <string name="join_group_hint">Sau khi tham gia, bạn có thể chia sẻ sở thích và bình chọn địa điểm cùng nhóm.</string>
     <string name="join_group_no_code">Chưa có mã nhóm?</string>
     <string name="join_group_no_code_text">Nhờ trưởng nhóm gửi mã hoặc liên kết mời từ màn hình Mời bạn.</string>
-    <string name="join_group_check">Kiểm tra đúng nhóm trước khi tham gia.</string>
+    <string name="join_group_check">Bước tiếp theo: đặt ngân sách và sở thích của bạn, rồi tham gia nhóm.</string>
+    <string name="join_group_continue">Tiếp tục</string>
 
     <!-- Invite friends -->
     <string name="invite_copy_code">Sao chép mã nhóm</string>
-    <string name="invite_link_label">LIÊN KẾT MỜI NHÓM</string>
-    <string name="invite_share_link">Chia sẻ liên kết nhóm</string>
     <string name="invite_contact_title">Mời qua số điện thoại hoặc email</string>
     <string name="invite_contact_intro">Nhập một trong hai thông tin bên dưới.</string>
     <string name="invite_phone_label">SỐ ĐIỆN THOẠI</string>
@@ -293,24 +347,41 @@
     <string name="invite_email_label">EMAIL</string>
     <string name="invite_email_placeholder">Nhập địa chỉ email</string>
     <string name="invite_send">Gửi lời mời</string>
-    <string name="invite_footer">Bạn bè có thể dùng mã hoặc liên kết để tham gia nhóm.</string>
+    <string name="invite_footer">Lời mời mở trong ứng dụng tin nhắn hoặc email của bạn; bạn bè dùng mã nhóm để tham gia.</string>
     <string name="invite_copied">Đã sao chép mã nhóm</string>
-    <string name="invite_sent">Đã gửi lời mời</string>
-    <string name="invite_share_text">Tham gia %1$s trên TripFair: %2$s</string>
+    <string name="invite_share_code">Chia sẻ mã nhóm</string>
+    <string name="invite_share_code_text">Tham gia nhóm %1$s trên TripFair để cùng lên kế hoạch đi %2$s. Mở app TripFair, chọn \"Tham gia nhóm\" và nhập mã %3$s.</string>
+    <string name="invite_group_detail">%1$s · %2$s · %3$d người</string>
+    <string name="invite_no_app">Không có ứng dụng phù hợp để gửi lời mời.</string>
 
     <!-- Group plan -->
-    <string name="plan_ready_title">Đã đủ 4 thành viên</string>
-    <string name="plan_ready_text">Mỗi người đã đặt ngân sách và sở thích</string>
+    <plurals name="plan_members_title">
+        <item quantity="other">%1$d thành viên trong nhóm</item>
+    </plurals>
+    <string name="plan_members_text">Mỗi người đã đặt ngân sách và sở thích khi tham gia</string>
+    <string name="plan_alone_title">Mới có bạn trong nhóm</string>
+    <string name="plan_alone_text">Gửi mã %1$s cho bạn bè để cùng lên kế hoạch.</string>
+    <string name="plan_vote_deadline_none">Không giới hạn</string>
+    <string name="plan_view_result">Xem kết quả tối ưu</string>
     <string name="plan_budget_set">Đã đặt</string>
     <string name="plan_fairness_note">Tối ưu công bằng ưu tiên mức hài lòng chung và không để ai vượt ngân sách cá nhân. Ngân sách của mỗi người được giữ kín.</string>
     <string name="plan_vote_deadline">Hạn bình chọn</string>
-    <string name="plan_vote_deadline_value">%1$s ›</string>
     <string name="plan_edit_budget">Chỉnh ngân sách của bạn</string>
     <string name="plan_start_vote">Bắt đầu bình chọn</string>
 
     <!-- Edit budget & preferences -->
     <string name="budget_title">Chỉnh ngân sách &amp; sở thích</string>
     <string name="budget_member">%1$s · Bạn</string>
+    <string name="budget_group_code">Mã nhóm %1$s</string>
+    <string name="interest_food">Ẩm thực</string>
+    <string name="interest_beach">Biển</string>
+    <string name="interest_scenery">Cảnh đẹp</string>
+    <string name="interest_relax">Thư giãn</string>
+    <string name="interest_fun">Vui chơi</string>
+    <string name="interest_photo">Chụp ảnh</string>
+    <string name="interest_culture">Văn hóa</string>
+    <string name="interest_explore">Khám phá</string>
+    <string name="interests_none">Chưa chọn sở thích</string>
     <string name="budget_label">Ngân sách của bạn</string>
     <string name="budget_helper">Mức chi tối đa cho vé, ăn uống và lưu trú, chưa gồm di chuyển. Có thể nhập 0đ. Chỉ bạn thấy số này.</string>
     <string name="budget_preferences">Sở thích du lịch</string>
@@ -337,10 +408,17 @@
     </plurals>
     <string name="vote_agreed">%1$s đồng ý</string>
     <string name="vote_leader_note">Chỉ trưởng nhóm có thể kết thúc bình chọn để bắt đầu tối ưu. Bình chọn của nhóm vẫn đang mở.</string>
+    <string name="vote_my_ballot">Bình chọn của bạn</string>
+    <string name="vote_empty">Chưa có địa điểm nào. Mở một địa điểm rồi chọn \"Thêm vào bình chọn\".</string>
+    <string name="vote_price_line">%1$s / người · %2$s</string>
+    <string name="vote_price_unknown">Chưa có giá</string>
+    <string name="add_vote_no_group">Bạn chưa có nhóm nào. Tạo nhóm hoặc tham gia nhóm ở tab Chuyến đi trước.</string>
+    <string name="add_vote_rating">Đánh giá</string>
     <string name="vote_finish">Kết thúc bình chọn &amp; tối ưu</string>
     <string name="ballot_title">Bình chọn</string>
     <string name="ballot_open_title">Chọn những nơi bạn muốn đi</string>
-    <string name="ballot_open_text">Gửi phiếu trước %1$s. Bạn sửa được sau khi gửi.</string>
+    <string name="ballot_open_text">Gửi phiếu trước %1$s. Sau khi gửi, bạn không đổi được bình chọn.</string>
+    <string name="ballot_open_text_none">Chọn xong thì gửi phiếu. Sau khi gửi, bạn không đổi được bình chọn.</string>
     <string name="ballot_sent_title">Đã gửi bình chọn của bạn</string>
     <string name="ballot_sent_text">Đang chờ thành viên còn lại.</string>
     <string name="ballot_options">Lựa chọn</string>
@@ -348,7 +426,6 @@
     <plurals name="ballot_send">
         <item quantity="other">Gửi phiếu (%1$d địa điểm)</item>
     </plurals>
-    <string name="ballot_edit">Sửa phiếu của bạn</string>
     <string name="cd_vote_pick">Chọn %1$s</string>
 
     <!-- Create trip -->
@@ -367,12 +444,51 @@
     <string name="trip_continue_group">Tiếp tục lập nhóm</string>
     <string name="trip_continue_lodging">Tiếp tục chọn chỗ ở</string>
     <string name="trip_continue_plan">Lập lộ trình</string>
+    <string name="trip_destination_hint">Ví dụ: Đà Nẵng</string>
+    <string name="trip_dates_pick">Chọn ngày đi và ngày về</string>
+    <string name="trip_dates_pick_end">%1$s – chọn ngày về</string>
+    <string name="trip_date_single">%1$d tháng %2$d</string>
+    <string name="trip_date_range_month">%1$d – %2$d tháng %3$d</string>
+    <string name="trip_date_range">%1$d tháng %2$d – %3$d tháng %4$d</string>
+    <string name="trip_length_day">1 ngày</string>
+    <string name="trip_length_nights">%1$d ngày %2$d đêm</string>
+    <string name="trip_delete">Xóa chuyến đi</string>
+    <string name="trip_delete_title">Xóa chuyến đi này?</string>
+    <string name="trip_delete_text">Lộ trình, bình chọn và ngân sách của chuyến sẽ bị xóa với mọi thành viên. Không khôi phục được.</string>
+    <string name="group_delete">Xóa nhóm</string>
+    <string name="group_leave">Rời nhóm</string>
+    <string name="group_leave_title">Rời nhóm này?</string>
+    <string name="group_leave_text">Bạn sẽ không còn thấy chuyến đi của nhóm. Muốn vào lại cần mã mời.</string>
+    <string name="trip_error_city_missing">Nhập điểm đến.</string>
+    <string name="trip_error_dates_missing">Chọn ngày đi và ngày về.</string>
+    <string name="trip_error_dates_too_long">Chuyến đi dài tối đa 15 ngày.</string>
+    <string name="trip_error_not_found">Không tìm thấy chuyến đi này, hoặc bạn không còn trong nhóm.</string>
+    <string name="trip_error_not_owner">Chỉ trưởng nhóm làm được việc này.</string>
+    <string name="trip_error_dates">Ngày đi và ngày về chưa hợp lệ.</string>
+    <string name="trip_error_code_not_found">Không có nhóm nào với mã này. Kiểm tra lại mã mời.</string>
+    <string name="trip_error_already_member">Bạn đã ở trong nhóm này.</string>
+    <string name="trip_error_hotel_not_found">Khách sạn này không còn trong gợi ý. Hãy chọn lại.</string>
+    <string name="trip_error_lodging_over_budget">Tiền phòng vượt ngân sách của một thành viên. Chọn phòng rẻ hơn hoặc tự lo chỗ ở.</string>
+    <string name="trip_error_lodging_not_chosen">Chưa chọn chỗ ở. Hãy chọn khách sạn hoặc tự lo chỗ ở trước khi lập lộ trình.</string>
+    <string name="trip_error_option_not_found">Địa điểm này không còn trong danh sách bình chọn.</string>
+    <string name="trip_error_voting_closed">Đã hết hạn bình chọn.</string>
+    <string name="trip_error_ballot_sent">Bạn đã gửi phiếu nên không đổi được bình chọn nữa.</string>
+    <string name="trip_error_no_places">Chưa tìm được địa điểm nào để lập lộ trình cho điểm đến này.</string>
+    <string name="trip_error_invalid_itinerary">Lộ trình có ngày nằm ngoài chuyến đi hoặc một địa điểm bị lặp.</string>
+    <string name="trip_error_itinerary_not_ready">Chuyến đi chưa có lộ trình, hoặc thông tin đã đổi từ lần lập trước.</string>
 
     <!-- Lodging -->
     <string name="lodging_title">Chọn chỗ ở</string>
     <string name="lodging_heading">Chỗ ở hợp ngân sách</string>
-    <string name="lodging_intro">Giá phòng lấy từ Agoda lúc %1$s. Tiền phòng được trừ khỏi ngân sách trước, phần còn lại dành cho các điểm.</string>
-    <string name="lodging_rating">%1$s Agoda · %2$s tới lộ trình</string>
+    <string name="lodging_intro">Giá phòng lấy lúc %1$s. Tiền phòng được trừ khỏi ngân sách trước, phần còn lại dành cho các điểm.</string>
+    <string name="lodging_trip_line">%1$s · %2$s · %3$d đêm · %4$d người/phòng</string>
+    <string name="lodging_none">Chưa tìm được khách sạn hợp ngân sách. Bạn vẫn có thể tự lo chỗ ở.</string>
+    <string name="lodging_tag_cheapest">Rẻ nhất</string>
+    <string name="lodging_tag_balanced">Cân bằng</string>
+    <string name="lodging_tag_nearest">Gần lộ trình nhất</string>
+    <string name="lodging_rating">%1$s/5 · %2$s tới lộ trình</string>
+    <string name="lodging_rating_only">%1$s/5</string>
+    <string name="lodging_distance_only">%1$s tới lộ trình</string>
     <plurals name="lodging_price">
         <item quantity="other">%1$s/đêm · phòng %2$d người</item>
     </plurals>
@@ -391,6 +507,7 @@
     <string name="optimizing_step_rooms">Lấy giá phòng từ Agoda</string>
     <string name="optimizing_step_pick">Chọn điểm theo giá trị và chi phí</string>
     <string name="optimizing_step_fair">Kiểm tra không ai vượt ngân sách</string>
+    <string name="optimizing_failed">Chưa lập được lộ trình</string>
     <string name="optimizing_leave">Bạn có thể rời màn hình này; app sẽ báo khi lộ trình sẵn sàng.</string>
 
     <!-- Optimization result -->
@@ -404,7 +521,14 @@
     <string name="result_group_total">Tổng nhóm</string>
     <string name="result_privacy">Ngân sách của từng người được ẩn. Cả nhóm chỉ thấy phần chi; số tiền còn lại chỉ hiện với chính bạn.</string>
     <string name="result_costs">Chi phí theo điểm · mỗi người</string>
-    <string name="result_view_itinerary">Xem lộ trình 3 ngày</string>
+    <string name="result_view_itinerary_days">Xem lộ trình %1$d ngày</string>
+    <string name="result_summary">%1$d địa điểm · %2$d ngày · %3$d người</string>
+    <string name="result_summary_lodging">%1$d địa điểm và lưu trú · %2$d ngày · %3$d người</string>
+    <string name="result_fairness">Chỉ số công bằng (Jain): %1$s</string>
+    <string name="result_overspend">Có người vượt ngân sách cá nhân</string>
+    <string name="result_cost_everyone">Cả nhóm</string>
+    <string name="result_lodging_line">%1$s · %2$d đêm</string>
+    <string name="result_lodging_detail">Cả nhóm · %1$d phòng, chia đều · %2$s</string>
 
     <!-- Day itinerary and editor -->
     <string name="itinerary_day_chip_selected">Ngày %1$d · %2$s</string>
@@ -417,6 +541,30 @@
     <string name="itinerary_over">Vượt ngân sách %1$s</string>
     <string name="itinerary_no_transport">Chưa gồm di chuyển</string>
     <string name="itinerary_breakdown">Gồm lưu trú %1$s (%2$d đêm) và các điểm %3$s</string>
+    <string name="itinerary_breakdown_self">Tự lo chỗ ở · các điểm %1$s</string>
+    <string name="itinerary_title">%1$s · %2$d ngày</string>
+    <string name="itinerary_title_short">Lộ trình</string>
+    <string name="itinerary_distance">~%1$s</string>
+    <string name="itinerary_place_fallback">Địa điểm</string>
+    <string name="itinerary_lodging_fallback">Chỗ ở</string>
+    <string name="itinerary_lodging_detail">Lưu trú · %1$d đêm · %2$s</string>
+    <string name="itinerary_skipped">Bạn không đi điểm này</string>
+    <string name="itinerary_not_going">Không đi</string>
+    <string name="itinerary_price_pending">Tính khi lưu</string>
+    <string name="itinerary_new_detail">Giờ và chi phí được tính khi bạn lưu lộ trình</string>
+    <string name="itinerary_already_added">Địa điểm này đã có trong lộ trình.</string>
+    <string name="itinerary_day_empty">Ngày này chưa có điểm nào.</string>
+    <string name="itinerary_warning_day_too_long">Ngày này dài hơn khung giờ đi chơi.</string>
+    <string name="itinerary_warning_place_closed">Có điểm có thể đóng cửa vào ngày này. Kiểm tra giờ mở cửa trước khi đi.</string>
+    <string name="itinerary_warning_over_budget">Lộ trình vượt ngân sách của bạn.</string>
+    <string name="itinerary_warning_member_over">Có thành viên vượt ngân sách cá nhân.</string>
+    <string name="weekday_mon">Thứ Hai</string>
+    <string name="weekday_tue">Thứ Ba</string>
+    <string name="weekday_wed">Thứ Tư</string>
+    <string name="weekday_thu">Thứ Năm</string>
+    <string name="weekday_fri">Thứ Sáu</string>
+    <string name="weekday_sat">Thứ Bảy</string>
+    <string name="weekday_sun">Chủ Nhật</string>
     <string name="itinerary_suggest_drop">Gợi ý: bỏ %1$s (%2$s) để về lại trong ngân sách.</string>
     <string name="itinerary_suggest_generic">Gợi ý: bỏ bớt điểm có phí để về lại trong ngân sách.</string>
     <string name="itinerary_running_total">Tổng %1$s</string>
@@ -436,36 +584,34 @@
     <string name="camera_ready">Chụp để nhận diện</string>
     <string name="camera_frame_hint">Đặt toàn bộ công trình vào trong khung</string>
     <string name="camera_steady">Giữ máy ổn định · đủ ánh sáng</string>
-    <string name="camera_usage">TripFair sẽ dùng ảnh để gợi ý địa điểm gần chuyến %1$s</string>
+    <string name="camera_usage_plain">Bấm nút chụp để mở camera của máy, hoặc chọn ảnh từ thư viện. Ảnh được gửi lên máy chủ để nhận diện và không được lưu lại.</string>
     <string name="camera_library">Thư viện</string>
-    <string name="camera_switch">Đổi camera</string>
     <string name="cd_camera_shutter">Chụp ảnh</string>
-    <string name="cd_flash_off">Đèn flash đang tắt</string>
     <string name="camera_analyzing">Đang phân tích ảnh…</string>
     <string name="camera_analyzing_hint">Đang nhận diện bằng Google Cloud Vision</string>
     <string name="camera_analyzing_time">Thường mất 2–3 giây</string>
-    <string name="camera_permission_title">Chưa có quyền camera</string>
-    <string name="camera_permission_text">TripFair cần camera để chụp và nhận diện địa điểm. Bạn vẫn chọn được ảnh từ thư viện.</string>
-    <string name="camera_permission_action">Cấp quyền camera</string>
     <string name="recognition_title">Kết quả nhận diện</string>
     <string name="recognition_retake">Chụp lại</string>
     <string name="recognition_found">ĐÃ NHẬN RA ĐỊA DANH</string>
     <string name="recognition_not_found">CHƯA NHẬN RA ĐỊA DANH</string>
     <string name="recognition_confidence">tin cậy</string>
-    <string name="recognition_labels">Nhãn trong ảnh</string>
-    <string name="recognition_source">Google Cloud Vision</string>
-    <string name="recognition_similar">Tương tự &amp; gần đó</string>
-    <string name="recognition_by_labels">Gợi ý theo nhãn trong ảnh</string>
-    <string name="recognition_for_trip">Cho chuyến %1$s</string>
-    <string name="recognition_view_trip">Xem trong chuyến đi 3 ngày</string>
+    <string name="recognition_matches">Địa danh trong ảnh</string>
+    <string name="recognition_open_place">Xem %1$s</string>
+    <string name="recognition_none_title">Chưa xác định được địa danh</string>
+    <string name="recognition_none_text">Ảnh có thể quá tối, bị che khuất, hoặc không có công trình nổi tiếng.</string>
+    <string name="recognition_no_place">Chưa có địa điểm tương ứng trên TripFair</string>
+    <string name="recognition_error_unavailable">Tính năng nhận diện chưa sẵn sàng trên máy chủ. Hãy thử lại sau hoặc tìm bằng tên.</string>
+    <string name="recognition_error_image">Không đọc được ảnh này. Hãy chụp lại hoặc chọn ảnh JPEG, PNG khác.</string>
+    <string name="recognition_error_no_camera">Máy không có ứng dụng camera. Hãy chọn ảnh từ thư viện.</string>
     <string name="recognition_search_by_name">Tìm bằng tên địa điểm</string>
-    <string name="cd_add_to_trip">Thêm %1$s vào chuyến đi</string>
 
     <!-- SOS -->
     <string name="sos_contacts_action">Liên hệ</string>
     <string name="sos_warning">Chỉ dùng khi cần trợ giúp khẩn cấp. Hệ thống sẽ chia sẻ vị trí GPS hiện tại.</string>
-    <string name="sos_gps">GPS chính xác %1$s</string>
-    <string name="sos_updated">%1$s · cập nhật vừa xong</string>
+    <string name="sos_your_position">Vị trí của bạn</string>
+    <string name="sos_locating">Đang xác định vị trí…</string>
+    <string name="map_no_key">Chưa cấu hình khóa Google Maps (MAPS_API_KEY) nên bản đồ chưa hiển thị.</string>
+    <string name="results_use_my_location">Dùng vị trí của tôi</string>
     <string name="sos_send_sms">Gửi SMS vị trí cho người thân</string>
     <string name="sos_quick_call">Gọi nhanh</string>
     <string name="sos_tap_to_choose">Chạm để chọn</string>
@@ -474,12 +620,16 @@
     <string name="sos_fire">Cứu hỏa</string>
     <string name="sos_saved">Đã lưu</string>
     <string name="sos_confirm_title">Xác nhận gửi vị trí?</string>
-    <string name="sos_confirm_to">SMS sẽ gửi cho %1$s.</string>
+    <string name="sos_confirm_to">Ứng dụng tin nhắn sẽ mở với tin SOS gửi cho %1$s; bấm gửi ở đó để hoàn tất.</string>
     <string name="sos_no_recipients">Chưa có người nhận. Chọn người nhận trong Liên hệ.</string>
     <string name="sos_hold_hint">Để tránh bấm nhầm, hãy giữ nút trong 3 giây.</string>
     <string name="sos_hold_button">Giữ 3 giây để gửi SOS</string>
-    <string name="sos_sent_title">Đã gửi vị trí</string>
-    <string name="sos_sent_text">SMS kèm vị trí đã gửi cho %1$s.</string>
+    <string name="sos_opened_title">Đã soạn sẵn tin nhắn</string>
+    <string name="sos_opened_text">Ứng dụng tin nhắn đã mở với nội dung gửi cho %1$s. Bấm gửi trong ứng dụng tin nhắn để hoàn tất.</string>
+    <string name="sos_failed_title">Chưa gửi được</string>
+    <string name="sos_failed_text">Máy này không gửi được SMS. Hãy gọi 113, 114, 115 hoặc gọi người thân.</string>
+    <string name="sos_message">SOS! %1$s cần trợ giúp khẩn cấp. Vị trí hiện tại: %2$s (%3$s). Gửi từ TripFair.</string>
+    <string name="sos_message_no_location">SOS! %1$s cần trợ giúp khẩn cấp. Chưa xác định được vị trí. Hãy gọi lại ngay. Gửi từ TripFair.</string>
     <string name="sos_permission_title">Chưa có quyền vị trí</string>
     <string name="sos_permission_text">TripFair cần vị trí để gửi tọa độ cho người thân. Bạn vẫn gọi được 113, 114, 115 khi chưa cấp quyền.</string>
     <string name="sos_permission_action">Cấp quyền vị trí</string>
@@ -502,6 +652,16 @@
     </plurals>
     <string name="contacts_receivers_none">Chưa chọn ai. Đánh dấu ít nhất một người để gửi được SOS.</string>
     <string name="cd_edit_contact">Sửa %1$s</string>
+    <string name="contacts_delete">Xóa liên hệ</string>
+    <string name="contacts_delete_title">Xóa liên hệ này?</string>
+    <string name="contacts_delete_text">%1$s sẽ không còn nhận tin SOS của bạn.</string>
+    <string name="contacts_error_limit">Mỗi tài khoản lưu tối đa 5 liên hệ khẩn cấp.</string>
+    <string name="contacts_error_not_found">Liên hệ này không còn trong danh sách. Hãy mở lại màn hình.</string>
+    <string name="contacts_error_phone">Số điện thoại chưa đúng. Số Việt Nam gồm 10 chữ số; số nước ngoài bắt đầu bằng + và mã quốc gia.</string>
+    <string name="contacts_error_exists">Số này đã có trong danh sách liên hệ khẩn cấp.</string>
+    <string name="profile_sos_none">Chưa có liên hệ. Thêm người sẽ nhận tin SOS.</string>
+    <string name="profile_sos_no_receivers">%1$s · chưa chọn người nhận tin</string>
+    <string name="profile_sos_summary">%1$s · %2$s nhận tin</string>
     <string name="cd_receives_sos">%1$s nhận tin SOS</string>
     <string name="contact_form_section">Thông tin liên hệ</string>
     <string name="contact_form_name">Họ và tên</string>

@@ -1,7 +1,6 @@
 package com.tripfair.app.ui.screens.vote
 
 import androidx.annotation.DrawableRes
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -20,31 +19,39 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tripfair.app.R
+import com.tripfair.app.data.trips.TripDetailDto
+import com.tripfair.app.data.trips.VoteOptionDto
+import com.tripfair.app.ui.components.PlacePlaceholder
 import com.tripfair.app.ui.components.ProgressBar
-import com.tripfair.app.ui.sample.SampleTrip
-import com.tripfair.app.ui.sample.SampleVote
-import com.tripfair.app.ui.sample.VoteOption
+import com.tripfair.app.ui.screens.explore.priceLabel
+import com.tripfair.app.ui.screens.explore.priceValue
+import com.tripfair.app.ui.screens.trip.tripDateRange
+import com.tripfair.app.ui.screens.trip.voteDeadlineText
+import java.time.LocalDate
 
-/** Trip name and members above a vote ("Chuyến nhóm" in Figma). */
+/** Trip name, dates and members above a vote ("Chuyến nhóm" in Figma). */
 @Composable
-internal fun VoteTripHeader() {
+internal fun VoteTripHeader(trip: TripDetailDto) {
+    val dates = tripDateRange(LocalDate.parse(trip.startDate), LocalDate.parse(trip.endDate))
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Text(
-            text = SampleTrip.NAME,
+            text = trip.name ?: trip.city,
             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
         )
         Text(
-            text = SampleVote.MEMBERS_LINE,
+            text = "$dates · ${trip.members.joinToString { it.fullName }}",
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }
@@ -69,29 +76,38 @@ internal fun VoteStatusBox(@DrawableRes icon: Int, title: String, text: String) 
     }
 }
 
-/** "x/4 người đã gửi phiếu" with the deadline and a progress bar ("Tiến trình nhóm"). */
+/** "x/4 người đã gửi phiếu" with the deadline, if any, and a progress bar ("Tiến trình nhóm"). */
 @Composable
-internal fun VoteProgress(sent: Int) {
+internal fun VoteProgress(sent: Int, memberCount: Int, deadline: String?) {
     Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = pluralStringResource(R.plurals.vote_progress, SampleVote.MEMBER_COUNT, sent, SampleVote.MEMBER_COUNT),
+                text = pluralStringResource(R.plurals.vote_progress, memberCount, sent, memberCount),
                 style = MaterialTheme.typography.labelMedium,
                 modifier = Modifier.weight(1f),
             )
-            Text(
-                text = stringResource(R.string.vote_deadline, SampleVote.DEADLINE),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.tertiary,
-            )
+            deadline?.let {
+                Text(
+                    text = stringResource(R.string.vote_deadline, voteDeadlineText(it)),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.tertiary,
+                )
+            }
         }
-        ProgressBar(fraction = sent.toFloat() / SampleVote.MEMBER_COUNT, height = 7.dp)
+        ProgressBar(fraction = if (memberCount > 0) sent.toFloat() / memberCount else 0f, height = 7.dp)
     }
 }
 
-/** 120dp card with a square photo, name and price; [footer] sits at the bottom right of the text. */
+/** "900.000đ / người · Vé · Klook", "~250.000đ / người · Ước tính · TripFair" or "Miễn phí". */
 @Composable
-internal fun VoteOptionCard(option: VoteOption, footer: @Composable ColumnScope.() -> Unit) {
+internal fun votePriceLine(option: VoteOptionDto): String {
+    val price = option.price ?: return stringResource(R.string.vote_price_unknown)
+    return if (price.max == 0) priceValue(price) else stringResource(R.string.vote_price_line, priceValue(price), priceLabel(price))
+}
+
+/** 120dp card with the place's category tile, name and price; [footer] sits at the bottom of the text. */
+@Composable
+internal fun VoteOptionCard(option: VoteOptionDto, footer: @Composable ColumnScope.() -> Unit) {
     val colors = MaterialTheme.colorScheme
     Row(
         modifier = Modifier
@@ -101,10 +117,8 @@ internal fun VoteOptionCard(option: VoteOption, footer: @Composable ColumnScope.
             .padding(12.dp),
         horizontalArrangement = Arrangement.spacedBy(13.dp),
     ) {
-        Image(
-            painter = painterResource(option.image),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
+        PlacePlaceholder(
+            category = option.category.orEmpty(),
             modifier = Modifier
                 .size(96.dp)
                 .clip(MaterialTheme.shapes.extraSmall),
@@ -116,8 +130,19 @@ internal fun VoteOptionCard(option: VoteOption, footer: @Composable ColumnScope.
             verticalArrangement = Arrangement.SpaceBetween,
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(text = option.name, style = MaterialTheme.typography.bodyLarge.copy(fontSize = 15.sp))
-                Text(text = option.priceLine, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+                Text(
+                    text = option.name ?: stringResource(R.string.itinerary_place_fallback),
+                    style = MaterialTheme.typography.bodyLarge.copy(fontSize = 15.sp),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = votePriceLine(option),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
             footer()
         }

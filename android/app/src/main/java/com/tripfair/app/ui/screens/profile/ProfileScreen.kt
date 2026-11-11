@@ -1,7 +1,6 @@
 package com.tripfair.app.ui.screens.profile
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -17,7 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -31,7 +29,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -48,7 +45,16 @@ import com.tripfair.app.ui.components.ListRow
 import com.tripfair.app.ui.components.MainTab
 import com.tripfair.app.ui.components.MainTabBar
 import com.tripfair.app.ui.components.TripFairTopBar
-import com.tripfair.app.ui.sample.SampleData
+import com.tripfair.app.data.auth.Account
+import com.tripfair.app.data.contacts.EmergencyContact
+import com.tripfair.app.data.trips.TripSummaryDto
+import com.tripfair.app.ui.screens.group.IconTile
+import com.tripfair.app.ui.screens.trip.title
+import com.tripfair.app.ui.screens.trip.tripDateRange
+import com.tripfair.app.ui.screens.trip.tripLength
+import java.time.LocalDate
+import com.tripfair.app.ui.sample.SampleAccount
+import com.tripfair.app.ui.sample.SampleSos
 import com.tripfair.app.ui.sample.SampleTrip
 import com.tripfair.app.ui.theme.ThemePreviews
 import com.tripfair.app.ui.theme.TripFairTheme
@@ -56,6 +62,9 @@ import com.tripfair.app.ui.theme.extendedColors
 
 @Composable
 fun ProfileScreen(
+    account: Account?,
+    emergencyContacts: List<EmergencyContact>,
+    latestTrip: TripSummaryDto?,
     onEditProfile: () -> Unit,
     onTrip: () -> Unit,
     onFavorites: () -> Unit,
@@ -84,12 +93,12 @@ fun ProfileScreen(
                 .padding(start = 18.dp, end = 18.dp, top = 8.dp, bottom = 14.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            ProfileCard(onEdit = onEditProfile)
+            ProfileCard(account = account, onEdit = onEditProfile)
             ListCard {
                 ListRow(
                     icon = R.drawable.ic_contact_round,
                     title = stringResource(R.string.profile_account),
-                    subtitle = stringResource(R.string.profile_account_detail, SampleData.USER_PHONE),
+                    subtitle = stringResource(R.string.profile_account_detail, account?.phone ?: account?.email.orEmpty()),
                     onClick = onEditProfile,
                     minHeight = 56.dp,
                 )
@@ -103,11 +112,11 @@ fun ProfileScreen(
                 )
             }
             ListCard {
-                TripHistoryRow(onClick = onTrip)
+                TripHistoryRow(trip = latestTrip, onClick = onTrip)
                 ListDivider()
                 ListRow(icon = R.drawable.ic_heart, title = stringResource(R.string.profile_favorites), onClick = onFavorites)
             }
-            SosCard(onClick = onEmergencyContacts)
+            SosCard(contacts = emergencyContacts, onClick = onEmergencyContacts)
             ListCard {
                 ListRow(icon = R.drawable.ic_settings, title = stringResource(R.string.profile_settings), onClick = onSettings)
                 ListDivider()
@@ -170,7 +179,7 @@ internal fun LogoutDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
 }
 
 @Composable
-private fun ProfileCard(onEdit: () -> Unit) {
+private fun ProfileCard(account: Account?, onEdit: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     Row(
         modifier = Modifier
@@ -196,8 +205,8 @@ private fun ProfileCard(onEdit: () -> Unit) {
             )
         }
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-            Text(text = SampleData.USER_NAME, style = MaterialTheme.typography.headlineSmall.copy(fontSize = 20.sp, letterSpacing = 0.sp))
-            Text(text = SampleData.USER_EMAIL, style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
+            Text(text = account?.fullName.orEmpty(), style = MaterialTheme.typography.headlineSmall.copy(fontSize = 20.sp, letterSpacing = 0.sp))
+            Text(text = account?.contact.orEmpty(), style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
             Text(
                 text = stringResource(R.string.profile_edit_link),
                 style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
@@ -221,7 +230,7 @@ private fun ProfileCard(onEdit: () -> Unit) {
 }
 
 @Composable
-private fun TripHistoryRow(onClick: () -> Unit) {
+private fun TripHistoryRow(trip: TripSummaryDto?, onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     Row(
         modifier = Modifier
@@ -231,28 +240,34 @@ private fun TripHistoryRow(onClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Image(
-            painter = painterResource(R.drawable.sample_trip_da_nang),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .size(width = 54.dp, height = 66.dp)
-                .clip(RoundedCornerShape(10.dp)),
-        )
+        IconTile(icon = R.drawable.ic_calendar_days, size = 54.dp, iconSize = 24.dp)
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(text = stringResource(R.string.profile_trip_history), style = MaterialTheme.typography.titleSmall)
+            if (trip == null) {
+                Text(
+                    text = stringResource(R.string.profile_trip_none),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = colors.onSurfaceVariant,
+                )
+                return@Column
+            }
+            val start = LocalDate.parse(trip.startDate)
+            val end = LocalDate.parse(trip.endDate)
             Text(
-                text = SampleTrip.NAME,
+                text = trip.title(),
                 style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
                 color = colors.primary,
             )
             Text(
-                text = pluralStringResource(R.plurals.profile_trip_members, SampleTrip.MEMBER_COUNT, SampleTrip.DATE_RANGE, SampleTrip.MEMBER_COUNT),
+                text = pluralStringResource(R.plurals.profile_trip_members, trip.memberCount, tripDateRange(start, end), trip.memberCount),
                 style = MaterialTheme.typography.labelSmall,
                 color = colors.onSurfaceVariant,
             )
             Text(
-                text = stringResource(R.string.profile_trip_status),
+                text = stringResource(
+                    if (end.isBefore(LocalDate.now())) R.string.profile_trip_past else R.string.profile_trip_upcoming,
+                    tripLength(trip.days),
+                ),
                 style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, lineHeight = 13.sp),
                 color = colors.primary,
             )
@@ -262,13 +277,20 @@ private fun TripHistoryRow(onClick: () -> Unit) {
 }
 
 @Composable
-private fun SosCard(onClick: () -> Unit) {
+private fun SosCard(contacts: List<EmergencyContact>, onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     val extended = MaterialTheme.extendedColors
+    val count = pluralStringResource(R.plurals.contacts_count, contacts.size, contacts.size)
+    val receivers = contacts.filter { it.receivesSos }.joinToString(", ") { it.name }
+    val summary = when {
+        contacts.isEmpty() -> stringResource(R.string.profile_sos_none)
+        receivers.isEmpty() -> stringResource(R.string.profile_sos_no_receivers, count)
+        else -> stringResource(R.string.profile_sos_summary, count, receivers)
+    }
     ListRow(
         icon = R.drawable.ic_circle_alert,
         title = stringResource(R.string.profile_sos),
-        subtitle = SampleData.SOS_CONTACTS_SUMMARY,
+        subtitle = summary,
         onClick = onClick,
         iconTint = colors.error,
         iconBackground = colors.errorContainer,
@@ -286,6 +308,9 @@ private fun SosCard(onClick: () -> Unit) {
 private fun ProfileScreenPreview() {
     TripFairTheme {
         ProfileScreen(
+            account = SampleAccount,
+            emergencyContacts = SampleSos.contacts,
+            latestTrip = SampleTrip.summaries.first(),
             onEditProfile = {},
             onTrip = {},
             onFavorites = {},

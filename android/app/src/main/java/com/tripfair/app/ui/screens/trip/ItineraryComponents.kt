@@ -1,7 +1,6 @@
 package com.tripfair.app.ui.screens.trip
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -26,8 +25,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -37,14 +34,13 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalInspectionMode
+import com.tripfair.app.BuildConfig
 import com.tripfair.app.R
+import com.tripfair.app.ui.components.PlacesMap
 import com.tripfair.app.ui.components.ProgressBar
 import com.tripfair.app.ui.components.TripFairChip
 import com.tripfair.app.ui.components.formatVnd
-import com.tripfair.app.ui.sample.ItineraryDay
-import com.tripfair.app.ui.sample.ItineraryStop
-import com.tripfair.app.ui.sample.SampleItinerary
-import com.tripfair.app.ui.sample.StopKind
 
 /** Total cost per person of the whole trip. */
 internal fun List<ItineraryDay>.totalCost(): Long = sumOf { day -> day.stops.sumOf { it.cost } }
@@ -55,6 +51,8 @@ internal fun List<ItineraryDay>.costBefore(index: Int): Long = take(index).total
 /** "~50.000đ", "300.000đ" or "Miễn phí"; "~" marks prices that are not official. */
 @Composable
 internal fun ItineraryStop.costLabel(): String = when {
+    skipped -> stringResource(R.string.itinerary_not_going)
+    pricePending -> stringResource(R.string.itinerary_price_pending)
     cost == 0L -> stringResource(R.string.itinerary_free)
     estimated -> "~" + formatVnd(cost)
     else -> formatVnd(cost)
@@ -96,14 +94,15 @@ internal fun DayHeader(day: ItineraryDay) {
 }
 
 /**
- * "Cả chuyến của bạn": spending against your budget. Over budget the card turns red; in the
- * editor it then suggests which stop of [day] to drop (the cheapest one that is enough).
+ * "Cả chuyến của bạn": spending against your [budget] (lodging for [nights] included). Over
+ * budget the card turns red; in the editor it then suggests which stop of [day] to drop (the
+ * cheapest one that is enough).
  */
 @Composable
-internal fun TripBudgetCard(days: List<ItineraryDay>, day: ItineraryDay, editing: Boolean) {
+internal fun TripBudgetCard(days: List<ItineraryDay>, day: ItineraryDay, editing: Boolean, budget: Long, nights: Int) {
     val colors = MaterialTheme.colorScheme
     val used = days.totalCost()
-    val over = used - SampleItinerary.BUDGET
+    val over = used - budget
     val isOver = over > 0
     val shape = MaterialTheme.shapes.small
     Column(
@@ -123,12 +122,13 @@ internal fun TripBudgetCard(days: List<ItineraryDay>, day: ItineraryDay, editing
                 modifier = Modifier.weight(1f),
             )
             Text(
-                text = stringResource(R.string.itinerary_used_of, formatVnd(used), formatVnd(SampleItinerary.BUDGET)),
+                text = stringResource(R.string.itinerary_used_of, formatVnd(used), formatVnd(budget)),
                 style = MaterialTheme.typography.labelMedium,
             )
         }
         ProgressBar(
-            fraction = used.toFloat() / SampleItinerary.BUDGET,
+            // A 0đ budget only allows free places: the bar is empty, or full once anything costs.
+            fraction = if (budget > 0) used.toFloat() / budget else if (used > 0) 1f else 0f,
             height = 7.dp,
             color = if (isOver) colors.error else colors.primary,
         )
@@ -164,7 +164,11 @@ internal fun TripBudgetCard(days: List<ItineraryDay>, day: ItineraryDay, editing
         } else {
             val lodging = days.sumOf { d -> d.stops.filter { it.kind == StopKind.Lodging }.sumOf { it.cost } }
             Text(
-                text = stringResource(R.string.itinerary_breakdown, formatVnd(lodging), SampleItinerary.NIGHTS, formatVnd(used - lodging)),
+                text = if (lodging > 0) {
+                    stringResource(R.string.itinerary_breakdown, formatVnd(lodging), nights, formatVnd(used - lodging))
+                } else {
+                    stringResource(R.string.itinerary_breakdown_self, formatVnd(used))
+                },
                 style = MaterialTheme.typography.labelSmall,
                 color = colors.onSurfaceVariant,
             )
@@ -172,23 +176,36 @@ internal fun TripBudgetCard(days: List<ItineraryDay>, day: ItineraryDay, editing
     }
 }
 
-/** Static map of the day with numbered coral stops and the route line ("Bản đồ lộ trình"). */
+/**
+ * The day's stops joined in visiting order ("Bản đồ lộ trình"): on Google Maps when the stops
+ * have coordinates and the app has a Maps key, else (previews, builds without a key) as
+ * numbered markers on a plain background.
+ */
 @Composable
-internal fun RouteMap(day: ItineraryDay) {
+internal fun RouteMap(day: ItineraryDay, onPlace: ((placeId: String) -> Unit)? = null) {
     val colors = MaterialTheme.colorScheme
     val description = stringResource(R.string.cd_itinerary_map, day.number)
+    if (day.pins.isNotEmpty() && BuildConfig.HAS_MAPS_KEY && !LocalInspectionMode.current) {
+        // The real map: numbered stops joined in visiting order.
+        PlacesMap(
+            pins = day.pins,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(220.dp)
+                .semantics { contentDescription = description },
+            route = true,
+            onPinClick = onPlace?.let { open -> { pin -> open(pin.id) } },
+        )
+        return
+    }
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxWidth()
             .height(200.dp)
             .semantics { contentDescription = description },
     ) {
-        Image(
-            painter = painterResource(R.drawable.sample_itinerary_map),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize(),
-        )
+        // Not a map: the stops keep their relative positions (north up) on a plain background.
+        Box(modifier = Modifier.fillMaxSize().background(colors.surfaceContainerHigh))
         val routeColor = colors.primary
         Canvas(modifier = Modifier.fillMaxSize()) {
             val points = day.route.mapNotNull { number -> day.markers.firstOrNull { it.number == number } }

@@ -1,6 +1,7 @@
 package com.tripfair.app.navigation
 
 import androidx.navigation3.runtime.NavKey
+import com.tripfair.app.data.trips.TripDraft
 import kotlinx.serialization.Serializable
 
 // One route per screen. @Serializable lets the back stack survive rotation and process death.
@@ -52,7 +53,7 @@ data class SearchResults(val query: String) : NavKey
 data object SearchHistory : NavKey
 
 @Serializable
-data class PlaceDetail(val placeId: String) : NavKey
+data class PlaceDetail(val placeId: String, val sessionToken: String? = null) : NavKey
 
 @Serializable
 data class PlaceReviews(val placeId: String) : NavKey
@@ -64,6 +65,9 @@ data object EditProfile : NavKey
 
 @Serializable
 data object Settings : NavKey
+
+@Serializable
+data object DeleteAccount : NavKey
 
 @Serializable
 data object Support : NavKey
@@ -79,20 +83,25 @@ data object TermsPage : NavKey
 @Serializable
 data object GroupChoice : NavKey
 
+/** Names the group of a trip drafted in "Tạo chuyến đi". */
 @Serializable
-data object CreateGroup : NavKey
+data class CreateGroup(val draft: TripDraft) : NavKey
 
 @Serializable
 data object JoinGroup : NavKey
 
+/** Last step of joining: the budget and interests sent with [inviteCode]. */
 @Serializable
-data object InviteFriends : NavKey
+data class JoinGroupBudget(val inviteCode: String) : NavKey
 
 @Serializable
-data object GroupPlan : NavKey
+data class InviteFriends(val tripId: Int) : NavKey
 
 @Serializable
-data object EditBudget : NavKey
+data class GroupPlan(val tripId: Int) : NavKey
+
+@Serializable
+data class EditBudget(val tripId: Int) : NavKey
 
 // 04 Votes
 
@@ -100,10 +109,10 @@ data object EditBudget : NavKey
 data class AddToGroupVote(val placeId: String) : NavKey
 
 @Serializable
-data object VoteList : NavKey
+data class VoteList(val tripId: Int) : NavKey
 
 @Serializable
-data object Ballot : NavKey
+data class Ballot(val tripId: Int) : NavKey
 
 // 05 Trip & optimization, 10 Solo trip & lodging
 
@@ -112,19 +121,23 @@ data object CreateTrip : NavKey
 
 /** [group] decides where the optimizer goes next: the fairness result or the itinerary. */
 @Serializable
-data class LodgingChoice(val group: Boolean) : NavKey
+data class LodgingChoice(val tripId: Int, val group: Boolean) : NavKey
 
 @Serializable
-data class Optimizing(val group: Boolean) : NavKey
+data class Optimizing(val tripId: Int, val group: Boolean) : NavKey
 
 @Serializable
-data object OptimizationResult : NavKey
+data class OptimizationResult(val tripId: Int) : NavKey
 
 @Serializable
-data object DayItinerary : NavKey
+data class DayItinerary(val tripId: Int) : NavKey
 
 @Serializable
-data object ItineraryEditor : NavKey
+data class ItineraryEditor(val tripId: Int) : NavKey
+
+/** Search used to pick a place for the itinerary being edited. */
+@Serializable
+data object PickPlace : NavKey
 
 // 06 Camera & SOS
 
@@ -132,7 +145,7 @@ data object ItineraryEditor : NavKey
 data object CameraScan : NavKey
 
 @Serializable
-data class RecognitionResult(val recognized: Boolean) : NavKey
+data object RecognitionResult : NavKey
 
 @Serializable
 data object Sos : NavKey
@@ -142,4 +155,4 @@ data object EmergencyContacts : NavKey
 
 /** Adds a contact, or edits the one with [contactId]. */
 @Serializable
-data class ContactForm(val contactId: String? = null) : NavKey
+data class ContactForm(val contactId: Int? = null) : NavKey

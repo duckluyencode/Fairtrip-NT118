@@ -1,78 +1,146 @@
 package com.tripfair.app.navigation
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
+import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import com.tripfair.app.data.AppContainer
+import com.tripfair.app.data.session.SessionState
 import com.tripfair.app.ui.components.MainTab
-import com.tripfair.app.ui.sample.SampleData
-import com.tripfair.app.ui.sample.SampleCamera
-import com.tripfair.app.ui.sample.SampleItinerary
 import com.tripfair.app.ui.sample.SamplePlaces
 import com.tripfair.app.ui.sample.SampleSearch
-import com.tripfair.app.ui.sample.SampleSos
-import com.tripfair.app.ui.screens.auth.ForgotPasswordScreen
-import com.tripfair.app.ui.screens.auth.LoginScreen
-import com.tripfair.app.ui.screens.auth.NewPasswordScreen
-import com.tripfair.app.ui.screens.auth.OtpVerificationScreen
-import com.tripfair.app.ui.screens.auth.RegisterScreen
-import com.tripfair.app.ui.screens.camera.CameraScreen
+import com.tripfair.app.ui.screens.auth.ForgotPasswordRoute
+import com.tripfair.app.ui.screens.auth.LoginRoute
+import com.tripfair.app.ui.screens.auth.NewPasswordRoute
+import com.tripfair.app.ui.screens.auth.OtpRoute
+import com.tripfair.app.ui.screens.auth.RegisterRoute
+import com.tripfair.app.ui.screens.camera.CameraRoute
+import com.tripfair.app.ui.screens.camera.RecognizedPhoto
 import com.tripfair.app.ui.screens.camera.RecognitionResultScreen
-import com.tripfair.app.ui.screens.explore.PlaceDetailScreen
+import com.tripfair.app.ui.screens.explore.PlaceDetailRoute
 import com.tripfair.app.ui.screens.explore.PlaceReviewsScreen
-import com.tripfair.app.ui.screens.explore.SearchHistoryScreen
-import com.tripfair.app.ui.screens.explore.SearchResultsScreen
-import com.tripfair.app.ui.screens.explore.SearchScreen
-import com.tripfair.app.ui.screens.group.CreateGroupScreen
+import com.tripfair.app.ui.screens.explore.SearchHistoryRoute
+import com.tripfair.app.ui.screens.explore.SearchResultsRoute
+import com.tripfair.app.ui.screens.explore.SearchRoute
+import com.tripfair.app.ui.screens.group.CreateGroupRoute
 import com.tripfair.app.ui.screens.group.CreateOrJoinGroupScreen
-import com.tripfair.app.ui.screens.group.EditBudgetScreen
-import com.tripfair.app.ui.screens.group.GroupPlanScreen
-import com.tripfair.app.ui.screens.group.GroupsScreen
-import com.tripfair.app.ui.screens.group.InviteFriendsScreen
+import com.tripfair.app.ui.screens.group.EditBudgetRoute
+import com.tripfair.app.ui.screens.group.GroupPlanRoute
+import com.tripfair.app.ui.screens.group.TripsRoute
+import com.tripfair.app.ui.screens.group.TripsViewModel
+import com.tripfair.app.ui.screens.group.InviteFriendsRoute
 import com.tripfair.app.ui.screens.group.JoinGroupScreen
 import com.tripfair.app.ui.screens.home.HomeScreen
+import com.tripfair.app.ui.screens.home.HomeViewModel
+import com.tripfair.app.ui.AppViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tripfair.app.ui.screens.legal.LegalDocumentScreen
 import com.tripfair.app.ui.screens.legal.PrivacyPolicy
 import com.tripfair.app.ui.screens.legal.TermsOfUse
-import com.tripfair.app.ui.screens.profile.EditProfileScreen
-import com.tripfair.app.ui.screens.profile.FavoritesScreen
+import com.tripfair.app.ui.screens.profile.DeleteAccountRoute
+import com.tripfair.app.ui.screens.profile.EditProfileRoute
+import com.tripfair.app.ui.screens.profile.FavoritesRoute
 import com.tripfair.app.ui.screens.profile.ProfileScreen
 import com.tripfair.app.ui.screens.profile.SettingsScreen
 import com.tripfair.app.ui.screens.profile.SupportScreen
-import com.tripfair.app.ui.screens.sos.ContactFormScreen
-import com.tripfair.app.ui.screens.sos.EmergencyContactsScreen
-import com.tripfair.app.ui.screens.sos.SosScreen
-import com.tripfair.app.ui.screens.sos.rememberLocationPermission
-import com.tripfair.app.ui.screens.trip.CreateTripScreen
-import com.tripfair.app.ui.screens.trip.ItineraryEditorScreen
-import com.tripfair.app.ui.screens.trip.ItineraryScreen
-import com.tripfair.app.ui.screens.trip.LodgingScreen
-import com.tripfair.app.ui.screens.trip.OptimizationResultScreen
-import com.tripfair.app.ui.screens.trip.OptimizingScreen
-import com.tripfair.app.ui.screens.vote.AddToVoteScreen
-import com.tripfair.app.ui.screens.vote.BallotScreen
-import com.tripfair.app.ui.screens.vote.VoteListScreen
+import com.tripfair.app.ui.screens.sos.ContactFormRoute
+import com.tripfair.app.ui.screens.sos.EmergencyContactsRoute
+import com.tripfair.app.ui.screens.sos.SosRoute
+import com.tripfair.app.ui.screens.trip.CreateTripNext
+import com.tripfair.app.ui.screens.trip.CreateTripRoute
+import com.tripfair.app.ui.screens.trip.upcoming
+import com.tripfair.app.data.places.SuggestionDto
+import com.tripfair.app.data.trips.TripSummaryDto
+import com.tripfair.app.ui.screens.trip.ItineraryEditorRoute
+import com.tripfair.app.ui.screens.trip.ItineraryRoute
+import com.tripfair.app.ui.screens.trip.LodgingRoute
+import com.tripfair.app.ui.screens.trip.OptimizationResultRoute
+import com.tripfair.app.ui.screens.trip.OptimizingRoute
+import com.tripfair.app.ui.screens.vote.AddToVoteRoute
+import com.tripfair.app.ui.screens.vote.BallotRoute
+import com.tripfair.app.ui.screens.vote.VoteListRoute
+
+/** Screens reachable without an account; the others need a signed-in session. */
+private fun NavKey.isPublic(): Boolean =
+    this == Login || this == Register || this == ForgotPassword || this is OtpVerification ||
+        this == NewPassword || this == Support || this == PrivacyPolicyPage || this == TermsPage
+
+/**
+ * Waits for the saved session (a few milliseconds at app start) so the first screen is the
+ * right one: Home when signed in, Login otherwise.
+ */
+@Composable
+fun TripFairNavDisplay(container: AppContainer) {
+    val session by container.session.state.collectAsState()
+    if (session is SessionState.Restoring) {
+        Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background))
+    } else {
+        TripFairNavHost(container, startSignedIn = session is SessionState.SignedIn)
+    }
+}
 
 /**
  * Connects every button to its target screen, following the flow notes in Figma.
  * The back stack is a plain list: navigating adds a route, going back removes the last one.
  */
 @Composable
-fun TripFairNavDisplay() {
-    val backStack = rememberNavBackStack(Login)
+private fun TripFairNavHost(container: AppContainer, startSignedIn: Boolean) {
+    val backStack = rememberNavBackStack(if (startSignedIn) Home else Login)
+    val session by container.session.state.collectAsState()
+    val account by container.authRepository.currentAccount.collectAsState()
 
-    // Data shared by several screens, kept here until there is a backend.
-    var itinerary by remember { mutableStateOf(SampleItinerary.days) }
-    var sosContacts by remember { mutableStateOf(SampleSos.contacts) }
+    // The session can end anywhere (sign out, account deleted, refresh token refused):
+    // then only the login screens stay reachable.
+    LaunchedEffect(session) {
+        if (session is SessionState.SignedOut && backStack.any { !it.isPublic() }) {
+            backStack.replaceAll(Login)
+        }
+    }
+
+    // Signing out ends the session, then starts a new history at the login screen.
+    val logout: () -> Unit = {
+        container.authRepository.logout()
+        backStack.replaceAll(Login)
+    }
+
+    val sosContacts by container.emergencyContactsRepository.contacts.collectAsState()
+    // A place chosen on the picker screen, on its way back to the itinerary editor.
+    var pickedPlace by remember { mutableStateOf<SuggestionDto?>(null) }
+    // The last recognized photo, shown by the result screen; kept in memory only.
+    var recognizedPhoto by remember { mutableStateOf<RecognizedPhoto?>(null) }
 
     // Shows the itinerary, going back to it if it is already open below.
-    val showItinerary: () -> Unit = {
-        if (DayItinerary in backStack) backStack.popUpTo(DayItinerary) else backStack.add(DayItinerary)
+    val showItinerary: (tripId: Int) -> Unit = { tripId ->
+        val route = DayItinerary(tripId)
+        if (route in backStack) backStack.popUpTo(route) else backStack.add(route)
+    }
+
+    // A group opens on its members and votes; a solo trip on its itinerary, planned first if needed.
+    val openTrip: (TripSummaryDto) -> Unit = { trip ->
+        backStack.add(
+            when {
+                trip.isGroup -> GroupPlan(trip.id)
+                trip.isPlanned -> DayItinerary(trip.id)
+                else -> Optimizing(trip.id, group = false)
+            },
+        )
+    }
+    val scheduleTrip: (TripSummaryDto) -> Unit = { trip ->
+        if (trip.isPlanned) backStack.add(DayItinerary(trip.id)) else openTrip(trip)
     }
 
     // Switching tabs starts a fresh history at that tab's root screen.
@@ -90,34 +158,38 @@ fun TripFairNavDisplay() {
     NavDisplay(
         backStack = backStack,
         onBack = { backStack.goBack() },
+        // Each screen keeps its saved UI state and its own ViewModels, both cleared when it is removed.
+        entryDecorators = listOf(
+            rememberSaveableStateHolderNavEntryDecorator(),
+            rememberViewModelStoreNavEntryDecorator(),
+        ),
         entryProvider = entryProvider {
             // 01 Authentication
             entry<Login> {
-                LoginScreen(
-                    onLogin = { backStack.replaceAll(Home) },
+                LoginRoute(
+                    onLoggedIn = { backStack.replaceAll(Home) },
                     onRegister = { backStack.add(Register) },
                     onForgotPassword = { backStack.add(ForgotPassword) },
                 )
             }
             entry<Register> {
-                RegisterScreen(
-                    onCreateAccount = { backStack.add(OtpVerification(OtpPurpose.Register)) },
+                RegisterRoute(
+                    onCodeSent = { backStack.add(OtpVerification(OtpPurpose.Register)) },
                     onLogin = { backStack.popUpTo(Login) },
                     onTermsClick = { backStack.add(TermsPage) },
                     onPrivacyClick = { backStack.add(PrivacyPolicyPage) },
                 )
             }
             entry<ForgotPassword> {
-                ForgotPasswordScreen(
+                ForgotPasswordRoute(
                     onBack = { backStack.goBack() },
-                    onSendCode = { backStack.add(OtpVerification(OtpPurpose.ResetPassword)) },
+                    onCodeSent = { backStack.add(OtpVerification(OtpPurpose.ResetPassword)) },
                     onBackToLogin = { backStack.popUpTo(Login) },
                     onSupport = { backStack.add(Support) },
                 )
             }
             entry<OtpVerification> { route ->
-                OtpVerificationScreen(
-                    destination = SampleData.USER_EMAIL,
+                OtpRoute(
                     onBack = { backStack.goBack() },
                     onVerified = {
                         when (route.purpose) {
@@ -131,87 +203,95 @@ fun TripFairNavDisplay() {
                 )
             }
             entry<NewPassword> {
-                NewPasswordScreen(
-                    email = SampleData.USER_EMAIL,
+                NewPasswordRoute(
                     onBack = { backStack.goBack() },
-                    onSave = { backStack.popUpTo(Login) },
+                    onSaved = { backStack.popUpTo(Login) },
                     onSupport = { backStack.add(Support) },
                 )
             }
 
             // Main tabs
             entry<Home> {
+                val home: HomeViewModel = viewModel(factory = AppViewModelProvider.Factory)
                 HomeScreen(
+                    userName = account?.fullName.orEmpty(),
+                    suggestions = home.suggestions,
+                    upcomingTrip = home.upcomingTrip,
                     onSearch = { backStack.add(Search) },
                     onSos = { backStack.add(Sos) },
                     onCamera = { backStack.add(CameraScan) },
-                    onTrip = { backStack.add(DayItinerary) },
+                    onTrip = openTrip,
                     onSeeAllSuggestions = { backStack.add(SearchResults(SampleSearch.QUERY)) },
-                    onPlace = { backStack.add(PlaceDetail(it.id)) },
+                    onPlace = { backStack.add(PlaceDetail(it.toString())) },
                     onHistory = { backStack.add(SearchHistory) },
                     onTabSelect = selectTab,
                 )
             }
             entry<Trips> {
-                GroupsScreen(
-                    onNewGroup = { backStack.add(GroupChoice) },
-                    onOpenGroup = { backStack.add(GroupPlan) },
-                    onInvite = { backStack.add(InviteFriends) },
-                    onSchedule = { backStack.add(DayItinerary) },
-                    onVote = { backStack.add(Ballot) },
-                    onPlaces = { backStack.add(SearchResults(SampleSearch.QUERY)) },
+                TripsRoute(
                     onCreateTrip = { backStack.add(CreateTrip) },
                     onJoinGroup = { backStack.add(JoinGroup) },
+                    onOpenTrip = openTrip,
+                    onSchedule = scheduleTrip,
+                    onInvite = { backStack.add(InviteFriends(it)) },
+                    onVote = { backStack.add(Ballot(it)) },
+                    onPlaces = { backStack.add(SearchResults(SampleSearch.QUERY)) },
                     onTabSelect = selectTab,
                 )
             }
             entry<Favorites> {
-                FavoritesScreen(
-                    onPlace = { backStack.add(PlaceDetail(it.id)) },
+                FavoritesRoute(
+                    onPlace = { backStack.add(PlaceDetail(it.toString())) },
                     onExplore = { selectTab(MainTab.Explore) },
                     onTabSelect = selectTab,
                 )
             }
             entry<Profile> {
+                val trips: TripsViewModel = viewModel(factory = AppViewModelProvider.Factory)
+                LaunchedEffect(Unit) { trips.load() }
                 ProfileScreen(
+                    account = account,
+                    emergencyContacts = sosContacts,
+                    latestTrip = trips.items.upcoming(),
                     onEditProfile = { backStack.add(EditProfile) },
-                    onTrip = { backStack.add(DayItinerary) },
+                    onTrip = { selectTab(MainTab.Trips) },
                     onFavorites = { selectTab(MainTab.Favorites) },
                     onEmergencyContacts = { backStack.add(EmergencyContacts) },
                     onSettings = { backStack.add(Settings) },
                     onHelp = { backStack.add(Support) },
-                    onLogout = { backStack.replaceAll(Login) },
+                    onLogout = logout,
                     onTabSelect = selectTab,
                 )
             }
 
             // 02 Explore & search
             entry<Search> {
-                SearchScreen(
+                SearchRoute(
                     onBack = { backStack.goBack() },
-                    onSearch = { query -> backStack.add(SearchResults(query.ifBlank { SampleSearch.QUERY })) },
+                    onSearch = { query -> backStack.add(SearchResults(query)) },
+                    onPlace = { id, sessionToken -> backStack.add(PlaceDetail(id.toString(), sessionToken)) },
                     onHistory = { backStack.add(SearchHistory) },
                 )
             }
             entry<SearchResults> { route ->
-                SearchResultsScreen(
+                SearchResultsRoute(
                     query = route.query,
                     onEditQuery = { backStack.add(Search) },
-                    onPlace = { backStack.add(PlaceDetail(it.id)) },
+                    onPlace = { backStack.add(PlaceDetail(it.toString())) },
                 )
             }
             entry<SearchHistory> {
-                SearchHistoryScreen(
+                SearchHistoryRoute(
                     onBack = { backStack.goBack() },
                     onSearch = { query -> backStack.add(SearchResults(query)) },
                 )
             }
             entry<PlaceDetail> { route ->
-                PlaceDetailScreen(
-                    place = SamplePlaces.byId(route.placeId),
+                PlaceDetailRoute(
+                    placeId = route.placeId,
+                    sessionToken = route.sessionToken,
                     onBack = { backStack.goBack() },
                     onProfile = { selectTab(MainTab.Profile) },
-                    onReviews = { backStack.add(PlaceReviews(route.placeId)) },
                     onAddToVote = { backStack.add(AddToGroupVote(route.placeId)) },
                 )
             }
@@ -226,16 +306,21 @@ fun TripFairNavDisplay() {
 
             // 08 Profile & favorites
             entry<EditProfile> {
-                EditProfileScreen(onBack = { backStack.goBack() }, onSave = { backStack.goBack() })
+                EditProfileRoute(onBack = { backStack.goBack() }, onSaved = { backStack.goBack() })
+            }
+            entry<DeleteAccount> {
+                DeleteAccountRoute(onBack = { backStack.goBack() }, onDeleted = { backStack.replaceAll(Login) })
             }
             entry<Settings> {
                 SettingsScreen(
+                    account = account,
                     onBack = { backStack.goBack() },
                     onEditProfile = { backStack.add(EditProfile) },
                     onPrivacy = { backStack.add(PrivacyPolicyPage) },
                     onSupport = { backStack.add(Support) },
                     onTerms = { backStack.add(TermsPage) },
-                    onLogout = { backStack.replaceAll(Login) },
+                    onDeleteAccount = { backStack.add(DeleteAccount) },
+                    onLogout = logout,
                 )
             }
             entry<Support> { SupportScreen(onBack = { backStack.goBack() }) }
@@ -246,153 +331,210 @@ fun TripFairNavDisplay() {
             entry<GroupChoice> {
                 CreateOrJoinGroupScreen(
                     onBack = { backStack.goBack() },
-                    onCreate = { backStack.add(CreateGroup) },
+                    onCreate = { backStack.add(CreateTrip) },
                     onJoin = { backStack.add(JoinGroup) },
                 )
             }
-            entry<CreateGroup> {
-                CreateGroupScreen(
+            entry<CreateGroup> { route ->
+                CreateGroupRoute(
+                    draft = route.draft,
+                    ownerName = account?.fullName.orEmpty(),
                     onBack = { backStack.goBack() },
-                    onInvite = { backStack.add(InviteFriends) },
-                    onContinue = { backStack.add(GroupPlan) },
+                    onCreated = { created ->
+                        // The group exists now: Back from it skips the two forms that made it.
+                        backStack.removeAll { it is CreateTrip || it is CreateGroup || it is GroupChoice }
+                        backStack.add(GroupPlan(created.tripId))
+                        if (created.invite) backStack.add(InviteFriends(created.tripId))
+                    },
                 )
             }
             entry<JoinGroup> {
-                JoinGroupScreen(onBack = { backStack.goBack() }, onJoin = { selectTab(MainTab.Trips) })
+                JoinGroupScreen(onBack = { backStack.goBack() }, onJoin = { code -> backStack.add(JoinGroupBudget(code)) })
             }
-            entry<InviteFriends> { InviteFriendsScreen(onBack = { backStack.goBack() }) }
-            entry<GroupPlan> {
-                GroupPlanScreen(
+            entry<JoinGroupBudget> { route ->
+                EditBudgetRoute(
+                    tripId = null,
+                    inviteCode = route.inviteCode,
+                    memberName = account?.fullName.orEmpty(),
                     onBack = { backStack.goBack() },
-                    onInvite = { backStack.add(InviteFriends) },
-                    onEditBudget = { backStack.add(EditBudget) },
-                    onStartVote = { backStack.add(VoteList) },
+                    onSaved = { tripId ->
+                        // Joined: Back from the group skips the screens that led into it.
+                        backStack.removeAll { it is JoinGroup || it is JoinGroupBudget || it is GroupChoice }
+                        backStack.add(GroupPlan(tripId))
+                    },
                 )
             }
-            entry<EditBudget> {
-                EditBudgetScreen(onBack = { backStack.goBack() }, onSave = { backStack.goBack() })
+            entry<InviteFriends> { route -> InviteFriendsRoute(tripId = route.tripId, onBack = { backStack.goBack() }) }
+            entry<GroupPlan> { route ->
+                GroupPlanRoute(
+                    tripId = route.tripId,
+                    onBack = { backStack.goBack() },
+                    onInvite = { backStack.add(InviteFriends(route.tripId)) },
+                    onEditBudget = { backStack.add(EditBudget(route.tripId)) },
+                    onStartVote = { backStack.add(VoteList(route.tripId)) },
+                    onViewResult = { backStack.add(OptimizationResult(route.tripId)) },
+                    onRemoved = { selectTab(MainTab.Trips) },
+                )
+            }
+            entry<EditBudget> { route ->
+                EditBudgetRoute(
+                    tripId = route.tripId,
+                    inviteCode = null,
+                    memberName = account?.fullName.orEmpty(),
+                    onBack = { backStack.goBack() },
+                    onSaved = { backStack.goBack() },
+                )
             }
 
             // 04 Votes
             entry<AddToGroupVote> { route ->
-                AddToVoteScreen(
-                    place = SamplePlaces.byId(route.placeId),
+                AddToVoteRoute(
+                    placeId = route.placeId,
                     onBack = { backStack.goBack() },
-                    onBackToDetail = { backStack.goBack() },
-                    onAdd = { backStack.replaceTop(VoteList) },
+                    // The place is on the list now: show it there, with Back returning to the place.
+                    onAdded = { tripId -> backStack.replaceTop(VoteList(tripId)) },
                 )
             }
-            entry<VoteList> {
-                VoteListScreen(onBack = { backStack.goBack() }, onFinish = { backStack.add(LodgingChoice(group = true)) })
+            entry<VoteList> { route ->
+                VoteListRoute(
+                    tripId = route.tripId,
+                    onBack = { backStack.goBack() },
+                    onBallot = { backStack.add(Ballot(route.tripId)) },
+                    onFinish = { wantsHotel ->
+                        backStack.add(if (wantsHotel) LodgingChoice(route.tripId, group = true) else Optimizing(route.tripId, group = true))
+                    },
+                )
             }
-            entry<Ballot> {
-                BallotScreen(onBack = { backStack.goBack() }, onAddPlace = { backStack.add(Search) })
+            entry<Ballot> { route ->
+                BallotRoute(tripId = route.tripId, onBack = { backStack.goBack() }, onAddPlace = { backStack.add(Search) })
             }
 
             // 05 Trip & optimization, 10 Solo trip & lodging
             entry<CreateTrip> {
-                CreateTripScreen(
+                CreateTripRoute(
                     onBack = { backStack.goBack() },
                     onProfile = { selectTab(MainTab.Profile) },
-                    onContinueGroup = { backStack.add(CreateGroup) },
-                    onChooseLodging = { backStack.add(LodgingChoice(group = false)) },
-                    onPlanWithoutLodging = { backStack.add(Optimizing(group = false)) },
+                    onNext = { next ->
+                        when (next) {
+                            is CreateTripNext.NameGroup -> backStack.add(CreateGroup(next.draft))
+                            // The solo trip exists now, so the form is not kept below the next screen.
+                            is CreateTripNext.ChooseLodging -> backStack.replaceTop(LodgingChoice(next.tripId, group = false))
+                            is CreateTripNext.Plan -> backStack.replaceTop(Optimizing(next.tripId, group = false))
+                        }
+                    },
                 )
             }
             entry<LodgingChoice> { route ->
-                LodgingScreen(onBack = { backStack.goBack() }, onConfirm = { backStack.add(Optimizing(route.group)) })
+                LodgingRoute(
+                    tripId = route.tripId,
+                    onBack = { backStack.goBack() },
+                    onConfirmed = { backStack.add(Optimizing(route.tripId, route.group)) },
+                )
             }
             entry<Optimizing> { route ->
-                OptimizingScreen(
+                OptimizingRoute(
+                    tripId = route.tripId,
                     onBack = { backStack.goBack() },
                     onDone = {
-                        itinerary = SampleItinerary.days
-                        // The progress screen is replaced, so Back does not return to it.
-                        backStack.replaceTop(if (route.group) OptimizationResult else DayItinerary)
+                        // Back from the result skips the progress screen and the lodging choice.
+                        backStack.removeAll { it is Optimizing || it is LodgingChoice }
+                        if (route.group) backStack.add(OptimizationResult(route.tripId)) else showItinerary(route.tripId)
                     },
+                    onChooseLodging = { backStack.replaceTop(LodgingChoice(route.tripId, route.group)) },
                 )
             }
-            entry<OptimizationResult> {
-                OptimizationResultScreen(
+            entry<OptimizationResult> { route ->
+                OptimizationResultRoute(
+                    tripId = route.tripId,
                     onBack = { backStack.goBack() },
                     onProfile = { selectTab(MainTab.Profile) },
-                    onViewItinerary = showItinerary,
+                    onViewItinerary = { showItinerary(route.tripId) },
                 )
             }
-            entry<DayItinerary> {
-                ItineraryScreen(
-                    days = itinerary,
+            entry<DayItinerary> { route ->
+                ItineraryRoute(
+                    tripId = route.tripId,
                     onBack = { backStack.goBack() },
-                    onEdit = { backStack.add(ItineraryEditor) },
+                    onEdit = { backStack.add(ItineraryEditor(route.tripId)) },
                     onPlace = { backStack.add(PlaceDetail(it)) },
+                    onPlan = { group -> backStack.replaceTop(Optimizing(route.tripId, group)) },
+                    onDeleted = { selectTab(MainTab.Trips) },
                 )
             }
-            entry<ItineraryEditor> {
-                ItineraryEditorScreen(
-                    initialDays = SampleItinerary.editDraft(itinerary),
+            entry<ItineraryEditor> { route ->
+                ItineraryEditorRoute(
+                    tripId = route.tripId,
                     onBack = { backStack.goBack() },
-                    onSave = { days ->
-                        itinerary = days
+                    onSaved = { backStack.goBack() },
+                    onAddPlace = { backStack.add(PickPlace) },
+                    onReoptimize = { group -> backStack.replaceTop(Optimizing(route.tripId, group)) },
+                    picked = pickedPlace,
+                    onPickedConsumed = { pickedPlace = null },
+                )
+            }
+            entry<PickPlace> {
+                SearchRoute(
+                    onBack = { backStack.goBack() },
+                    onSearch = {},
+                    onPlace = { _, _ -> },
+                    onHistory = { backStack.add(SearchHistory) },
+                    onPick = { place ->
+                        pickedPlace = place
                         backStack.goBack()
                     },
-                    onAddPlace = { backStack.add(Search) },
-                    onReoptimize = { backStack.replaceTop(Optimizing(group = true)) },
                 )
             }
 
             // 06 Camera & SOS
             entry<CameraScan> {
-                CameraScreen(
+                CameraRoute(
                     onBack = { backStack.goBack() },
                     onHelp = { backStack.add(Support) },
-                    onResult = { recognized -> backStack.add(RecognitionResult(recognized)) },
+                    onResult = { photo ->
+                        recognizedPhoto = photo
+                        backStack.add(RecognitionResult)
+                    },
                 )
             }
-            entry<RecognitionResult> { route ->
-                RecognitionResultScreen(
-                    result = if (route.recognized) SampleCamera.recognized else SampleCamera.notRecognized,
-                    onBack = { backStack.goBack() },
-                    onRetake = { backStack.popUpTo(CameraScan) },
-                    onPlace = { backStack.add(PlaceDetail(it)) },
-                    onViewTrip = showItinerary,
-                    onSearchByName = { backStack.add(Search) },
-                )
+            entry<RecognitionResult> {
+                val photo = recognizedPhoto
+                // The photo is not saved: after the app was closed in the background, start again.
+                LaunchedEffect(photo) {
+                    if (photo == null) backStack.popUpTo(CameraScan)
+                }
+                if (photo != null) {
+                    RecognitionResultScreen(
+                        image = photo.image,
+                        result = photo.result,
+                        onBack = { backStack.goBack() },
+                        onRetake = { backStack.popUpTo(CameraScan) },
+                        onPlace = { backStack.add(PlaceDetail(it.toString())) },
+                        onSearchByName = { backStack.add(Search) },
+                    )
+                }
             }
             entry<Sos> {
-                val location = rememberLocationPermission()
-                SosScreen(
+                SosRoute(
                     contacts = sosContacts,
-                    hasLocationPermission = location.granted,
-                    onRequestLocation = location.request,
+                    userName = account?.fullName.orEmpty(),
+                    locationProvider = container.locationProvider,
                     onBack = { backStack.goBack() },
                     onContacts = { backStack.add(EmergencyContacts) },
                 )
             }
             entry<EmergencyContacts> {
-                EmergencyContactsScreen(
-                    contacts = sosContacts,
-                    onToggle = { id ->
-                        sosContacts = sosContacts.map { if (it.id == id) it.copy(receivesSos = !it.receivesSos) else it }
-                    },
-                    onSelectAll = { sosContacts = sosContacts.map { it.copy(receivesSos = true) } },
+                EmergencyContactsRoute(
                     onBack = { backStack.goBack() },
-                    onSave = { backStack.goBack() },
+                    onSaved = { backStack.goBack() },
                     onAdd = { backStack.add(ContactForm()) },
                     onEdit = { backStack.add(ContactForm(it)) },
                 )
             }
             entry<ContactForm> { route ->
-                ContactFormScreen(
-                    contact = sosContacts.firstOrNull { it.id == route.contactId },
+                ContactFormRoute(
+                    contactId = route.contactId,
                     onBack = { backStack.goBack() },
-                    onSave = { saved ->
-                        sosContacts = if (sosContacts.any { it.id == saved.id }) {
-                            sosContacts.map { if (it.id == saved.id) saved else it }
-                        } else {
-                            sosContacts + saved
-                        }
-                        backStack.goBack()
-                    },
+                    onSaved = { backStack.goBack() },
                 )
             }
         },

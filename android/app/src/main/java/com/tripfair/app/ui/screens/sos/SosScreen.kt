@@ -6,7 +6,6 @@ import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -45,7 +44,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -58,33 +56,94 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
+import androidx.compose.runtime.remember
 import com.tripfair.app.R
+import com.tripfair.app.data.location.LocationProvider
+import com.tripfair.app.data.sos.SosOutcome
+import com.tripfair.app.data.sos.mapsLink
+import com.tripfair.app.data.sos.smsAppIntent
+import com.tripfair.app.data.places.LocationDto
+import com.tripfair.app.ui.components.MapPin
+import com.tripfair.app.ui.components.PlacesMap
 import com.tripfair.app.ui.components.PrimaryButton
 import com.tripfair.app.ui.components.TopBarTextAction
 import com.tripfair.app.ui.components.TripFairTopBar
-import com.tripfair.app.ui.sample.EmergencyContact
+import com.tripfair.app.data.contacts.EmergencyContact
 import com.tripfair.app.ui.sample.SampleSos
 import com.tripfair.app.ui.theme.ThemePreviews
 import com.tripfair.app.ui.theme.TripFairTheme
+import java.util.Locale
+import kotlin.math.abs
 import com.tripfair.app.ui.theme.extendedColors
 import kotlinx.coroutines.launch
 
-private enum class SendState { Idle, Confirming, Sent }
+private enum class SendState { Idle, Confirming }
 
 /** How long the send button has to be held, to avoid sending by mistake. */
 private const val HOLD_MILLIS = 3000
 
 /**
+ * Connects the SOS screen to the phone: reads the position once location is allowed, and
+ * opens the SMS app with the recipients and the text filled in, so one more tap sends it.
+ */
+@Composable
+fun SosRoute(
+    contacts: List<EmergencyContact>,
+    userName: String,
+    locationProvider: LocationProvider,
+    onBack: () -> Unit,
+    onContacts: () -> Unit,
+) {
+    val context = LocalContext.current
+    val permission = rememberLocationPermission()
+    var position by remember { mutableStateOf<LocationDto?>(null) }
+    LaunchedEffect(permission.granted) {
+        if (permission.granted) position = locationProvider.current()
+    }
+
+    var outcome by rememberSaveable { mutableStateOf<SosOutcome?>(null) }
+    val numbers = contacts.filter { it.receivesSos }.map { it.phone }
+    val place = position
+    val message = if (place != null) {
+        stringResource(R.string.sos_message, userName, mapsLink(place), coordinatesText(place))
+    } else {
+        stringResource(R.string.sos_message_no_location, userName)
+    }
+
+    SosScreen(
+        contacts = contacts,
+        hasLocationPermission = permission.granted,
+        location = position,
+        outcome = outcome,
+        onRequestLocation = permission.request,
+        onSend = {
+            outcome = try {
+                context.startActivity(smsAppIntent(numbers, message))
+                SosOutcome.OpenedSmsApp
+            } catch (_: ActivityNotFoundException) {
+                SosOutcome.Failed
+            }
+        },
+        onCloseOutcome = { outcome = null },
+        onBack = onBack,
+        onContacts = onContacts,
+    )
+}
+
+/**
  * "SOS khẩn cấp": current location, the SMS to the chosen contacts (confirmed by holding a
  * button for 3 seconds) and quick calls. Without location permission the map is replaced by
  * a card asking for it ("SOS · chưa có quyền vị trí"); calls still work.
- * Until SmsManager and the location provider are connected, the location and the sending are samples.
  */
 @Composable
 fun SosScreen(
     contacts: List<EmergencyContact>,
     hasLocationPermission: Boolean,
+    location: LocationDto?,
+    outcome: SosOutcome?,
     onRequestLocation: () -> Unit,
+    onSend: () -> Unit,
+    onCloseOutcome: () -> Unit,
     onBack: () -> Unit,
     onContacts: () -> Unit,
     initiallyConfirming: Boolean = false,
@@ -99,15 +158,15 @@ fun SosScreen(
     // Opens the phone app with the number filled in; the user still taps call.
     val call: (String) -> Unit = { number ->
         try {
-            context.startActivity(Intent(Intent.ACTION_DIAL, "tel:${number.filter { it.isDigit() }}".toUri()))
+            context.startActivity(Intent(Intent.ACTION_DIAL, "tel:${number.filter { it.isDigit() || it == '+' }}".toUri()))
         } catch (_: ActivityNotFoundException) {
             // No phone app (e.g. a tablet): nothing to open.
         }
     }
 
     // The confirmation and result cards sit under the quick calls, so bring them into view.
-    LaunchedEffect(state) {
-        if (state != SendState.Idle) scroll.animateScrollTo(scroll.maxValue)
+    LaunchedEffect(state, outcome) {
+        if (state != SendState.Idle || outcome != null) scroll.animateScrollTo(scroll.maxValue)
     }
 
     Scaffold(
@@ -126,7 +185,7 @@ fun SosScreen(
             verticalArrangement = Arrangement.spacedBy(11.dp),
         ) {
             SafetyNote()
-            if (hasLocationPermission) LocationCard() else LocationPermissionCard(onRequestLocation)
+            if (hasLocationPermission) LocationCard(location) else LocationPermissionCard(onRequestLocation)
             PrimaryButton(
                 text = stringResource(R.string.sos_send_sms),
                 onClick = { state = SendState.Confirming },
@@ -169,14 +228,16 @@ fun SosScreen(
                     }
                 }
             }
-            when (state) {
-                SendState.Confirming -> ConfirmCard(
+            when {
+                outcome != null -> SentCard(outcome = outcome, recipientNames = recipientNames, onClose = onCloseOutcome)
+                state == SendState.Confirming -> ConfirmCard(
                     recipientNames = recipientNames,
                     onCancel = { state = SendState.Idle },
-                    onSent = { state = SendState.Sent },
+                    onSent = {
+                        state = SendState.Idle
+                        onSend()
+                    },
                 )
-                SendState.Sent -> SentCard(recipientNames = recipientNames, onClose = { state = SendState.Idle })
-                SendState.Idle -> Unit
             }
         }
     }
@@ -215,9 +276,9 @@ private fun SafetyNote() {
     }
 }
 
-/** Map around the current position with GPS accuracy and the address ("Vị trí hiện tại"). */
+/** Map around the current position with its coordinates ("Vị trí hiện tại"). */
 @Composable
-private fun LocationCard() {
+private fun LocationCard(location: LocationDto?) {
     val colors = MaterialTheme.colorScheme
     Box(
         modifier = Modifier
@@ -225,76 +286,30 @@ private fun LocationCard() {
             .height(178.dp)
             .clip(MaterialTheme.shapes.large),
     ) {
-        Image(
-            painter = painterResource(R.drawable.sample_itinerary_map),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
+        PlacesMap(
+            pins = listOfNotNull(location?.let { MapPin(id = "me", position = it, title = stringResource(R.string.sos_your_position)) }),
             modifier = Modifier.fillMaxSize(),
+            showMyLocation = true,
         )
-        Box(
+        Row(
             modifier = Modifier
-                .fillMaxSize()
-                .background(colors.primary.copy(alpha = 0.08f)),
-        )
-        // Current position: red dot with a white ring inside a soft halo.
-        Box(
-            modifier = Modifier
-                .align(Alignment.Center)
-                .size(48.dp)
-                .background(colors.error.copy(alpha = 0.2f), CircleShape),
-            contentAlignment = Alignment.Center,
+                .align(Alignment.BottomCenter)
+                .padding(12.dp)
+                .fillMaxWidth()
+                .background(colors.surfaceContainerLow.copy(alpha = 0.95f), MaterialTheme.shapes.small)
+                .padding(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(9.dp),
         ) {
-            Box(
-                modifier = Modifier
-                    .size(22.dp)
-                    .background(colors.error, CircleShape)
-                    .border(3.dp, colors.surfaceContainerLowest, CircleShape),
-                contentAlignment = Alignment.Center,
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(5.dp)
-                        .background(colors.surfaceContainerLowest, CircleShape),
-                )
-            }
-        }
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(12.dp),
-            verticalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Row(
-                modifier = Modifier
-                    .background(colors.surfaceContainerLow.copy(alpha = 0.93f), CircleShape)
-                    .padding(horizontal = 10.dp, vertical = 7.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(7.dp)
-                        .background(colors.primary, CircleShape),
-                )
+            Icon(painter = painterResource(R.drawable.ic_map_pin), contentDescription = null, tint = colors.error, modifier = Modifier.size(18.dp))
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
-                    text = stringResource(R.string.sos_gps, SampleSos.GPS_ACCURACY),
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                    color = colors.primary,
+                    text = stringResource(if (location != null) R.string.sos_your_position else R.string.sos_locating),
+                    style = MaterialTheme.typography.labelMedium,
                 )
-            }
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(colors.surfaceContainerLow.copy(alpha = 0.95f), MaterialTheme.shapes.small)
-                    .padding(10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(9.dp),
-            ) {
-                Icon(painter = painterResource(R.drawable.ic_map_pin), contentDescription = null, tint = colors.error, modifier = Modifier.size(18.dp))
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(text = SampleSos.ADDRESS, style = MaterialTheme.typography.labelMedium)
+                location?.let {
                     Text(
-                        text = stringResource(R.string.sos_updated, SampleSos.COORDINATES),
+                        text = coordinatesText(it),
                         style = MaterialTheme.typography.labelSmall,
                         color = colors.onSurfaceVariant,
                     )
@@ -303,6 +318,16 @@ private fun LocationCard() {
         }
     }
 }
+
+/** "16.0544° N, 108.2469° E" */
+internal fun coordinatesText(location: LocationDto): String = String.format(
+    Locale.US,
+    "%.4f° %s, %.4f° %s",
+    abs(location.lat),
+    if (location.lat >= 0) "N" else "S",
+    abs(location.lng),
+    if (location.lng >= 0) "E" else "W",
+)
 
 /** Shown instead of the map when location is not allowed ("Chưa có quyền vị trí"). */
 @Composable
@@ -465,15 +490,16 @@ private fun HoldToSendButton(enabled: Boolean, onSent: () -> Unit, modifier: Mod
 
 /** Result shown in place after sending (not designed in Figma; follows the confirmation card). */
 @Composable
-private fun SentCard(recipientNames: String, onClose: () -> Unit) {
+private fun SentCard(outcome: SosOutcome, recipientNames: String, onClose: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     val success = MaterialTheme.extendedColors.success
+    val failed = outcome == SosOutcome.Failed
     AlertCard(
-        icon = R.drawable.ic_check,
-        iconTint = success,
-        iconBackground = colors.primaryContainer,
-        title = stringResource(R.string.sos_sent_title),
-        text = stringResource(R.string.sos_sent_text, recipientNames),
+        icon = if (failed) R.drawable.ic_circle_alert else R.drawable.ic_check,
+        iconTint = if (failed) colors.error else success,
+        iconBackground = if (failed) colors.errorContainer else colors.primaryContainer,
+        title = stringResource(if (failed) R.string.sos_failed_title else R.string.sos_opened_title),
+        text = if (failed) stringResource(R.string.sos_failed_text) else stringResource(R.string.sos_opened_text, recipientNames),
         action = { TopBarTextAction(text = stringResource(R.string.action_close), onClick = onClose) },
     )
 }
@@ -525,7 +551,11 @@ private fun SosScreenPreview() {
         SosScreen(
             contacts = SampleSos.contacts,
             hasLocationPermission = true,
+            location = LocationDto(16.0544, 108.2469),
+            outcome = null,
             onRequestLocation = {},
+            onSend = {},
+            onCloseOutcome = {},
             onBack = {},
             onContacts = {},
             initiallyConfirming = true,
@@ -540,7 +570,11 @@ private fun SosNoLocationPreview() {
         SosScreen(
             contacts = SampleSos.contacts,
             hasLocationPermission = false,
+            location = null,
+            outcome = null,
             onRequestLocation = {},
+            onSend = {},
+            onCloseOutcome = {},
             onBack = {},
             onContacts = {},
         )

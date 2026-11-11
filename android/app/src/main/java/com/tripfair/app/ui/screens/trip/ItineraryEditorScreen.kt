@@ -46,41 +46,113 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import androidx.annotation.StringRes
+import androidx.compose.runtime.LaunchedEffect
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tripfair.app.R
+import com.tripfair.app.data.places.SuggestionDto
+import com.tripfair.app.data.trips.DayPlacesDto
+import com.tripfair.app.ui.AppViewModelProvider
 import com.tripfair.app.ui.components.OutlineButton
 import com.tripfair.app.ui.components.PrimaryButton
 import com.tripfair.app.ui.components.TopBarTextAction
 import com.tripfair.app.ui.components.TripFairTopBar
-import com.tripfair.app.ui.sample.ItineraryDay
-import com.tripfair.app.ui.sample.ItineraryStop
 import com.tripfair.app.ui.sample.SampleItinerary
 import com.tripfair.app.ui.theme.ThemePreviews
 import com.tripfair.app.ui.theme.TripFairTheme
 
+@Composable
+fun ItineraryEditorRoute(
+    tripId: Int,
+    onBack: () -> Unit,
+    onSaved: () -> Unit,
+    onAddPlace: () -> Unit,
+    onReoptimize: (group: Boolean) -> Unit,
+    picked: SuggestionDto?,
+    onPickedConsumed: () -> Unit,
+    viewModel: ItineraryViewModel = viewModel(factory = AppViewModelProvider.Factory),
+) {
+    LaunchedEffect(tripId) { viewModel.start(tripId) }
+    LaunchedEffect(viewModel.saved) {
+        if (viewModel.saved) onSaved()
+    }
+    val itinerary = viewModel.itinerary
+    val trip = viewModel.trip
+    if (itinerary == null || trip == null) {
+        TripLoadScaffold(
+            title = stringResource(R.string.itinerary_edit),
+            loading = viewModel.loading,
+            error = viewModel.error?.let { tripErrorMessage(it) },
+            onRetry = viewModel::load,
+            onBack = onBack,
+        )
+        return
+    }
+    val current = itineraryDays(itinerary)
+    LaunchedEffect(itinerary) { viewModel.startEditing(current) }
+    // A place chosen on the picker screen arrives here once, when this screen shows again.
+    val pendingDetail = stringResource(R.string.itinerary_new_detail)
+    var notice by rememberSaveable { mutableStateOf<Int?>(null) }
+    LaunchedEffect(picked, viewModel.editorDays != null) {
+        if (picked != null && viewModel.editorDays != null) {
+            notice = if (viewModel.addPlace(picked.id, picked.name, pendingDetail)) null else R.string.itinerary_already_added
+            onPickedConsumed()
+        }
+    }
+    ItineraryEditorScreen(
+        days = viewModel.editorDays ?: current,
+        onDaysChange = viewModel::onEditorChange,
+        budget = itinerary.me.budget,
+        nights = itinerary.lodging?.nights ?: 0,
+        saving = viewModel.saving,
+        error = viewModel.saveError?.let { tripErrorMessage(it) } ?: notice,
+        onBack = onBack,
+        onSave = { days -> viewModel.design(days.toDayPlaces()) },
+        onAddPlace = { dayIndex ->
+            notice = null
+            viewModel.onAddPlaceTo(dayIndex)
+            onAddPlace()
+        },
+        onReoptimize = { onReoptimize(trip.isGroup) },
+    )
+}
+
+/** The places of each day in their order on screen; the room is not a place to visit. */
+internal fun List<ItineraryDay>.toDayPlaces(): List<DayPlacesDto> = map { day ->
+    DayPlacesDto(day.number, day.stops.filter { it.kind == StopKind.Place }.mapNotNull { it.placeId?.toIntOrNull() })
+}
+
 /**
  * "Tự thiết kế lộ trình": hold and drag a stop to reorder it, swipe it left to remove it.
- * The budget card updates as you edit and turns red when the trip goes over budget.
+ * The budget card updates as you edit and turns red when the trip goes over budget. Saving
+ * sends the new order to the backend, which works out the times and costs again.
  */
 @Composable
 fun ItineraryEditorScreen(
-    initialDays: List<ItineraryDay>,
+    days: List<ItineraryDay>,
+    onDaysChange: (List<ItineraryDay>) -> Unit,
+    budget: Long,
+    nights: Int,
     onBack: () -> Unit,
     onSave: (List<ItineraryDay>) -> Unit,
-    onAddPlace: () -> Unit,
+    onAddPlace: (dayIndex: Int) -> Unit,
     onReoptimize: () -> Unit,
+    saving: Boolean = false,
+    @StringRes error: Int? = null,
 ) {
-    var days by remember { mutableStateOf(initialDays) }
     var selected by rememberSaveable { mutableIntStateOf(0) }
     val dayIndex = selected.coerceIn(0, days.lastIndex)
     val day = days[dayIndex]
 
     fun setStops(stops: List<ItineraryStop>) {
-        days = days.toMutableList().also { it[dayIndex] = it[dayIndex].copy(stops = stops) }
+        onDaysChange(days.toMutableList().also { it[dayIndex] = it[dayIndex].copy(stops = stops) })
     }
 
     // Times belong to the slots of the day: a moved stop takes the time of its new slot.
     fun moveStop(from: Int, to: Int) {
         val stops = days[dayIndex].stops
+        // The room row stays first: places are not moved above it.
+        if (stops[to].kind == StopKind.Lodging) return
         val moved = stops.toMutableList().apply { add(to, removeAt(from)) }
         setStops(moved.mapIndexed { index, stop -> stop.copy(time = stops[index].time) })
     }
@@ -88,7 +160,7 @@ fun ItineraryEditorScreen(
     Scaffold(
         topBar = {
             TripFairTopBar(title = stringResource(R.string.itinerary_edit), onBack = onBack) {
-                TopBarTextAction(text = stringResource(R.string.action_save), onClick = { onSave(days) })
+                TopBarTextAction(text = stringResource(R.string.action_save), onClick = { if (!saving) onSave(days) })
             }
         },
         bottomBar = {
@@ -98,12 +170,14 @@ fun ItineraryEditorScreen(
                     .padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
+                error?.let { Text(text = stringResource(it), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error) }
                 OutlineButton(text = stringResource(R.string.editor_reoptimize), onClick = onReoptimize, trailingIcon = R.drawable.ic_arrow_right)
                 PrimaryButton(
                     text = stringResource(R.string.editor_save_itinerary),
                     onClick = { onSave(days) },
                     trailingIcon = R.drawable.ic_arrow_right,
                     height = 52.dp,
+                    enabled = !saving,
                 )
             }
         },
@@ -117,7 +191,7 @@ fun ItineraryEditorScreen(
         ) {
             DayChips(days = days, selected = dayIndex, onSelect = { selected = it })
             DayHeader(day = day)
-            TripBudgetCard(days = days, day = day, editing = true)
+            TripBudgetCard(days = days, day = day, editing = true, budget = budget, nights = nights)
             Text(
                 text = stringResource(R.string.editor_hint),
                 style = MaterialTheme.typography.labelSmall,
@@ -134,7 +208,7 @@ fun ItineraryEditorScreen(
                     onMove = ::moveStop,
                     onRemove = { id -> setStops(days[dayIndex].stops.filterNot { it.id == id }) },
                 )
-                AddPlaceButton(onClick = onAddPlace)
+                AddPlaceButton(onClick = { onAddPlace(dayIndex) })
             }
         }
     }
@@ -161,6 +235,11 @@ private fun EditableTimeline(
         stops.forEach { stop ->
             total += stop.cost
             val runningTotal = total
+            if (stop.kind == StopKind.Lodging) {
+                // The room is chosen on "Chọn chỗ ở": shown for the total, not dragged or removed.
+                TimelineRow(stop = stop, runningTotal = runningTotal)
+                return@forEach
+            }
             key(stop.id) {
                 val dismissState = rememberSwipeToDismissBoxState()
                 val isDragging = draggingId == stop.id
@@ -273,7 +352,10 @@ private fun AddPlaceButton(onClick: () -> Unit) {
 private fun ItineraryEditorScreenPreview() {
     TripFairTheme {
         ItineraryEditorScreen(
-            initialDays = SampleItinerary.editDraft(SampleItinerary.days),
+            days = SampleItinerary.editDraft(SampleItinerary.days),
+            onDaysChange = {},
+            budget = SampleItinerary.BUDGET,
+            nights = SampleItinerary.NIGHTS,
             onBack = {},
             onSave = {},
             onAddPlace = {},

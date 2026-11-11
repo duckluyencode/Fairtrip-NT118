@@ -39,7 +39,8 @@ import com.tripfair.app.ui.components.ListDivider
 import com.tripfair.app.ui.components.ListRow
 import com.tripfair.app.ui.components.TripFairSwitch
 import com.tripfair.app.ui.components.TripFairTopBar
-import com.tripfair.app.ui.sample.SampleData
+import com.tripfair.app.data.auth.Account
+import com.tripfair.app.ui.sample.SampleAccount
 import com.tripfair.app.ui.theme.ThemePreviews
 import com.tripfair.app.ui.theme.TripFairTheme
 
@@ -48,11 +49,13 @@ private val SettingsRowPadding = PaddingValues(vertical = 6.dp)
 
 @Composable
 fun SettingsScreen(
+    account: Account?,
     onBack: () -> Unit,
     onEditProfile: () -> Unit,
     onPrivacy: () -> Unit,
     onSupport: () -> Unit,
     onTerms: () -> Unit,
+    onDeleteAccount: () -> Unit,
     onLogout: () -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
@@ -94,10 +97,10 @@ fun SettingsScreen(
                 }
                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                     Text(
-                        text = SampleData.USER_NAME,
+                        text = account?.fullName.orEmpty(),
                         style = MaterialTheme.typography.titleSmall.copy(fontSize = 16.sp, fontWeight = FontWeight.SemiBold, lineHeight = 22.sp),
                     )
-                    Text(text = SampleData.USER_EMAIL, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+                    Text(text = account?.contact.orEmpty(), style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
                 }
                 Chevron()
             }
@@ -129,6 +132,14 @@ fun SettingsScreen(
                         icon = R.drawable.ic_shield_check,
                         title = stringResource(R.string.privacy_policy_row),
                         onClick = onPrivacy,
+                        contentPadding = SettingsRowPadding,
+                    )
+                    ListDivider()
+                    ListRow(
+                        icon = R.drawable.ic_shield_alert,
+                        title = stringResource(R.string.delete_account_title),
+                        subtitle = stringResource(R.string.delete_account_row_detail),
+                        onClick = onDeleteAccount,
                         contentPadding = SettingsRowPadding,
                     )
                 }
@@ -186,6 +197,15 @@ fun SettingsScreen(
 @Composable
 private fun SettingsScreenPreview() {
     TripFairTheme {
-        SettingsScreen(onBack = {}, onEditProfile = {}, onPrivacy = {}, onSupport = {}, onTerms = {}, onLogout = {})
+        SettingsScreen(
+            account = SampleAccount,
+            onBack = {},
+            onEditProfile = {},
+            onPrivacy = {},
+            onSupport = {},
+            onTerms = {},
+            onDeleteAccount = {},
+            onLogout = {},
+        )
     }
 }

@@ -6,6 +6,7 @@ import android.provider.ContactsContract
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -18,37 +19,65 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tripfair.app.R
+import com.tripfair.app.data.contacts.ContactInput
+import com.tripfair.app.data.contacts.EmergencyContact
+import com.tripfair.app.ui.AppViewModelProvider
+import com.tripfair.app.ui.components.ConfirmDialog
 import com.tripfair.app.ui.components.LabeledTextField
 import com.tripfair.app.ui.components.OutlineButton
 import com.tripfair.app.ui.components.PrimaryButton
 import com.tripfair.app.ui.components.TripFairChip
 import com.tripfair.app.ui.components.TripFairSwitch
 import com.tripfair.app.ui.components.TripFairTopBar
-import com.tripfair.app.ui.sample.EmergencyContact
 import com.tripfair.app.ui.sample.SampleSos
 import com.tripfair.app.ui.theme.ThemePreviews
 import com.tripfair.app.ui.theme.TripFairTheme
-import java.util.UUID
+
+@Composable
+fun ContactFormRoute(
+    contactId: Int?,
+    onBack: () -> Unit,
+    onSaved: () -> Unit,
+    viewModel: ContactFormViewModel = viewModel(factory = AppViewModelProvider.Factory),
+) {
+    LaunchedEffect(viewModel.done) {
+        if (viewModel.done) onSaved()
+    }
+    ContactFormScreen(
+        contact = remember(contactId) { viewModel.contact(contactId) },
+        onBack = onBack,
+        onSave = { viewModel.save(contactId, it) },
+        onDelete = contactId?.let { id -> { viewModel.delete(id) } },
+        saving = viewModel.saving,
+        phoneError = viewModel.phoneError,
+        error = viewModel.error,
+    )
+}
 
 /**
  * "Thêm liên hệ khẩn cấp" (or edit when [contact] is given). "Chọn từ danh bạ" opens the
@@ -58,14 +87,34 @@ import java.util.UUID
 fun ContactFormScreen(
     contact: EmergencyContact?,
     onBack: () -> Unit,
-    onSave: (EmergencyContact) -> Unit,
+    onSave: (ContactInput) -> Unit,
+    onDelete: (() -> Unit)? = null,
+    saving: Boolean = false,
+    @StringRes phoneError: Int? = null,
+    @StringRes error: Int? = null,
 ) {
     val colors = MaterialTheme.colorScheme
     val context = LocalContext.current
     var name by rememberSaveable { mutableStateOf(contact?.name.orEmpty()) }
-    var phone by rememberSaveable { mutableStateOf(contact?.phone.orEmpty()) }
+    var phone by rememberSaveable { mutableStateOf(contact?.displayPhone.orEmpty()) }
     var relation by rememberSaveable { mutableStateOf(contact?.relation ?: SampleSos.relations.first()) }
     var receivesSos by rememberSaveable { mutableStateOf(contact?.receivesSos ?: true) }
+    var confirmDelete by rememberSaveable { mutableStateOf(false) }
+
+    if (confirmDelete && contact != null && onDelete != null) {
+        ConfirmDialog(
+            title = stringResource(R.string.contacts_delete_title),
+            text = stringResource(R.string.contacts_delete_text, contact.name),
+            confirmLabel = stringResource(R.string.contacts_delete),
+            dismissLabel = stringResource(R.string.action_cancel),
+            onConfirm = {
+                confirmDelete = false
+                onDelete()
+            },
+            onDismiss = { confirmDelete = false },
+            confirmColor = colors.error,
+        )
+    }
 
     val pickContact = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         val uri = result.data?.data
@@ -96,6 +145,9 @@ fun ContactFormScreen(
                     .padding(horizontal = 20.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
+                error?.let {
+                    Text(text = stringResource(it), style = MaterialTheme.typography.bodySmall, color = colors.error)
+                }
                 OutlineButton(
                     text = stringResource(R.string.contact_form_pick),
                     onClick = {
@@ -105,19 +157,23 @@ fun ContactFormScreen(
                 PrimaryButton(
                     text = stringResource(R.string.contact_form_save),
                     onClick = {
-                        onSave(
-                            EmergencyContact(
-                                id = contact?.id ?: UUID.randomUUID().toString(),
-                                name = name.trim(),
-                                relation = relation,
-                                phone = phone.trim(),
-                                receivesSos = receivesSos,
-                            ),
-                        )
+                        onSave(ContactInput(name = name.trim(), relation = relation, phone = phone.trim(), receivesSos = receivesSos))
                     },
                     height = 52.dp,
-                    enabled = name.isNotBlank() && phone.isNotBlank(),
+                    enabled = !saving && name.isNotBlank() && phone.isNotBlank(),
                 )
+                if (contact != null && onDelete != null) {
+                    Text(
+                        text = stringResource(R.string.contacts_delete),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = colors.error,
+                        modifier = Modifier
+                            .align(Alignment.CenterHorizontally)
+                            .clip(MaterialTheme.shapes.extraSmall)
+                            .clickable(role = Role.Button, enabled = !saving) { confirmDelete = true }
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                    )
+                }
             }
         },
     ) { innerPadding ->
@@ -145,6 +201,7 @@ fun ContactFormScreen(
                 label = stringResource(R.string.contact_form_phone),
                 leadingIcon = R.drawable.ic_phone,
                 placeholder = stringResource(R.string.contact_form_phone_hint),
+                errorText = phoneError?.let { stringResource(it) },
                 keyboardType = KeyboardType.Phone,
             )
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {

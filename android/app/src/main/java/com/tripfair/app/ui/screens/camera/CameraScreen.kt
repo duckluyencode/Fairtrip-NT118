@@ -2,7 +2,6 @@ package com.tripfair.app.ui.screens.camera
 
 import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -30,7 +29,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -48,50 +46,110 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
+import android.content.ActivityNotFoundException
+import android.content.Context
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.StringRes
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalInspectionMode
+import androidx.core.content.FileProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tripfair.app.R
+import com.tripfair.app.ui.AppViewModelProvider
 import com.tripfair.app.ui.components.TopBarTextAction
 import com.tripfair.app.ui.components.TripFairTopBar
-import com.tripfair.app.ui.sample.SampleCamera
 import com.tripfair.app.ui.theme.ThemePreviews
 import com.tripfair.app.ui.theme.TripFairTheme
 import com.tripfair.app.ui.theme.extendedColors
+import java.io.File
 
 /** How long the sample analysis takes; the real app waits for Google Cloud Vision. */
-private const val ANALYSIS_MILLIS = 2400
+/** The progress ring fills slowly while waiting, and never claims to be done by itself. */
+private const val ANALYSIS_MILLIS = 8000
+
+/** Where the camera app saves the photo; shared through the FileProvider in the manifest. */
+private fun newPhotoUri(context: Context): Uri {
+    val file = File(context.cacheDir, "photos/capture.jpg").apply { parentFile?.mkdirs() }
+    return FileProvider.getUriForFile(context, "${context.packageName}.files", file)
+}
 
 /**
- * "Camera nhận diện địa điểm". Until CameraX is added the viewfinder shows a sample photo.
- * The shutter and "Thư viện" both start "Đang phân tích ảnh", then [onResult] reports whether
- * a landmark was found (the shutter sample is recognized, the library sample is not).
- * [hasCameraPermission] = false shows the permission card ("Từ chối quyền camera" in Figma).
+ * Takes the photo with the phone's own camera app, or picks one with the system photo
+ * picker; neither needs a permission. The photo is then sent for recognition.
+ */
+@Composable
+fun CameraRoute(
+    onBack: () -> Unit,
+    onHelp: () -> Unit,
+    onResult: (RecognizedPhoto) -> Unit,
+    viewModel: RecognitionViewModel = viewModel(factory = AppViewModelProvider.Factory),
+) {
+    val context = LocalContext.current
+    var photoUri by rememberSaveable { mutableStateOf<Uri?>(null) }
+    val takePicture = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { saved ->
+        val uri = photoUri
+        if (saved && uri != null) viewModel.analyze(context, uri)
+    }
+    val pickPhoto = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) viewModel.analyze(context, uri)
+    }
+    LaunchedEffect(viewModel.result) {
+        viewModel.result?.let {
+            onResult(it)
+            viewModel.onNavigated()
+        }
+    }
+    CameraScreen(
+        onBack = onBack,
+        onHelp = onHelp,
+        analyzing = viewModel.analyzing,
+        error = viewModel.error,
+        onCapture = {
+            val uri = newPhotoUri(context)
+            photoUri = uri
+            try {
+                takePicture.launch(uri)
+            } catch (_: ActivityNotFoundException) {
+                viewModel.onNoCamera()
+            }
+        },
+        onLibrary = { pickPhoto.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+        onCancel = viewModel::cancel,
+    )
+}
+
+/**
+ * "Camera nhận diện địa điểm": the shutter opens the phone's camera app and "Thư viện" the
+ * photo picker; while the photo is being recognized the progress ring shows.
  */
 @Composable
 fun CameraScreen(
     onBack: () -> Unit,
     onHelp: () -> Unit,
-    onResult: (recognized: Boolean) -> Unit,
-    hasCameraPermission: Boolean = true,
-    onRequestPermission: () -> Unit = {},
-    initiallyAnalyzing: Boolean = false,
+    analyzing: Boolean,
+    @StringRes error: Int?,
+    onCapture: () -> Unit,
+    onLibrary: () -> Unit,
+    onCancel: () -> Unit,
 ) {
     val camera = MaterialTheme.extendedColors
-    // null while aiming; true/false while analyzing a photo that will / will not be recognized.
-    var analyzing by rememberSaveable { mutableStateOf(if (initiallyAnalyzing) true else null) }
     val progress = remember { Animatable(0f) }
-    val currentOnResult by rememberUpdatedState(onResult)
+    val inspecting = LocalInspectionMode.current
 
     DarkStatusBar()
 
     LaunchedEffect(analyzing) {
-        val expected = analyzing ?: return@LaunchedEffect
-        if (initiallyAnalyzing) {
+        if (!analyzing) return@LaunchedEffect
+        if (inspecting) {
             progress.snapTo(0.65f)
             return@LaunchedEffect
         }
         progress.snapTo(0f)
-        progress.animateTo(1f, tween(ANALYSIS_MILLIS, easing = LinearEasing))
-        currentOnResult(expected)
-        analyzing = null
+        progress.animateTo(0.92f, tween(ANALYSIS_MILLIS, easing = LinearOutSlowInEasing))
     }
 
     Column(
@@ -107,19 +165,6 @@ fun CameraScreen(
                 .fillMaxWidth()
                 .weight(1f),
         ) {
-            if (hasCameraPermission) {
-                Image(
-                    painter = painterResource(R.drawable.sample_golden_bridge),
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize(),
-                )
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(camera.cameraBackground.copy(alpha = if (analyzing != null) 0.5f else 0.22f)),
-                )
-            }
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -128,20 +173,6 @@ fun CameraScreen(
                 verticalArrangement = Arrangement.spacedBy(20.dp),
             ) {
                 Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    // Flash control needs CameraX; it shows the default "off" state.
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .background(camera.cameraOverlay, CircleShape),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_zap_off),
-                            contentDescription = stringResource(R.string.cd_flash_off),
-                            tint = camera.onCamera,
-                            modifier = Modifier.size(19.dp),
-                        )
-                    }
                     Box(modifier = Modifier.weight(1f))
                     Row(
                         modifier = Modifier
@@ -156,23 +187,17 @@ fun CameraScreen(
                                 .background(camera.cameraAccent, CircleShape),
                         )
                         Text(
-                            text = stringResource(if (analyzing != null) R.string.camera_analyzing else R.string.camera_ready),
+                            text = stringResource(if (analyzing) R.string.camera_analyzing else R.string.camera_ready),
                             style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
                             color = camera.onCamera,
                         )
                     }
                 }
-                if (hasCameraPermission) {
-                    Viewfinder(analyzing = analyzing != null, modifier = Modifier.weight(1f))
-                } else {
-                    Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                        CameraPermissionCard(onRequestPermission = onRequestPermission)
-                    }
-                }
+                Viewfinder(analyzing = analyzing, modifier = Modifier.weight(1f))
                 Text(
-                    text = stringResource(R.string.camera_usage, SampleCamera.TRIP_NAME),
+                    text = stringResource(error ?: R.string.camera_usage_plain),
                     style = MaterialTheme.typography.bodySmall,
-                    color = camera.onCamera,
+                    color = if (error != null) camera.cameraAccent else camera.onCamera,
                     textAlign = TextAlign.Center,
                 )
             }
@@ -185,14 +210,10 @@ fun CameraScreen(
                 .padding(horizontal = 32.dp, vertical = 24.dp),
             contentAlignment = Alignment.Center,
         ) {
-            if (analyzing != null) {
-                AnalysisProgress(progress = progress.value, onCancel = { analyzing = null })
+            if (analyzing) {
+                AnalysisProgress(progress = progress.value, onCancel = onCancel)
             } else {
-                CaptureControls(
-                    canCapture = hasCameraPermission,
-                    onCapture = { analyzing = true },
-                    onLibrary = { analyzing = false },
-                )
+                CaptureControls(canCapture = true, onCapture = onCapture, onLibrary = onLibrary)
             }
         }
     }
@@ -289,18 +310,8 @@ private fun CaptureControls(canCapture: Boolean, onCapture: () -> Unit, onLibrar
                 )
             }
         }
-        // Switching cameras needs CameraX; as in Figma, the screen stays as it is.
-        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Box(
-                modifier = Modifier
-                    .size(46.dp)
-                    .background(camera.onCamera.copy(alpha = 0.12f), CircleShape),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(painter = painterResource(R.drawable.ic_refresh_cw), contentDescription = null, tint = camera.onCamera, modifier = Modifier.size(21.dp))
-            }
-            Text(text = stringResource(R.string.camera_switch), style = MaterialTheme.typography.labelSmall, color = camera.onCamera)
-        }
+        // The phone's camera app switches cameras itself; this keeps the shutter centred.
+        Box(modifier = Modifier.size(46.dp))
     }
 }
 
@@ -340,48 +351,11 @@ private fun AnalysisProgress(progress: Float, onCancel: () -> Unit) {
     }
 }
 
-/** Explains why the camera is needed, like the SOS location card. */
-@Composable
-private fun CameraPermissionCard(onRequestPermission: () -> Unit) {
-    val colors = MaterialTheme.colorScheme
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(colors.surfaceContainerLow, RoundedCornerShape(18.dp))
-            .padding(horizontal = 18.dp, vertical = 20.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Icon(painter = painterResource(R.drawable.ic_camera), contentDescription = null, tint = colors.error, modifier = Modifier.size(36.dp))
-        Text(
-            text = stringResource(R.string.camera_permission_title),
-            style = MaterialTheme.typography.titleSmall.copy(fontSize = 16.sp, lineHeight = 20.sp),
-            textAlign = TextAlign.Center,
-        )
-        Text(
-            text = stringResource(R.string.camera_permission_text),
-            style = MaterialTheme.typography.bodySmall,
-            color = colors.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
-        Text(
-            text = stringResource(R.string.camera_permission_action),
-            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
-            color = colors.onPrimary,
-            modifier = Modifier
-                .clip(RoundedCornerShape(12.dp))
-                .background(colors.primary)
-                .clickable(role = Role.Button, onClick = onRequestPermission)
-                .padding(horizontal = 18.dp, vertical = 10.dp),
-        )
-    }
-}
-
 @ThemePreviews
 @Composable
 private fun CameraScreenPreview() {
     TripFairTheme {
-        CameraScreen(onBack = {}, onHelp = {}, onResult = {})
+        CameraScreen(onBack = {}, onHelp = {}, analyzing = false, error = null, onCapture = {}, onLibrary = {}, onCancel = {})
     }
 }
 
@@ -389,14 +363,6 @@ private fun CameraScreenPreview() {
 @Composable
 private fun CameraAnalyzingPreview() {
     TripFairTheme {
-        CameraScreen(onBack = {}, onHelp = {}, onResult = {}, initiallyAnalyzing = true)
-    }
-}
-
-@ThemePreviews
-@Composable
-private fun CameraNoPermissionPreview() {
-    TripFairTheme {
-        CameraScreen(onBack = {}, onHelp = {}, onResult = {}, hasCameraPermission = false)
+        CameraScreen(onBack = {}, onHelp = {}, analyzing = true, error = null, onCapture = {}, onLibrary = {}, onCancel = {})
     }
 }

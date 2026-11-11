@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12 and newer: the saved session and the copy of the emergency contacts are
+     neither backed up nor copied to a new phone. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="file" path="datastore/session.preferences_pb" />
+        <exclude domain="file" path="datastore/emergency_contacts.preferences_pb" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="file" path="datastore/session.preferences_pb" />
+        <exclude domain="file" path="datastore/emergency_contacts.preferences_pb" />
+    </device-transfer>
+</data-extraction-rules>

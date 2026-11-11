@@ -42,8 +42,12 @@ import com.tripfair.app.ui.components.PlaceCard
 import com.tripfair.app.ui.components.SectionHeader
 import com.tripfair.app.ui.components.TripFairTopBar
 import com.tripfair.app.ui.sample.SampleData
-import com.tripfair.app.ui.sample.SamplePlace
-import com.tripfair.app.ui.sample.SamplePlaces
+import com.tripfair.app.data.places.PlaceSummaryDto
+import com.tripfair.app.data.trips.TripSummaryDto
+import com.tripfair.app.ui.screens.trip.title
+import com.tripfair.app.ui.screens.trip.tripDatesLine
+import com.tripfair.app.ui.screens.explore.categoryLabel
+import com.tripfair.app.ui.screens.explore.ratingText
 import com.tripfair.app.ui.sample.SampleTrip
 import com.tripfair.app.ui.theme.ThemePreviews
 import com.tripfair.app.ui.theme.TripFairTheme
@@ -51,12 +55,15 @@ import com.tripfair.app.ui.theme.extendedColors
 
 @Composable
 fun HomeScreen(
+    userName: String,
+    suggestions: List<PlaceSummaryDto>,
+    upcomingTrip: TripSummaryDto?,
     onSearch: () -> Unit,
     onSos: () -> Unit,
     onCamera: () -> Unit,
-    onTrip: () -> Unit,
+    onTrip: (TripSummaryDto) -> Unit,
     onSeeAllSuggestions: () -> Unit,
-    onPlace: (SamplePlace) -> Unit,
+    onPlace: (placeId: Int) -> Unit,
     onHistory: () -> Unit,
     onTabSelect: (MainTab) -> Unit,
 ) {
@@ -66,7 +73,7 @@ fun HomeScreen(
 
     Scaffold(
         topBar = {
-            TripFairTopBar(title = stringResource(R.string.home_greeting, SampleData.USER_NAME)) {
+            TripFairTopBar(title = stringResource(R.string.home_greeting, userName)) {
                 AvatarButton(onClick = { onTabSelect(MainTab.Profile) })
             }
         },
@@ -105,22 +112,26 @@ fun HomeScreen(
                     modifier = Modifier.weight(1f),
                 )
             }
-            UpcomingTripCard(onClick = onTrip)
-            SectionHeader(
-                title = stringResource(R.string.home_group_suggestions),
-                titleStyle = sectionStyle,
-                actionLabel = stringResource(R.string.home_see_all),
-                onAction = onSeeAllSuggestions,
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                SamplePlaces.groupSuggestions.forEach { place ->
-                    PlaceCard(
-                        name = place.name,
-                        detail = stringResource(R.string.place_card_detail, place.rating, place.categoryLabel),
-                        image = place.cardImage,
-                        onClick = { onPlace(place) },
-                        modifier = Modifier.weight(1f),
-                    )
+            upcomingTrip?.let { trip -> UpcomingTripCard(trip = trip, onClick = { onTrip(trip) }) }
+            // Shown only when the backend has places to suggest (around the user, or the catalog).
+            if (suggestions.isNotEmpty()) {
+                SectionHeader(
+                    title = stringResource(R.string.home_group_suggestions),
+                    titleStyle = sectionStyle,
+                    actionLabel = stringResource(R.string.home_see_all),
+                    onAction = onSeeAllSuggestions,
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    suggestions.take(2).forEach { place ->
+                        val category = stringResource(categoryLabel(place.category))
+                        PlaceCard(
+                            name = place.name,
+                            detail = place.rating?.let { stringResource(R.string.place_card_detail, ratingText(it), category) } ?: category,
+                            category = place.category,
+                            onClick = { onPlace(place.id) },
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
                 }
             }
             SectionHeader(
@@ -203,7 +214,7 @@ private fun QuickAction(
 }
 
 @Composable
-private fun UpcomingTripCard(onClick: () -> Unit) {
+private fun UpcomingTripCard(trip: TripSummaryDto, onClick: () -> Unit) {
     val onImage = Color.White
     Box(
         modifier = Modifier
@@ -212,17 +223,26 @@ private fun UpcomingTripCard(onClick: () -> Unit) {
             .clip(MaterialTheme.shapes.large)
             .clickable(role = Role.Button, onClick = onClick),
     ) {
-        Image(
-            painter = painterResource(R.drawable.sample_trip_da_nang),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize(),
-        )
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.extendedColors.imageScrim),
-        )
+        // The bundled photo is of Đà Nẵng; other cities get a plain teal card.
+        if (trip.city.contains("Đà Nẵng", ignoreCase = true)) {
+            Image(
+                painter = painterResource(R.drawable.sample_trip_da_nang),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.extendedColors.imageScrim),
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.primary),
+            )
+        }
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -230,13 +250,13 @@ private fun UpcomingTripCard(onClick: () -> Unit) {
             verticalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
-                text = stringResource(R.string.home_upcoming_trip, SampleTrip.MEMBER_COUNT),
+                text = stringResource(R.string.home_upcoming_trip, trip.memberCount),
                 style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
                 color = onImage,
             )
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(text = SampleTrip.NAME, style = MaterialTheme.typography.headlineMedium, color = onImage)
-                Text(text = SampleTrip.DATES, style = MaterialTheme.typography.bodyMedium, color = onImage)
+                Text(text = trip.title(), style = MaterialTheme.typography.headlineMedium, color = onImage)
+                Text(text = tripDatesLine(trip), style = MaterialTheme.typography.bodyMedium, color = onImage)
             }
         }
     }
@@ -247,6 +267,9 @@ private fun UpcomingTripCard(onClick: () -> Unit) {
 private fun HomeScreenPreview() {
     TripFairTheme {
         HomeScreen(
+            userName = SampleData.USER_NAME,
+            suggestions = emptyList(),
+            upcomingTrip = SampleTrip.summaries.first(),
             onSearch = {},
             onSos = {},
             onCamera = {},

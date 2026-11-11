@@ -14,37 +14,58 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tripfair.app.R
+import com.tripfair.app.ui.AppViewModelProvider
 import com.tripfair.app.ui.components.BrandMark
 import com.tripfair.app.ui.components.FillHeightScrollColumn
 import com.tripfair.app.ui.components.LabeledTextField
 import com.tripfair.app.ui.components.PrimaryButton
 import com.tripfair.app.ui.components.TextWithLink
 import com.tripfair.app.ui.components.TripFairCheckbox
-import com.tripfair.app.ui.sample.SampleData
 import com.tripfair.app.ui.theme.ThemePreviews
 import com.tripfair.app.ui.theme.TripFairTheme
 
+/** Connects [LoginScreen] to its [LoginViewModel]; [onLoggedIn] runs once the account is signed in. */
+@Composable
+fun LoginRoute(
+    onLoggedIn: () -> Unit,
+    onRegister: () -> Unit,
+    onForgotPassword: () -> Unit,
+    viewModel: LoginViewModel = viewModel(factory = AppViewModelProvider.Factory),
+) {
+    val state = viewModel.state
+    LaunchedEffect(state.loggedIn) {
+        if (state.loggedIn) onLoggedIn()
+    }
+    LoginScreen(
+        state = state,
+        onContactChange = viewModel::onContactChange,
+        onPasswordChange = viewModel::onPasswordChange,
+        onRememberMeChange = viewModel::onRememberMeChange,
+        onLogin = viewModel::login,
+        onRegister = onRegister,
+        onForgotPassword = onForgotPassword,
+    )
+}
+
 @Composable
 fun LoginScreen(
+    state: LoginUiState,
+    onContactChange: (String) -> Unit,
+    onPasswordChange: (String) -> Unit,
+    onRememberMeChange: (Boolean) -> Unit,
     onLogin: () -> Unit,
     onRegister: () -> Unit,
     onForgotPassword: () -> Unit,
 ) {
-    var contact by rememberSaveable { mutableStateOf(SampleData.USER_EMAIL) }
-    var password by rememberSaveable { mutableStateOf(SampleData.PASSWORD) }
-    var rememberMe by rememberSaveable { mutableStateOf(true) }
-
     Scaffold { innerPadding ->
         FillHeightScrollColumn(
             modifier = Modifier
@@ -65,17 +86,21 @@ fun LoginScreen(
             }
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 LabeledTextField(
-                    value = contact,
-                    onValueChange = { contact = it },
+                    value = state.contact,
+                    onValueChange = onContactChange,
                     label = stringResource(R.string.field_contact_label),
                     leadingIcon = R.drawable.ic_mail,
+                    placeholder = stringResource(R.string.placeholder_contact),
+                    errorText = state.contactError?.let { stringResource(it) },
                     keyboardType = KeyboardType.Email,
                 )
                 LabeledTextField(
-                    value = password,
-                    onValueChange = { password = it },
+                    value = state.password,
+                    onValueChange = onPasswordChange,
                     label = stringResource(R.string.field_password_label),
                     leadingIcon = R.drawable.ic_lock_keyhole,
+                    placeholder = stringResource(R.string.placeholder_password),
+                    errorText = state.passwordError?.let { stringResource(it) },
                     isPassword = true,
                 )
                 Row(
@@ -85,10 +110,10 @@ fun LoginScreen(
                     Row(
                         modifier = Modifier
                             .weight(1f)
-                            .toggleable(value = rememberMe, role = Role.Checkbox, onValueChange = { rememberMe = it }),
+                            .toggleable(value = state.rememberMe, role = Role.Checkbox, onValueChange = onRememberMeChange),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        TripFairCheckbox(checked = rememberMe)
+                        TripFairCheckbox(checked = state.rememberMe)
                         Text(
                             text = stringResource(R.string.login_remember_me),
                             style = MaterialTheme.typography.bodyMedium,
@@ -111,6 +136,7 @@ fun LoginScreen(
                     text = stringResource(R.string.action_login),
                     onClick = onLogin,
                     trailingIcon = R.drawable.ic_arrow_right,
+                    enabled = !state.loading,
                 )
                 TextWithLink(
                     prefix = stringResource(R.string.login_no_account),
@@ -131,6 +157,14 @@ fun LoginScreen(
 @Composable
 private fun LoginScreenPreview() {
     TripFairTheme {
-        LoginScreen(onLogin = {}, onRegister = {}, onForgotPassword = {})
+        LoginScreen(
+            state = LoginUiState(),
+            onContactChange = {},
+            onPasswordChange = {},
+            onRememberMeChange = {},
+            onLogin = {},
+            onRegister = {},
+            onForgotPassword = {},
+        )
     }
 }

@@ -1,34 +1,30 @@
 package com.tripfair.app.ui.screens.profile
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -37,38 +33,60 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tripfair.app.R
+import com.tripfair.app.data.places.PlaceSummaryDto
+import com.tripfair.app.ui.AppViewModelProvider
+import com.tripfair.app.ui.components.ErrorState
+import com.tripfair.app.ui.components.LoadingState
 import com.tripfair.app.ui.components.MainTab
 import com.tripfair.app.ui.components.MainTabBar
+import com.tripfair.app.ui.components.PlacePlaceholder
 import com.tripfair.app.ui.components.PrimaryButton
 import com.tripfair.app.ui.components.TripFairChip
 import com.tripfair.app.ui.components.TripFairTopBar
-import com.tripfair.app.ui.sample.PlaceCategory
-import com.tripfair.app.ui.sample.SamplePlace
-import com.tripfair.app.ui.sample.SamplePlaces
+import com.tripfair.app.ui.screens.explore.categoryLabel
+import com.tripfair.app.ui.screens.explore.ratingText
 import com.tripfair.app.ui.theme.ThemePreviews
 import com.tripfair.app.ui.theme.TripFairTheme
 
 private val Filters = listOf(
     null to R.string.filter_all,
-    PlaceCategory.Food to R.string.filter_food,
-    PlaceCategory.Fun to R.string.filter_fun,
-    PlaceCategory.Scenic to R.string.filter_scenic,
+    "FOOD" to R.string.filter_food,
+    "FUN" to R.string.filter_fun,
+    "SCENIC" to R.string.filter_scenic,
 )
 
 @Composable
-fun FavoritesScreen(
-    onPlace: (SamplePlace) -> Unit,
+fun FavoritesRoute(
+    onPlace: (placeId: Int) -> Unit,
     onExplore: () -> Unit,
     onTabSelect: (MainTab) -> Unit,
-    initialFavorites: List<SamplePlace> = SamplePlaces.favorites,
+    viewModel: FavoritesViewModel = viewModel(factory = AppViewModelProvider.Factory),
+) {
+    FavoritesScreen(
+        state = viewModel.state,
+        onCategoryChange = viewModel::onCategoryChange,
+        onUnsave = viewModel::unsave,
+        onRetry = viewModel::load,
+        onPlace = onPlace,
+        onExplore = onExplore,
+        onTabSelect = onTabSelect,
+    )
+}
+
+@Composable
+fun FavoritesScreen(
+    state: FavoritesUiState,
+    onCategoryChange: (String?) -> Unit,
+    onUnsave: (Int) -> Unit,
+    onRetry: () -> Unit,
+    onPlace: (Int) -> Unit,
+    onExplore: () -> Unit,
+    onTabSelect: (MainTab) -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme
-    var filter by rememberSaveable { mutableStateOf<PlaceCategory?>(null) }
-    // Unsaving only changes this screen (Figma: "trái tim → bỏ lưu tại chỗ").
-    var removedIds by rememberSaveable { mutableStateOf(setOf<String>()) }
-    val saved = initialFavorites.filter { it.id !in removedIds }
-    val shown = saved.filter { filter == null || filter in it.categories }
+    val shown = state.shown
 
     Scaffold(
         topBar = {
@@ -78,46 +96,62 @@ fun FavoritesScreen(
         },
         bottomBar = { MainTabBar(selected = MainTab.Favorites, onSelect = onTabSelect) },
     ) { innerPadding ->
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .padding(innerPadding)
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(start = 18.dp, end = 18.dp, top = 8.dp, bottom = 18.dp),
+                .fillMaxSize(),
+            contentPadding = PaddingValues(start = 18.dp, end = 18.dp, top = 8.dp, bottom = 18.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Text(text = stringResource(R.string.favorites_intro), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-            if (saved.isEmpty()) {
-                EmptyFavorites(onExplore = onExplore)
-                return@Column
+            item {
+                Text(text = stringResource(R.string.favorites_intro), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
             }
-            Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Filters.forEach { (category, label) ->
-                    TripFairChip(text = stringResource(label), selected = filter == category, onClick = { filter = category })
+            when {
+                state.loading -> item { LoadingState() }
+                state.error != null -> item { ErrorState(message = stringResource(state.error), onRetry = onRetry) }
+                state.items.isEmpty() -> item { EmptyFavorites(onExplore = onExplore) }
+                else -> {
+                    item {
+                        Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Filters.forEach { (category, label) ->
+                                TripFairChip(
+                                    text = stringResource(label),
+                                    selected = state.category == category,
+                                    onClick = { onCategoryChange(category) },
+                                )
+                            }
+                        }
+                    }
+                    item {
+                        Text(
+                            text = pluralStringResource(R.plurals.favorites_count, shown.size, shown.size),
+                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                            color = colors.onSurfaceVariant,
+                        )
+                    }
+                    items(shown, key = { it.id }) { place ->
+                        SavedPlaceCard(
+                            place = place,
+                            onClick = { onPlace(place.id) },
+                            onUnsave = { onUnsave(place.id) },
+                            modifier = Modifier.animateItem(),
+                        )
+                    }
+                    item {
+                        Text(text = stringResource(R.string.favorites_hint), style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
+                    }
                 }
             }
-            Text(
-                text = pluralStringResource(R.plurals.favorites_count, shown.size, shown.size),
-                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
-                color = colors.onSurfaceVariant,
-            )
-            shown.forEach { place ->
-                SavedPlaceCard(
-                    place = place,
-                    onClick = { onPlace(place) },
-                    onUnsave = { removedIds = removedIds + place.id },
-                )
-            }
-            Text(text = stringResource(R.string.favorites_hint), style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
         }
     }
 }
 
 @Composable
-private fun SavedPlaceCard(place: SamplePlace, onClick: () -> Unit, onUnsave: () -> Unit) {
+private fun SavedPlaceCard(place: PlaceSummaryDto, onClick: () -> Unit, onUnsave: () -> Unit, modifier: Modifier = Modifier) {
     val colors = MaterialTheme.colorScheme
+    val category = stringResource(categoryLabel(place.category))
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clip(MaterialTheme.shapes.small)
             .background(colors.surfaceContainerLow)
@@ -126,19 +160,17 @@ private fun SavedPlaceCard(place: SamplePlace, onClick: () -> Unit, onUnsave: ()
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Image(
-            painter = painterResource(place.thumbImage),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
+        PlacePlaceholder(
+            category = place.category,
             modifier = Modifier
                 .size(width = 86.dp, height = 92.dp)
                 .clip(MaterialTheme.shapes.extraSmall),
         )
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
             Text(text = place.name, style = MaterialTheme.typography.titleSmall)
-            Text(text = place.area, style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
+            place.area?.let { Text(text = it, style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant) }
             Text(
-                text = stringResource(R.string.place_card_detail, place.rating, place.categoryLabel),
+                text = place.rating?.let { stringResource(R.string.place_card_detail, ratingText(it), category) } ?: category,
                 style = MaterialTheme.typography.labelSmall,
                 color = colors.primary,
             )
@@ -193,11 +225,24 @@ private fun EmptyFavorites(onExplore: () -> Unit) {
     }
 }
 
+private val PreviewFavorites = listOf(
+    PlaceSummaryDto(1, "GOOGLE", "Cầu Rồng", "Nguyễn Văn Linh, Đà Nẵng", category = "SCENIC", categories = listOf("SCENIC"), rating = 4.7),
+    PlaceSummaryDto(2, "GOOGLE", "Mì Quảng Bà Mua", "Hải Châu, Đà Nẵng", category = "FOOD", categories = listOf("FOOD"), rating = 4.4),
+)
+
 @ThemePreviews
 @Composable
 private fun FavoritesScreenPreview() {
     TripFairTheme {
-        FavoritesScreen(onPlace = {}, onExplore = {}, onTabSelect = {})
+        FavoritesScreen(
+            state = FavoritesUiState(items = PreviewFavorites, loading = false),
+            onCategoryChange = {},
+            onUnsave = {},
+            onRetry = {},
+            onPlace = {},
+            onExplore = {},
+            onTabSelect = {},
+        )
     }
 }
 
@@ -205,6 +250,14 @@ private fun FavoritesScreenPreview() {
 @Composable
 private fun FavoritesEmptyPreview() {
     TripFairTheme {
-        FavoritesScreen(onPlace = {}, onExplore = {}, onTabSelect = {}, initialFavorites = emptyList())
+        FavoritesScreen(
+            state = FavoritesUiState(loading = false),
+            onCategoryChange = {},
+            onUnsave = {},
+            onRetry = {},
+            onPlace = {},
+            onExplore = {},
+            onTabSelect = {},
+        )
     }
 }

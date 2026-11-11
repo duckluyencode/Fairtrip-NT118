@@ -21,7 +21,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,29 +36,57 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tripfair.app.R
+import com.tripfair.app.data.contacts.EmergencyContact
+import com.tripfair.app.ui.AppViewModelProvider
 import com.tripfair.app.ui.components.OutlineButton
 import com.tripfair.app.ui.components.TopBarTextAction
 import com.tripfair.app.ui.components.TripFairCheckbox
 import com.tripfair.app.ui.components.TripFairTopBar
-import com.tripfair.app.ui.sample.EmergencyContact
 import com.tripfair.app.ui.sample.SampleSos
 import com.tripfair.app.ui.theme.ThemePreviews
 import com.tripfair.app.ui.theme.TripFairTheme
 
+@Composable
+fun EmergencyContactsRoute(
+    onBack: () -> Unit,
+    onSaved: () -> Unit,
+    onAdd: () -> Unit,
+    onEdit: (id: Int) -> Unit,
+    viewModel: EmergencyContactsViewModel = viewModel(factory = AppViewModelProvider.Factory),
+) {
+    LaunchedEffect(viewModel.done) {
+        if (viewModel.done) onSaved()
+    }
+    EmergencyContactsScreen(
+        contacts = viewModel.contacts,
+        error = viewModel.error,
+        onToggle = viewModel::toggle,
+        onSelectAll = viewModel::selectAll,
+        onBack = onBack,
+        onSave = viewModel::save,
+        onAdd = onAdd,
+        onEdit = onEdit,
+    )
+}
+
 /**
  * "Liên hệ khẩn cấp": the people who can receive the SOS text. Ticking a card decides who
- * receives it; the pencil opens the contact form.
+ * receives it; the pencil opens the contact form. [tripNote] says who the user travels with,
+ * hidden when there is no trip under way.
  */
 @Composable
 fun EmergencyContactsScreen(
     contacts: List<EmergencyContact>,
-    onToggle: (id: String) -> Unit,
+    onToggle: (id: Int) -> Unit,
     onSelectAll: () -> Unit,
     onBack: () -> Unit,
     onSave: () -> Unit,
     onAdd: () -> Unit,
-    onEdit: (id: String) -> Unit,
+    onEdit: (id: Int) -> Unit,
+    @StringRes error: Int? = null,
+    tripNote: String? = null,
 ) {
     val colors = MaterialTheme.colorScheme
     val receivers = contacts.filter { it.receivesSos }
@@ -103,6 +133,9 @@ fun EmergencyContactsScreen(
                     )
                 }
             }
+            error?.let {
+                Text(text = stringResource(it), style = MaterialTheme.typography.bodySmall, color = colors.error)
+            }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(text = stringResource(R.string.contacts_section), style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
                 Text(
@@ -118,16 +151,18 @@ fun EmergencyContactsScreen(
             }
             OutlineButton(text = stringResource(R.string.contacts_add), onClick = onAdd, leadingIcon = R.drawable.ic_user_plus, subtle = true)
             ReceiversCard(receivers = receivers, onSelectAll = onSelectAll)
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(colors.tertiaryContainer, MaterialTheme.shapes.extraSmall)
-                    .padding(12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(9.dp),
-            ) {
-                Icon(painter = painterResource(R.drawable.ic_users), contentDescription = null, tint = colors.tertiary, modifier = Modifier.size(17.dp))
-                Text(text = SampleSos.TRIP_NOTE, style = MaterialTheme.typography.labelSmall)
+            if (tripNote != null) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(colors.tertiaryContainer, MaterialTheme.shapes.extraSmall)
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(9.dp),
+                ) {
+                    Icon(painter = painterResource(R.drawable.ic_users), contentDescription = null, tint = colors.tertiary, modifier = Modifier.size(17.dp))
+                    Text(text = tripNote, style = MaterialTheme.typography.labelSmall)
+                }
             }
         }
     }
@@ -156,8 +191,10 @@ private fun ContactCard(contact: EmergencyContact, index: Int, onToggle: () -> U
         ContactAvatar(contact = contact, index = index, size = 44)
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Text(text = contact.name, style = MaterialTheme.typography.titleSmall)
-            Text(text = contact.relation, style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
-            Text(text = contact.phone, style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold))
+            contact.relation?.let {
+                Text(text = it, style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
+            }
+            Text(text = contact.displayPhone, style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold))
         }
         val editLabel = stringResource(R.string.cd_edit_contact, contact.name)
         Box(
@@ -259,6 +296,7 @@ private fun EmergencyContactsScreenPreview() {
             onSave = {},
             onAdd = {},
             onEdit = {},
+            tripNote = SampleSos.TRIP_NOTE,
         )
     }
 }

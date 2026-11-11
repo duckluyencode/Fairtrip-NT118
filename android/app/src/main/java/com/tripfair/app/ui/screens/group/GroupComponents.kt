@@ -24,7 +24,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tripfair.app.R
-import com.tripfair.app.ui.sample.SampleGroup
 import com.tripfair.app.ui.theme.extendedColors
 
 /**
@@ -114,7 +113,7 @@ internal fun IconTile(@DrawableRes icon: Int, size: Dp = 40.dp, iconSize: Dp = 2
 
 /** White card naming the group and its trip ("Thông tin nhóm" in Figma). */
 @Composable
-internal fun GroupInfoCard(modifier: Modifier = Modifier) {
+internal fun GroupInfoCard(name: String, detail: String, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -125,9 +124,9 @@ internal fun GroupInfoCard(modifier: Modifier = Modifier) {
     ) {
         IconTile(icon = R.drawable.ic_users)
         Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-            Text(text = SampleGroup.NAME, style = MaterialTheme.typography.titleSmall.copy(fontSize = 15.sp))
+            Text(text = name, style = MaterialTheme.typography.titleSmall.copy(fontSize = 15.sp))
             Text(
-                text = SampleGroup.SHORT_DETAIL,
+                text = detail,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

@@ -70,10 +70,10 @@ Các bước AN4–AN6 là đề xuất, chỉnh lại khi tới.
 | --- | --- | --- | --- | --- |
 | AN1 Khung app | Compose, theme sáng/tối theo Figma, font Inter | ✅ | #6 | 2026-11-04 |
 | AN2 Màn hình theo Figma | Navigation 3, mọi màn với dữ liệu mẫu | ✅ | #6 | 2026-11-04 |
-| AN3 Logic form tài khoản | ViewModel + repository mẫu, kiểm tra input, đếm ngược gửi lại mã | 🔄 chờ review | #7 | |
-| AN4 Logic các màn còn lại | ViewModel cho tìm kiếm, nhóm, bình chọn, lộ trình với dữ liệu mẫu | ⏳ | | |
-| AN5 Nối backend | Retrofit thay repository mẫu: tài khoản, tìm kiếm, lịch sử, yêu thích trước; lộ trình, nhóm sau khi backend xong | ⏳ | | |
-| AN6 Tính năng thiết bị | Google Maps SDK, vị trí cho SOS, camera thật, lưu lộ trình offline | ⛔ [Camera], [Offline] | | |
+| AN3 Logic form tài khoản | ViewModel + repository mẫu, kiểm tra input, đếm ngược gửi lại mã | ✅ | #7, #13 | 2026-11-11 |
+| AN4 Logic các màn còn lại | ViewModel cho tìm kiếm, nhóm, bình chọn, lộ trình | ➡️ gộp vào AN5: ViewModel viết thẳng trên dữ liệu backend, không qua bản mẫu | | |
+| AN5 Nối backend | Retrofit thay repository mẫu: tài khoản, tìm kiếm, lịch sử, yêu thích trước; lộ trình, nhóm sau khi backend xong | ✅ code xong mọi mảng (tài khoản, địa điểm, liên hệ khẩn cấp, chuyến đi, chỗ ở, lộ trình kể cả thêm điểm khi tự thiết kế, nhóm, bình chọn, xóa/rời chuyến), 78 unit test đạt, lint không lỗi, đã chạy thử trên máy ảo Android 17 với backend trên máy. Còn lại: backend của chuyến đi nằm ở nhánh `feat/backend-readiness`, chưa merge; đổi email/số điện thoại bằng OTP (cần đổi schema); ảnh địa điểm (cần thư viện tải ảnh) | #13 | 2026-11-11 |
+| AN6 Tính năng thiết bị | Google Maps SDK, vị trí cho SOS, camera thật, lưu lộ trình offline | 🔄 bản đồ Google ở kết quả tìm kiếm, chi tiết địa điểm, lộ trình và SOS; tìm kiếm theo vị trí của người dùng. SOS gửi vị trí thật qua ứng dụng tin nhắn; nhận diện ảnh chụp bằng camera của máy. Đã kiểm tra với khóa Google thật trên máy ảo: tìm kiếm và gợi ý toàn quốc, bản đồ, khách sạn, lập lộ trình cho thành phố ngoài danh mục mẫu. Còn lại: thử nhận diện với ảnh địa danh thật (Cloud Vision đã trả lời nhưng chưa có ca nhận ra); khung ngắm trong app ⛔ [Camera]; lưu lộ trình offline ⛔ [Offline] | #13 | |
 
 ## Backend: giai đoạn A (chạy trên máy)
 
@@ -139,3 +139,10 @@ Nội dung đầy đủ ở mục "Câu hỏi mở" của [CLAUDE.md](../CLAUDE.
 - **2026-11-07:** Xong A11: lời giải tối ưu bằng vét cạn và chương trình đánh giá (`npm run bench:planner`). Đánh giá cho thấy Local search và Fairness ban đầu không cải thiện gì so với Greedy, nên thêm đổi điểm (1-swap) và đổi phần tham gia; bản đầy đủ đạt 97–99% tối ưu trong dưới 2 ms ([algorithm.md](algorithm.md)).
 - **2026-11-07:** A12 (chuẩn bị đưa vào sử dụng): xóa tài khoản, quản lý nhóm, quán ăn đúng giờ ăn, thời gian ghé theo loại điểm, giờ mở cửa theo giờ địa phương, chọn số người mỗi phòng, giới hạn route tốn phí Google, `npm audit fix` (0 lỗ hổng), bản nháp chính sách quyền riêng tư.
 - **2026-11-07:** Chuyển sang tài khoản AWS mới. Trên tài khoản cũ đã xóa toàn bộ tài nguyên TripFair (EC2, Elastic IP, RDS và sao lưu, ECR, SSM, IAM role, security group, subnet), không còn phí; chi phí từ đầu tháng của TripFair khoảng 0,8 USD, đã được tín dụng trừ. Cách gỡ ghi ở [deploy.md](deploy.md) mục 13.
+- **2026-11-08:** Bắt đầu AN5 trên nhánh `feat/android-backend`, xây chồng lên PR #7: lớp mạng Retrofit/OkHttp, đọc lỗi theo `code` của backend, địa chỉ backend cấu hình trong `local.properties`.
+- **2026-11-10:** AN5: app Android gọi backend cho mọi mảng. Phiên đăng nhập lưu mã hóa và tự làm mới token; liên hệ khẩn cấp có bản sao trên máy để SOS dùng khi mất mạng; chuyến đi một mình và nhóm đi trọn luồng tạo → chỗ ở → lập lộ trình → xem và sửa lộ trình; nhóm có mã mời, ngân sách riêng tư và bình chọn. Sơ đồ ngày vẽ theo tọa độ điểm, chưa phải bản đồ thật (Google Maps SDK thuộc AN6).
+- **2026-11-10:** Chạy thử app trên máy ảo Android 17 với backend trên máy: đăng nhập, tìm kiếm, tạo chuyến và lập lộ trình chạy trọn luồng. Sửa hai lỗi lộ ra khi chạy thật (app không gọi được `10.0.2.2` trên Android 17; hộp chọn ngày hiện tiếng Anh). Bắt đầu AN6: thêm Google Maps SDK và vị trí.
+- **2026-11-10:** AN6: SOS đọc vị trí thật và mở ứng dụng tin nhắn với tin soạn sẵn (Android 17 không cho app gửi SMS trực tiếp); nhận diện ảnh qua camera của máy; thêm địa điểm khi tự thiết kế lộ trình; xóa liên hệ, rời nhóm, xóa chuyến đi.
+- **2026-11-11:** Có khóa Google (server và Android): app tìm được địa điểm thật trên cả nước, bản đồ hiện đường phố, chuyến Hà Nội lập được lộ trình với khách sạn và điểm tham quan từ Google.
+- **2026-11-11:** Thêm CI cho Android: unit test, lint và build debug cho mọi PR chạm `android/`.
+- **2026-11-11:** Merge vào main: backend (#14 Docker và deploy, #15 chuyến đi và lộ trình, #16 chuẩn bị đưa vào sử dụng) và app Android nối backend (#13, gồm cả #7).

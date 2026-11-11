@@ -9,33 +9,57 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tripfair.app.R
+import com.tripfair.app.ui.AppViewModelProvider
 import com.tripfair.app.ui.components.FillHeightScrollColumn
 import com.tripfair.app.ui.components.InfoNote
 import com.tripfair.app.ui.components.LabeledTextField
 import com.tripfair.app.ui.components.PrimaryButton
 import com.tripfair.app.ui.components.TextWithLink
-import com.tripfair.app.ui.sample.SampleData
 import com.tripfair.app.ui.theme.ThemePreviews
 import com.tripfair.app.ui.theme.TripFairTheme
 
+/** Connects [ForgotPasswordScreen] to its [ForgotPasswordViewModel]; [onCodeSent] opens the code screen. */
+@Composable
+fun ForgotPasswordRoute(
+    onBack: () -> Unit,
+    onCodeSent: () -> Unit,
+    onBackToLogin: () -> Unit,
+    onSupport: () -> Unit,
+    viewModel: ForgotPasswordViewModel = viewModel(factory = AppViewModelProvider.Factory),
+) {
+    val state = viewModel.state
+    LaunchedEffect(state.codeSent) {
+        if (state.codeSent) {
+            viewModel.onCodeSentHandled()
+            onCodeSent()
+        }
+    }
+    ForgotPasswordScreen(
+        state = state,
+        onContactChange = viewModel::onContactChange,
+        onBack = onBack,
+        onSendCode = viewModel::sendCode,
+        onBackToLogin = onBackToLogin,
+        onSupport = onSupport,
+    )
+}
+
 @Composable
 fun ForgotPasswordScreen(
+    state: ForgotPasswordUiState,
+    onContactChange: (String) -> Unit,
     onBack: () -> Unit,
     onSendCode: () -> Unit,
     onBackToLogin: () -> Unit,
     onSupport: () -> Unit,
 ) {
-    var contact by rememberSaveable { mutableStateOf(SampleData.USER_EMAIL) }
-
     Scaffold(topBar = { AuthTopBar(title = stringResource(R.string.forgot_top_title), onBack = onBack) }) { innerPadding ->
         FillHeightScrollColumn(
             modifier = Modifier
@@ -52,11 +76,13 @@ fun ForgotPasswordScreen(
                 )
                 Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     LabeledTextField(
-                        value = contact,
-                        onValueChange = { contact = it },
+                        value = state.contact,
+                        onValueChange = onContactChange,
                         label = stringResource(R.string.forgot_contact_label),
                         leadingIcon = R.drawable.ic_mail,
+                        placeholder = stringResource(R.string.placeholder_contact),
                         helperText = stringResource(R.string.forgot_contact_helper),
+                        errorText = state.contactError?.let { stringResource(it) },
                         keyboardType = KeyboardType.Email,
                     )
                     InfoNote(icon = R.drawable.ic_clock, text = stringResource(R.string.forgot_code_validity_note))
@@ -70,6 +96,7 @@ fun ForgotPasswordScreen(
                     text = stringResource(R.string.forgot_submit),
                     onClick = onSendCode,
                     trailingIcon = R.drawable.ic_send,
+                    enabled = !state.loading,
                 )
                 TextWithLink(
                     prefix = stringResource(R.string.forgot_remembered),
@@ -87,6 +114,13 @@ fun ForgotPasswordScreen(
 @Composable
 private fun ForgotPasswordScreenPreview() {
     TripFairTheme {
-        ForgotPasswordScreen(onBack = {}, onSendCode = {}, onBackToLogin = {}, onSupport = {})
+        ForgotPasswordScreen(
+            state = ForgotPasswordUiState(),
+            onContactChange = {},
+            onBack = {},
+            onSendCode = {},
+            onBackToLogin = {},
+            onSupport = {},
+        )
     }
 }
