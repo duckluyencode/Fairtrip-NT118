@@ -4,22 +4,37 @@ import { AppError } from '../../common/errors/app-error.js';
 import { ErrorCode } from '../../common/errors/error-code.js';
 import {
   GooglePlacesClient,
+  type AutocompleteSuggestion,
   type DayHours,
   type GooglePlace,
+  type TextSearchRequest,
+  type TextSearchResult,
 } from './google-places.client.js';
 
 const BASE_URL = 'https://places.googleapis.com/v1';
 const TIMEOUT_MS = 5000;
 
 // Field masks decide the billed SKU, so ask only for what the screens show.
+const LIST_FIELDS = [
+  'id',
+  'displayName',
+  'formattedAddress',
+  'location',
+  'types',
+  'rating',
+  'userRatingCount',
+];
 const SEARCH_FIELDS = [
-  'places.id',
-  'places.displayName',
-  'places.formattedAddress',
-  'places.location',
-  'places.types',
-  'places.rating',
-  'places.userRatingCount',
+  ...LIST_FIELDS.map((f) => `places.${f}`),
+  'nextPageToken',
+].join(',');
+// Trip planning needs prices and opening hours for every candidate: reading them in the
+// search costs one call instead of one detail call per place.
+const PLANNING_FIELDS = [
+  ...[...LIST_FIELDS, 'priceLevel', 'priceRange', 'regularOpeningHours'].map(
+    (f) => `places.${f}`,
+  ),
+  'nextPageToken',
 ].join(',');
 
 const DETAIL_FIELDS = [
@@ -33,6 +48,7 @@ const DETAIL_FIELDS = [
   'priceLevel',
   'priceRange',
   'regularOpeningHours',
+  'utcOffsetMinutes',
   'editorialSummary',
   'googleMapsUri',
 ].join(',');
@@ -63,19 +79,27 @@ interface ApiPlace {
   };
   editorialSummary?: { text?: string };
   googleMapsUri?: string;
+  /** The place's offset from UTC now, e.g. 420 in Vietnam. */
+  utcOffsetMinutes?: number;
 }
 
-/** Vietnam is UTC+7 all year. */
-function vietnamWeekday(now: Date): number {
-  return new Date(now.getTime() + 7 * 60 * 60 * 1000).getUTCDay();
+/** Vietnam (UTC+7, no daylight saving time), used when Google gives no offset. */
+const VIETNAM_OFFSET_MINUTES = 7 * 60;
+
+/** The weekday where the place is (0 = Sunday), so "open today" uses its local date. */
+function localWeekday(now: Date, offsetMinutes: number): number {
+  return new Date(now.getTime() + offsetMinutes * 60 * 1000).getUTCDay();
 }
 
 const minutes = (point: OpeningPoint) =>
   (point.hour ?? 0) * 60 + (point.minute ?? 0);
 
-export function todayHours(
-  periods: { open?: OpeningPoint; close?: OpeningPoint }[] | undefined,
-  now = new Date(),
+type Periods = { open?: OpeningPoint; close?: OpeningPoint }[] | undefined;
+
+/** Hours on a weekday (0 = Sunday), or null when Google has no hours. */
+export function hoursForWeekday(
+  periods: Periods,
+  weekday: number,
 ): DayHours | null {
   if (!periods || periods.length === 0) {
     return null;
@@ -84,8 +108,7 @@ export function todayHours(
   if (periods.length === 1 && !periods[0].close) {
     return { allDay: true };
   }
-  const today = vietnamWeekday(now);
-  const period = periods.find((p) => p.open?.day === today);
+  const period = periods.find((p) => p.open?.day === weekday);
   if (!period?.open) {
     return { closed: true };
   }
@@ -97,6 +120,14 @@ export function todayHours(
     open: minutes(period.open),
     close: minutes(period.close),
   };
+}
+
+export function todayHours(
+  periods: Periods,
+  now = new Date(),
+  offsetMinutes = VIETNAM_OFFSET_MINUTES,
+): DayHours | null {
+  return hoursForWeekday(periods, localWeekday(now, offsetMinutes));
 }
 
 export function toGooglePlace(place: ApiPlace, now = new Date()): GooglePlace {
@@ -120,7 +151,16 @@ export function toGooglePlace(place: ApiPlace, now = new Date()): GooglePlace {
             end: end?.units !== undefined ? Number(end.units) : null,
           }
         : null,
-    todayHours: todayHours(place.regularOpeningHours?.periods, now),
+    todayHours: todayHours(
+      place.regularOpeningHours?.periods,
+      now,
+      place.utcOffsetMinutes,
+    ),
+    weeklyHours: place.regularOpeningHours?.periods?.length
+      ? Array.from({ length: 7 }, (_, weekday) =>
+          hoursForWeekday(place.regularOpeningHours?.periods, weekday),
+        )
+      : null,
     summary: place.editorialSummary?.text ?? null,
     mapsUri: place.googleMapsUri ?? null,
   };
@@ -139,42 +179,94 @@ export class HttpGooglePlacesClient extends GooglePlacesClient {
     this.enabled = Boolean(this.apiKey);
   }
 
-  async searchText(query: string, maxResults: number): Promise<GooglePlace[]> {
-    if (!this.apiKey) {
-      return [];
+  async search(request: TextSearchRequest): Promise<TextSearchResult> {
+    const body: Record<string, unknown> = {
+      textQuery: request.query,
+      languageCode: 'vi',
+      pageSize: Math.min(20, Math.max(1, request.pageSize)),
+    };
+    if (request.pageToken) body.pageToken = request.pageToken;
+    if (request.includedType) body.includedType = request.includedType;
+    if (request.near) {
+      body.locationBias = {
+        circle: {
+          center: { latitude: request.near.lat, longitude: request.near.lng },
+          radius: Math.min(50_000, request.near.radiusMeters),
+        },
+      };
     }
-    try {
-      const res = await fetch(`${BASE_URL}/places:searchText`, {
-        method: 'POST',
-        headers: this.headers(SEARCH_FIELDS),
-        body: JSON.stringify({
-          textQuery: query,
-          languageCode: 'vi',
-          regionCode: 'VN',
-          pageSize: maxResults,
-        }),
-        signal: AbortSignal.timeout(TIMEOUT_MS),
-      });
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}: ${await res.text()}`);
-      }
-      const body = (await res.json()) as { places?: ApiPlace[] };
-      return (body.places ?? []).map((place) => toGooglePlace(place));
-    } catch (error) {
-      // Search still answers from the catalog when Google fails.
-      this.logger.warn(`Google text search failed: ${String(error)}`);
-      return [];
-    }
+    const result = await this.post<{
+      places?: ApiPlace[];
+      nextPageToken?: string;
+    }>(
+      'places:searchText',
+      body,
+      request.withDetails ? PLANNING_FIELDS : SEARCH_FIELDS,
+    );
+    return {
+      places: (result.places ?? []).map((place) => toGooglePlace(place)),
+      nextPageToken: result.nextPageToken ?? null,
+    };
   }
 
-  async getPlace(placeId: string): Promise<GooglePlace | null> {
+  async autocomplete(
+    input: string,
+    sessionToken: string | undefined,
+    near: { lat: number; lng: number } | null,
+  ): Promise<AutocompleteSuggestion[]> {
+    const body: Record<string, unknown> = { input, languageCode: 'vi' };
+    if (sessionToken) body.sessionToken = sessionToken;
+    if (near) {
+      body.locationBias = {
+        circle: {
+          center: { latitude: near.lat, longitude: near.lng },
+          radius: 50_000,
+        },
+      };
+    }
+    const result = await this.post<{
+      suggestions?: {
+        placePrediction?: {
+          placeId?: string;
+          structuredFormat?: {
+            mainText?: { text?: string };
+            secondaryText?: { text?: string };
+          };
+          text?: { text?: string };
+        };
+      }[];
+    }>(
+      'places:autocomplete',
+      body,
+      'suggestions.placePrediction.placeId,suggestions.placePrediction.structuredFormat,suggestions.placePrediction.text',
+    );
+    return (result.suggestions ?? []).flatMap(({ placePrediction: p }) =>
+      p?.placeId
+        ? [
+            {
+              placeId: p.placeId,
+              mainText:
+                p.structuredFormat?.mainText?.text ?? p.text?.text ?? '',
+              secondaryText: p.structuredFormat?.secondaryText?.text ?? null,
+            },
+          ]
+        : [],
+    );
+  }
+
+  async getPlace(
+    placeId: string,
+    sessionToken?: string,
+  ): Promise<GooglePlace | null> {
     if (!this.apiKey) {
       throw unavailable();
     }
+    const params = new URLSearchParams({ languageCode: 'vi' });
+    if (sessionToken) params.set('sessionToken', sessionToken);
     let res: Response;
     try {
       res = await fetch(
-        `${BASE_URL}/places/${encodeURIComponent(placeId)}?languageCode=vi&regionCode=VN`,
+        `${BASE_URL}/places/${encodeURIComponent(placeId)}?${params.toString()}`,
         {
           headers: this.headers(DETAIL_FIELDS),
           signal: AbortSignal.timeout(TIMEOUT_MS),
@@ -194,6 +286,31 @@ export class HttpGooglePlacesClient extends GooglePlacesClient {
       throw unavailable();
     }
     return toGooglePlace((await res.json()) as ApiPlace);
+  }
+
+  private async post<T>(
+    path: string,
+    body: Record<string, unknown>,
+    fieldMask: string,
+  ): Promise<T> {
+    if (!this.apiKey) {
+      throw unavailable();
+    }
+    try {
+      const res = await fetch(`${BASE_URL}/${path}`, {
+        method: 'POST',
+        headers: this.headers(fieldMask),
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(TIMEOUT_MS),
+      });
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}: ${await res.text()}`);
+      }
+      return (await res.json()) as T;
+    } catch (error) {
+      this.logger.warn(`Google ${path} failed: ${String(error)}`);
+      throw unavailable();
+    }
   }
 
   private headers(fieldMask: string): Record<string, string> {

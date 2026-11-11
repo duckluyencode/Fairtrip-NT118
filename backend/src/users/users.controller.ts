@@ -1,8 +1,17 @@
-import { Body, Controller, Get, Patch } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Patch,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, type AuthUser } from '../auth/auth.decorators.js';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { UpdateProfileDto } from './user.dto.js';
+import { AccountDeletionService } from './account-deletion.service.js';
+import { DeleteAccountDto, UpdateProfileDto } from './user.dto.js';
 import { UserResponse } from './user.response.js';
 
 /** The signed-in user's own profile. Changing email or phone needs a code and comes later. */
@@ -10,7 +19,10 @@ import { UserResponse } from './user.response.js';
 @ApiBearerAuth()
 @Controller('me')
 export class UsersController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly deletion: AccountDeletionService,
+  ) {}
 
   @Get()
   async profile(@CurrentUser() me: AuthUser): Promise<UserResponse> {
@@ -30,5 +42,18 @@ export class UsersController {
       data: { fullName: dto.fullName },
     });
     return UserResponse.from(user);
+  }
+
+  /**
+   * Deletes the account after checking the password again. Groups others are still in
+   * pass to the member who joined first; everything else of the account is deleted.
+   */
+  @Delete()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  deleteAccount(
+    @CurrentUser() me: AuthUser,
+    @Body() dto: DeleteAccountDto,
+  ): Promise<void> {
+    return this.deletion.delete(me.id, dto.password);
   }
 }

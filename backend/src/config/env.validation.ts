@@ -3,6 +3,7 @@ import {
   IsBooleanString,
   IsIn,
   IsNotEmpty,
+  IsNumberString,
   IsOptional,
   IsPort,
   IsString,
@@ -44,11 +45,23 @@ class EnvironmentVariables {
   @IsBooleanString()
   MYSQL_ALLOW_PUBLIC_KEY_RETRIEVAL?: string;
 
+  /** Path to the RDS CA bundle; turns on verified TLS. Required in production. */
+  @ValidateIf((env: EnvironmentVariables) => env.NODE_ENV === 'production')
+  @IsString()
+  @IsNotEmpty()
+  MYSQL_SSL_CA?: string;
+
+  /** Number of reverse proxies in front of the API (1 behind Caddy), so client IPs are right. */
+  @IsOptional()
+  @IsNumberString({ no_symbols: true })
+  TRUST_PROXY?: string;
+
   @IsString()
   @MinLength(32)
   JWT_SECRET: string;
 
-  // SMTP is optional in development (codes are logged) but required in production.
+  // SMTP is optional: without it, email codes are logged in development and fail
+  // in production. Once SMTP_HOST is set, the rest of the SMTP settings are required.
   @ValidateIf((env: EnvironmentVariables) => smtpRequired(env))
   @IsString()
   @IsNotEmpty()
@@ -75,7 +88,7 @@ class EnvironmentVariables {
 }
 
 function smtpRequired(env: EnvironmentVariables): boolean {
-  return env.NODE_ENV === 'production' || Boolean(env.SMTP_HOST);
+  return Boolean(env.SMTP_HOST);
 }
 
 /** Fails startup with every missing or invalid variable listed, instead of failing on first use. */

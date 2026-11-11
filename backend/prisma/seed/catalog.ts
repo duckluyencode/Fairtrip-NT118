@@ -1,5 +1,6 @@
 import type { PrismaClient } from '../../src/generated/prisma/client.js';
 import type {
+  Interest,
   PlaceCategory,
   PriceSource,
 } from '../../src/generated/prisma/enums.js';
@@ -313,6 +314,25 @@ export const CATALOG: CatalogPlace[] = [
   },
 ];
 
+/** Preferences each place suits, used by the trip planner to score it for each member. */
+export const INTERESTS_BY_SLUG: Record<string, Interest[]> = {
+  'ba-na-hills': ['FUN', 'SCENERY', 'PHOTO', 'EXPLORE'],
+  'golden-bridge': ['SCENERY', 'PHOTO'],
+  'le-jardin-damour': ['SCENERY', 'PHOTO', 'RELAX'],
+  'mi-quang-ba-mua': ['FOOD'],
+  'my-khe-beach': ['BEACH', 'RELAX', 'PHOTO'],
+  'son-tra-night-market': ['FOOD', 'FUN', 'EXPLORE'],
+  'dragon-bridge': ['SCENERY', 'PHOTO', 'FUN'],
+  'love-bridge': ['SCENERY', 'PHOTO', 'RELAX'],
+  'marble-mountains': ['SCENERY', 'CULTURE', 'EXPLORE'],
+  'linh-ung-pagoda': ['CULTURE', 'SCENERY', 'RELAX'],
+  'cham-museum': ['CULTURE', 'EXPLORE'],
+  'han-market': ['FOOD', 'EXPLORE'],
+  'asia-park': ['FUN', 'PHOTO'],
+  'banh-xeo-ba-duong': ['FOOD'],
+  'non-nuoc-beach': ['BEACH', 'RELAX'],
+};
+
 function toMinutes(hhmm: string): number {
   const [h, m] = hhmm.split(':').map(Number);
   return h * 60 + m;
@@ -329,10 +349,13 @@ function hoursOf(hours: string): {
   return { openMinute: toMinutes(open), closeMinute: toMinutes(close) };
 }
 
-/** Every place must have a price, or be inside a parent that has one. */
+/** Every place must have interests and a price, or be inside a parent that has a price. */
 export function validateCatalog(places: CatalogPlace[]): void {
   const bySlug = new Map(places.map((p) => [p.slug, p]));
   for (const place of places) {
+    if (!INTERESTS_BY_SLUG[place.slug]?.length) {
+      throw new Error(`Catalog place ${place.slug} needs interests`);
+    }
     if (place.price) continue;
     const parent = place.parent ? bySlug.get(place.parent) : undefined;
     if (!parent?.price) {
@@ -387,6 +410,13 @@ export async function seedCatalog(prisma: PrismaClient): Promise<number> {
     await prisma.placeCategoryLink.deleteMany({ where: { placeId: saved.id } });
     await prisma.placeCategoryLink.createMany({
       data: categories.map((category) => ({ placeId: saved.id, category })),
+    });
+    await prisma.placeInterest.deleteMany({ where: { placeId: saved.id } });
+    await prisma.placeInterest.createMany({
+      data: INTERESTS_BY_SLUG[place.slug].map((interest) => ({
+        placeId: saved.id,
+        interest,
+      })),
     });
   }
   return CATALOG.length;

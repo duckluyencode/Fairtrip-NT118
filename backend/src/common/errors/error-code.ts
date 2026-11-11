@@ -8,6 +8,7 @@ export const ErrorCode = {
   NotFound: 'NOT_FOUND',
   Conflict: 'CONFLICT',
   TooManyRequests: 'TOO_MANY_REQUESTS',
+  PayloadTooLarge: 'PAYLOAD_TOO_LARGE',
   Internal: 'INTERNAL_ERROR',
   DatabaseUnavailable: 'DATABASE_UNAVAILABLE',
 
@@ -28,6 +29,48 @@ export const ErrorCode = {
   // Places
   PlaceNotFound: 'PLACE_NOT_FOUND',
   GooglePlacesUnavailable: 'GOOGLE_PLACES_UNAVAILABLE',
+
+  // Trips and groups
+  /** Also returned to non-members, so trip ids cannot be probed. */
+  TripNotFound: 'TRIP_NOT_FOUND',
+  NotTripOwner: 'NOT_TRIP_OWNER',
+  InvalidTripDates: 'INVALID_TRIP_DATES',
+  InviteCodeNotFound: 'INVITE_CODE_NOT_FOUND',
+  AlreadyMember: 'ALREADY_MEMBER',
+  OwnerCannotLeave: 'OWNER_CANNOT_LEAVE',
+  /** No member with this id in the trip. */
+  MemberNotFound: 'MEMBER_NOT_FOUND',
+  /** Only group trips have invite codes. */
+  NotAGroup: 'NOT_A_GROUP',
+  HotelNotFound: 'HOTEL_NOT_FOUND',
+  /** Someone's share of the room is more than their budget. */
+  LodgingOverBudget: 'LODGING_OVER_BUDGET',
+  /** A one-day trip has no night to book. */
+  LodgingNotNeeded: 'LODGING_NOT_NEEDED',
+  /** The trip is set to stay in a hotel but none has been chosen yet. */
+  LodgingNotChosen: 'LODGING_NOT_CHOSEN',
+  OptionNotFound: 'OPTION_NOT_FOUND',
+  /** The vote deadline has passed. */
+  VotingClosed: 'VOTING_CLOSED',
+  /** The member already sent their ballot; votes cannot change any more. */
+  BallotAlreadySent: 'BALLOT_ALREADY_SENT',
+  /** No place could be found to plan from (none picked, none found for the city). */
+  NoPlacesToPlan: 'NO_PLACES_TO_PLAN',
+  /** A self-designed itinerary uses a day outside the trip or a place twice. */
+  InvalidItinerary: 'INVALID_ITINERARY',
+  /** The trip has no itinerary yet (or its inputs changed since it was planned). */
+  ItineraryNotReady: 'ITINERARY_NOT_READY',
+
+  // Emergency contacts
+  ContactNotFound: 'CONTACT_NOT_FOUND',
+  ContactExists: 'CONTACT_EXISTS',
+  ContactLimitReached: 'CONTACT_LIMIT_REACHED',
+
+  // Photo recognition
+  /** No photo, or not a JPEG, PNG or WebP image. */
+  InvalidImage: 'INVALID_IMAGE',
+  /** Cloud Vision is not configured or cannot answer right now. */
+  RecognitionUnavailable: 'RECOGNITION_UNAVAILABLE',
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

@@ -2,8 +2,12 @@
 // Tables are added module by module; the full design is in docs/database.md.
 
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  // Explicit, so the output does not depend on whether tsconfig.json is present
+  // (it is not yet when `npm ci` runs `prisma generate` in the Docker build).
+  moduleFormat        = "esm"
+  importFileExtension = "js"
 }
 
 datasource db {
@@ -26,10 +30,13 @@ model User {
   createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @updatedAt @map("updated_at")
 
-  otpCodes      OtpCode[]
-  refreshTokens RefreshToken[]
-  searchHistory SearchHistory[]
-  favorites     Favorite[]
+  otpCodes          OtpCode[]
+  refreshTokens     RefreshToken[]
+  searchHistory     SearchHistory[]
+  favorites         Favorite[]
+  ownedTrips        Trip[]
+  memberships       TripMember[]
+  emergencyContacts EmergencyContact[]
 
   @@map("users")
 }
@@ -91,10 +98,14 @@ model Place {
   createdAt      DateTime       @default(now()) @map("created_at")
   updatedAt      DateTime       @updatedAt @map("updated_at")
 
-  parent     Place?              @relation("PlaceParent", fields: [parentId], references: [id], onDelete: SetNull)
-  children   Place[]             @relation("PlaceParent")
-  categories PlaceCategoryLink[]
-  favorites  Favorite[]
+  parent      Place?              @relation("PlaceParent", fields: [parentId], references: [id], onDelete: SetNull)
+  children    Place[]             @relation("PlaceParent")
+  categories  PlaceCategoryLink[]
+  favorites   Favorite[]
+  interests   PlaceInterest[]
+  tripStops   TripStop[]
+  voteOptions VoteOption[]
+  lodgings    TripLodging[]
 
   @@index([source, city])
   @@map("places")
@@ -184,4 +195,236 @@ model RefreshToken {
 
   @@index([userId])
   @@map("refresh_tokens")
+}
+
+/// The app's 8 travel preferences ("Ẩm thực", "Biển", "Cảnh đẹp"...), used to score places.
+enum Interest {
+  FOOD
+  BEACH
+  SCENERY
+  RELAX
+  FUN
+  PHOTO
+  CULTURE
+  EXPLORE
+}
+
+/// Preferences a catalog place suits. Google places get theirs from Google's place types.
+model PlaceInterest {
+  placeId  Int      @map("place_id")
+  interest Interest
+
+  place Place @relation(fields: [placeId], references: [id], onDelete: Cascade)
+
+  @@id([placeId, interest])
+  @@map("place_interests")
+}
+
+enum TripType {
+  SOLO
+  GROUP
+}
+
+enum TripStatus {
+  /// Collecting members, budgets and votes; no itinerary yet (or it was cleared).
+  DRAFT
+  PLANNED
+}
+
+enum LodgingMode {
+  HOTEL
+  /// "Tự lo chỗ ở": no room cost, the whole budget goes to places.
+  SELF
+}
+
+enum TripRole {
+  OWNER
+  MEMBER
+}
+
+/// A trip. A group trip is the group itself (one group plans one trip); a solo trip is a
+/// group of one, so both use the same planner.
+model Trip {
+  id             Int         @id @default(autoincrement())
+  ownerId        Int         @map("owner_id")
+  type           TripType
+  /// Group name, e.g. "Nhóm Đà Nẵng".
+  name           String?     @db.VarChar(100)
+  city           String      @db.VarChar(100)
+  startDate      DateTime    @map("start_date") @db.Date
+  endDate        DateTime    @map("end_date") @db.Date
+  /// Daily window for visits, minutes after midnight.
+  dayStartMinute Int         @default(480) @map("day_start_minute")
+  dayEndMinute   Int         @default(1260) @map("day_end_minute")
+  /// Minimum pause between two visits ("thời gian giữa các lần đi chơi").
+  gapMinutes     Int         @default(30) @map("gap_minutes")
+  lodgingMode    LodgingMode @default(SELF) @map("lodging_mode")
+  status         TripStatus  @default(DRAFT)
+  /// Code friends type to join a group, e.g. DN1214.
+  inviteCode     String?     @unique @map("invite_code") @db.VarChar(8)
+  voteDeadline   DateTime?   @map("vote_deadline")
+  plannedAt      DateTime?   @map("planned_at")
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+
+  owner   User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  members TripMember[]
+  lodging TripLodging?
+  stops   TripStop[]
+  options VoteOption[]
+
+  @@index([ownerId])
+  @@map("trips")
+}
+
+model TripMember {
+  id           Int       @id @default(autoincrement())
+  tripId       Int       @map("trip_id")
+  userId       Int       @map("user_id")
+  role         TripRole  @default(MEMBER)
+  /// Maximum the member wants to spend, VND. Only the member (and the planner) sees it.
+  budget       Int       @default(0)
+  /// The member's part of the room cost, set when the trip is planned.
+  lodgingShare Int       @default(0) @map("lodging_share")
+  /// 0–100 after planning.
+  satisfaction Int?
+  ballotSentAt DateTime? @map("ballot_sent_at")
+  joinedAt     DateTime  @default(now()) @map("joined_at")
+
+  trip         Trip              @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  interests    MemberInterest[]
+  stops        StopParticipant[]
+  votes        Vote[]
+  addedOptions VoteOption[]
+
+  @@unique([tripId, userId])
+  @@index([userId])
+  @@map("trip_members")
+}
+
+model MemberInterest {
+  memberId Int      @map("member_id")
+  interest Interest
+
+  member TripMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@id([memberId, interest])
+  @@map("member_interests")
+}
+
+/// The hotel chosen for a trip. The hotel is a place (found through Google Places, so only
+/// its place ID is stored); its nightly price is copied here when it is chosen.
+model TripLodging {
+  tripId        Int         @id @map("trip_id")
+  placeId       Int         @map("place_id")
+  checkIn       DateTime    @map("check_in") @db.Date
+  checkOut      DateTime    @map("check_out") @db.Date
+  rooms         Int
+  guestsPerRoom Int         @map("guests_per_room")
+  /// VND for one room and one night.
+  pricePerNight Int         @map("price_per_night")
+  priceSource   PriceSource @map("price_source")
+  priceProvider String      @map("price_provider") @db.VarChar(100)
+  pricedAt      DateTime    @map("priced_at")
+
+  trip  Trip  @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  place Place @relation(fields: [placeId], references: [id])
+
+  @@index([placeId])
+  @@map("trip_lodgings")
+}
+
+/// One visit in the itinerary. The price is copied at planning time, so later price
+/// changes do not change a plan.
+model TripStop {
+  id            Int         @id @default(autoincrement())
+  tripId        Int         @map("trip_id")
+  placeId       Int         @map("place_id")
+  day           Int
+  position      Int
+  startMinute   Int         @map("start_minute")
+  travelMinutes Int         @map("travel_minutes")
+  visitMinutes  Int         @map("visit_minutes")
+  /// Ticket or meal price per person, VND, before ticketed-area coverage.
+  costPerPerson Int         @map("cost_per_person")
+  priceSource   PriceSource @map("price_source")
+  priceProvider String      @map("price_provider") @db.VarChar(100)
+
+  trip         Trip              @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  place        Place             @relation(fields: [placeId], references: [id])
+  participants StopParticipant[]
+
+  @@unique([tripId, day, position])
+  @@index([placeId])
+  @@map("trip_stops")
+}
+
+/// Who goes to a stop and what they pay there (0 when their ticket for the area covers it).
+model StopParticipant {
+  stopId   Int @map("stop_id")
+  memberId Int @map("member_id")
+  cost     Int
+
+  stop   TripStop   @relation(fields: [stopId], references: [id], onDelete: Cascade)
+  member TripMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@id([stopId, memberId])
+  @@index([memberId])
+  @@map("stop_participants")
+}
+
+/// A place proposed for the trip. Group members vote on it; a solo trip's picks are
+/// options too, so the planner always plans from options when there are any.
+model VoteOption {
+  id        Int      @id @default(autoincrement())
+  tripId    Int      @map("trip_id")
+  placeId   Int      @map("place_id")
+  addedById Int?     @map("added_by_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  trip    Trip        @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  place   Place       @relation(fields: [placeId], references: [id])
+  addedBy TripMember? @relation(fields: [addedById], references: [id], onDelete: SetNull)
+  votes   Vote[]
+
+  @@unique([tripId, placeId])
+  @@index([placeId])
+  @@index([addedById])
+  @@map("vote_options")
+}
+
+/// A member ticking "đồng ý" for an option.
+model Vote {
+  optionId  Int      @map("option_id")
+  memberId  Int      @map("member_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  option VoteOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  member TripMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@id([optionId, memberId])
+  @@index([memberId])
+  @@map("votes")
+}
+
+/// People to alert with the SOS button. Kept on the server so they survive a phone change;
+/// the Android app keeps a copy so SOS works offline.
+model EmergencyContact {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @map("user_id")
+  name        String   @db.VarChar(100)
+  /// e.g. "Mẹ", "Bạn thân".
+  relation    String?  @db.VarChar(50)
+  /// E.164, e.g. +84905128846.
+  phone       String   @db.VarChar(16)
+  /// Whether the SOS message goes to this person.
+  receivesSos Boolean  @default(true) @map("receives_sos")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, phone])
+  @@map("emergency_contacts")
 }

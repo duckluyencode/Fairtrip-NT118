@@ -1,8 +1,9 @@
 import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { CurrentUser, type AuthUser } from '../auth/auth.decorators.js';
 import {
-  OriginQuery,
+  PlaceDetailQuery,
   SearchPlacesQuery,
   SuggestionsQuery,
 } from './dto/place.query.js';
@@ -21,6 +22,8 @@ export class PlacesController {
 
   /** Search or browse places; a search with text is added to the search history. */
   @Get()
+  // Each page is a billed Google Text Search.
+  @Throttle({ default: { limit: 60, ttl: 60_000 } })
   search(
     @CurrentUser() me: AuthUser,
     @Query() query: SearchPlacesQuery,
@@ -28,10 +31,10 @@ export class PlacesController {
     return this.places.search(me.id, query);
   }
 
-  /** Up to 5 names while the user is typing. */
+  /** Names while the user is typing (Google Autocomplete, or the sample catalog). */
   @Get('suggestions')
   suggestions(@Query() query: SuggestionsQuery): Promise<PlaceSuggestion[]> {
-    return this.places.suggestions(query.q);
+    return this.places.suggestions(query);
   }
 
   /** Details with price, opening hours and visit time. */
@@ -39,8 +42,8 @@ export class PlacesController {
   detail(
     @CurrentUser() me: AuthUser,
     @Param('id', ParseIntPipe) id: number,
-    @Query() origin: OriginQuery,
+    @Query() query: PlaceDetailQuery,
   ): Promise<PlaceDetail> {
-    return this.places.detail(me.id, id, origin);
+    return this.places.detail(me.id, id, query, query.sessionToken);
   }
 }

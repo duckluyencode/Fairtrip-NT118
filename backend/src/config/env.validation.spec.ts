@@ -29,10 +29,27 @@ describe('validateEnv', () => {
     );
   });
 
-  it('allows no SMTP in development but requires it in production', () => {
+  it('allows no SMTP, also in production', () => {
     expect(() => validateEnv({ ...valid, SMTP_HOST: '' })).not.toThrow();
+    expect(() =>
+      validateEnv({
+        ...valid,
+        NODE_ENV: 'production',
+        MYSQL_SSL_CA: '/certs/rds-ca.pem',
+      }),
+    ).not.toThrow();
+  });
+
+  it('requires TLS to the database in production', () => {
     expect(() => validateEnv({ ...valid, NODE_ENV: 'production' })).toThrow(
-      /SMTP_HOST[\s\S]*SMTP_PASSWORD/,
+      /MYSQL_SSL_CA/,
+    );
+  });
+
+  it('accepts only a whole number of proxies', () => {
+    expect(() => validateEnv({ ...valid, TRUST_PROXY: '1' })).not.toThrow();
+    expect(() => validateEnv({ ...valid, TRUST_PROXY: 'yes' })).toThrow(
+      /TRUST_PROXY/,
     );
   });
 
