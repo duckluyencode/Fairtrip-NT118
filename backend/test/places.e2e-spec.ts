@@ -426,6 +426,43 @@ describe('Places, search history and favorites (e2e)', () => {
       ]);
     });
 
+    it('finds places of the category near a searched name', async () => {
+      // "pham" finds no place to have fun at, so the filter means "fun near pham".
+      const park = {
+        ...googleBeach,
+        id: 'google-asia-park',
+        name: 'Asia Park',
+        types: ['amusement_park'],
+      };
+      t.google.placesForQuery.set('điểm vui chơi gần pham', [park, park]);
+      const res = await get('/places?q=pham&category=FUN&limit=1').expect(200);
+      expect(res.body.items.map((p: Summary) => p.name)).toEqual(['Asia Park']);
+      // The name is searched first (a few pages), then the places near it.
+      expect(t.google.searches[0].query).toBe('pham');
+      expect(t.google.searches.at(-1)?.query).toBe('điểm vui chơi gần pham');
+      expect(res.body.nextPageToken).toBe('near:next-page');
+
+      // The next page goes to the nearby query, with Google's own token.
+      await get(
+        '/places?q=pham&category=FUN&limit=1&pageToken=near:next-page',
+      ).expect(200);
+      expect(t.google.searches.at(-1)).toMatchObject({
+        query: 'điểm vui chơi gần pham',
+        pageToken: 'next-page',
+      });
+
+      // A category the name itself matches is searched once, as typed.
+      t.google.searches.length = 0;
+      await get('/places?q=pham&category=SCENIC').expect(200);
+      expect(t.google.searches.map((s) => s.query)).toEqual(['pham']);
+
+      // The history keeps what the user typed.
+      const history = await get('/me/search-history').expect(200);
+      expect(
+        history.body.items.every((h: { query: string }) => h.query === 'pham'),
+      ).toBe(true);
+    });
+
     it('suggests Google places while typing', async () => {
       const res = await get(
         `/places/suggestions?q=${encodeURIComponent('Phở')}`,
