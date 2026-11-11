@@ -6,6 +6,7 @@ import com.tripfair.app.data.network.ApiResult
 import com.tripfair.app.data.places.LocationDto
 import com.tripfair.app.data.trips.DayPlacesDto
 import com.tripfair.app.data.trips.ItineraryDto
+import com.tripfair.app.data.trips.LodgingDto
 import com.tripfair.app.data.trips.LodgingOptionDto
 import com.tripfair.app.data.trips.MyCostsDto
 import com.tripfair.app.data.trips.TripDetailDto
@@ -35,7 +36,9 @@ private class PlanningTrips : FakeTrips() {
     )
     val chosen = mutableListOf<Pair<Int?, Int?>>()
 
-    override suspend fun detail(tripId: Int): ApiResult<TripDetailDto> = ApiResult.Failure(ApiError(ApiError.NETWORK))
+    var detailResult: ApiResult<TripDetailDto> = ApiResult.Failure(ApiError(ApiError.NETWORK))
+
+    override suspend fun detail(tripId: Int): ApiResult<TripDetailDto> = detailResult
 
     override suspend fun lodgingOptions(tripId: Int, guestsPerRoom: Int?) = hotels
 
@@ -79,6 +82,21 @@ class TripPlanViewModelsTest {
 
         assertEquals(listOf<Pair<Int?, Int?>>(2 to 3), trips.chosen)
         assertTrue(viewModel.done)
+    }
+
+    @Test
+    fun `the hotel already chosen for the trip stays selected`() {
+        val lodging = LodgingDto(
+            placeId = 1, checkIn = "2026-12-12", checkOut = "2026-12-13", nights = 1, rooms = 1, guestsPerRoom = 3,
+            pricePerNight = 500_000, priceSource = "ESTIMATED", provider = "TripFair", isEstimate = true, myShare = 166_667,
+        )
+        trips.detailResult = ApiResult.Success(
+            TripDetailDto(7, "GROUP", null, "Huế", "2026-12-12", "2026-12-13", 2, "DRAFT", myRole = "OWNER", lodgingMode = "HOTEL", lodging = lodging),
+        )
+        val viewModel = LodgingViewModel(trips)
+        viewModel.start(7)
+
+        assertEquals(1, viewModel.selected)
     }
 
     @Test

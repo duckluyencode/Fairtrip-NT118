@@ -77,25 +77,30 @@ export function hoursForTrip(
   openMinute: number | null;
   closeMinute: number | null;
   closedDays: number[];
+  dayHours: ({ open: number; close: number } | null)[];
 } {
   const closedDays: number[] = [];
+  const dayHours: ({ open: number; close: number } | null)[] = [];
   let window: { open: number; close: number } | null = null;
-  if (weeklyHours) {
-    for (let day = 1; day <= days; day++) {
-      const hours = weeklyHours[addDays(startDate, day - 1).getUTCDay()];
-      if (!hours) continue;
-      if ('closed' in hours) {
-        closedDays.push(day);
-      } else if (!hours.allDay && !window) {
-        // The planner keeps one window per place: the first open day's hours.
-        window = { open: hours.open, close: hours.close };
-      }
+  for (let day = 1; day <= days; day++) {
+    const hours =
+      weeklyHours?.[addDays(startDate, day - 1).getUTCDay()] ?? null;
+    let today: { open: number; close: number } | null = null;
+    if (hours && 'closed' in hours) {
+      closedDays.push(day);
+    } else if (hours && !hours.allDay) {
+      today = { open: hours.open, close: hours.close };
+      window ??= today;
     }
+    dayHours.push(today);
   }
   return {
+    // The first open day's hours, for callers that do not schedule a given day.
     openMinute: window?.open ?? null,
     closeMinute: window?.close ?? null,
     closedDays,
+    // The hours of each trip day, which the planner uses.
+    dayHours,
   };
 }
 
@@ -187,8 +192,15 @@ export class TripPlacesService {
     private readonly places: PlacesService,
   ) {}
 
-  /** The places with these ids that can be read right now, by id. */
-  async resolve(ids: number[]): Promise<Map<number, TripPlace>> {
+  /**
+   * The places with these ids that can be read right now, by id. With `strict`, a Google
+   * error is thrown (GOOGLE_PLACES_UNAVAILABLE) instead of leaving the place out, for
+   * planning, where a missing place would silently change the itinerary.
+   */
+  async resolve(
+    ids: number[],
+    { strict = false } = {},
+  ): Promise<Map<number, TripPlace>> {
     const unique = [...new Set(ids)];
     const rows = await this.prisma.place.findMany({
       where: { id: { in: unique } },
@@ -203,9 +215,14 @@ export class TripPlacesService {
           return null;
         }
         try {
-          const place = await this.google.getPlace(row.googlePlaceId);
+          const place = await this.google.getPlace(
+            row.googlePlaceId,
+            undefined,
+            'trip',
+          );
           return place ? fromGoogle(row.id, place) : null;
         } catch (error) {
+          if (strict) throw error;
           this.logger.warn(`Skipped Google place ${row.id}: ${String(error)}`);
           return null;
         }

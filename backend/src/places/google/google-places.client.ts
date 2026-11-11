@@ -1,5 +1,8 @@
 import type { GooglePriceInput } from '../pricing.js';
 
+/** Which fields getPlace reads: the place screen's, or the cheaper set trips need. */
+export type PlaceFields = 'detail' | 'trip';
+
 /** Hours of one day, in minutes after midnight (close < open means after midnight). */
 export type DayHours =
   | { allDay: true }
@@ -68,9 +71,13 @@ export abstract class GooglePlacesClient {
     sessionToken: string | undefined,
     near: { lat: number; lng: number } | null,
   ): Promise<AutocompleteSuggestion[]>;
-  /** Null when Google does not know the place (any more). */
+  /**
+   * Null when Google does not know the place (any more). `fields: 'trip'` leaves out the
+   * description and Maps link, which only the place screen shows and which cost more.
+   */
   abstract getPlace(
     placeId: string,
     sessionToken?: string,
+    fields?: PlaceFields,
   ): Promise<GooglePlace | null>;
 }

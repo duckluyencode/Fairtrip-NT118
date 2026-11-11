@@ -92,7 +92,7 @@ Các bước AN4–AN6 là đề xuất, chỉnh lại khi tới.
 | A11 Đánh giá thuật toán | So Greedy, Greedy + Local search + Fairness, lời giải tối ưu (thay ILP OR-Tools) | ✅ | | 2026-11-07 |
 | A12 Chuẩn bị đưa vào sử dụng | Xóa tài khoản (yêu cầu của Google Play); chủ nhóm mời ra, chuyển quyền, đổi mã mời; quán ăn đúng giờ ăn, thời gian ghé theo loại điểm; giờ mở cửa theo giờ địa phương; chọn số người mỗi phòng; giới hạn route tốn phí Google; vá lỗ hổng dependency; bản nháp chính sách quyền riêng tư | 🔄 | | |
 
-Việc còn lại của A12: đổi email/số điện thoại bằng OTP (cần thêm một loại mã vào schema, chờ bạn đồng ý); chính sách quyền riêng tư cần bạn xem lại, điền thông tin liên hệ và đăng lên web; giá ở nước ngoài vẫn dùng bảng quy đổi VND của Việt Nam (chờ quyết định: giới hạn ở Việt Nam hay thêm tỉ giá và bảng giá theo nước).
+Việc còn lại của A12: đổi email/số điện thoại bằng OTP (cần thêm một loại mã vào schema, chờ bạn đồng ý); cho thử lại refresh token vừa đổi khi app mất phản hồi (cần cột `replaced_by_id`, chờ bạn đồng ý đổi schema); chính sách quyền riêng tư cần bạn xem lại, điền thông tin liên hệ và đăng lên web; giá ở nước ngoài vẫn dùng bảng quy đổi VND của Việt Nam (chờ quyết định: giới hạn ở Việt Nam hay thêm tỉ giá và bảng giá theo nước).
 
 Việc còn lại của các bước đang làm:
 
@@ -146,3 +146,4 @@ Nội dung đầy đủ ở mục "Câu hỏi mở" của [CLAUDE.md](../CLAUDE.
 - **2026-11-11:** Có khóa Google (server và Android): app tìm được địa điểm thật trên cả nước, bản đồ hiện đường phố, chuyến Hà Nội lập được lộ trình với khách sạn và điểm tham quan từ Google.
 - **2026-11-11:** Thêm CI cho Android: unit test, lint và build debug cho mọi PR chạm `android/`.
 - **2026-11-11:** Merge vào main: backend (#14 Docker và deploy, #15 chuyến đi và lộ trình, #16 chuẩn bị đưa vào sử dụng) và app Android nối backend (#13, gồm cả #7).
+- **2026-11-11:** Sửa lỗi sau khi rà soát code (A12, AN6). Backend: lập lộ trình theo giờ mở cửa của từng ngày trong chuyến; Google lỗi khi lập hoặc thiết kế lộ trình thì báo `GOOGLE_PLACES_UNAVAILABLE` thay vì lặng lẽ bỏ điểm; tìm theo nhóm Vui chơi/Cảnh đẹp đọc thêm tối đa 2 trang khi trang đầu không có điểm hợp; chi tiết địa điểm cho chuyến đi dùng bộ trường rẻ hơn; tính lại giờ mỗi ngày chỉ gọi Routes một lần; ngân sách 0đ luôn "Tự lo chỗ ở" cả cho nhóm; cảnh báo ngày quá dài tính cả đường về khách sạn. Android: SOS chỉ dùng vị trí đo trong 2 phút gần nhất, cũ hơn thì đo lại với độ chính xác cao; màn chỗ ở chọn sẵn khách sạn đã chọn cho chuyến. Còn lại: cho thử lại refresh token vừa đổi khi mất phản hồi, cần thêm cột `replaced_by_id` vào `refresh_tokens` (chờ đồng ý đổi schema).

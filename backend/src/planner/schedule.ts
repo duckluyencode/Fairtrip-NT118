@@ -4,7 +4,10 @@ import type { LatLng, PlannerInput, PlannerPlace } from './types.js';
 export type DaySettings = Pick<
   PlannerInput,
   'dayStartMinute' | 'dayEndMinute' | 'gapMinutes' | 'base'
->;
+> & {
+  /** 1-based trip day being scheduled, for places whose hours differ by day. */
+  day?: number;
+};
 
 export interface TimedVisit {
   place: PlannerPlace;
@@ -21,15 +24,19 @@ export interface TimedDay {
 /** Opening hours as minutes, with a close after midnight moved past 1440. */
 function openingWindow(
   place: PlannerPlace,
+  day: number | undefined,
 ): { open: number; close: number } | null {
-  if (place.openMinute === null || place.closeMinute === null) {
+  const hours =
+    day !== undefined && place.dayHours
+      ? (place.dayHours[day - 1] ?? null)
+      : place.openMinute === null || place.closeMinute === null
+        ? null
+        : { open: place.openMinute, close: place.closeMinute };
+  if (!hours) {
     return null;
   }
-  const close =
-    place.closeMinute <= place.openMinute
-      ? place.closeMinute + 1440
-      : place.closeMinute;
-  return { open: place.openMinute, close };
+  const close = hours.close <= hours.open ? hours.close + 1440 : hours.close;
+  return { open: hours.open, close };
 }
 
 /** When meals may start, minutes after midnight: lunch 11:00–13:30, dinner 17:30–20:30. */
@@ -72,7 +79,7 @@ export function simulateDay(
     const travel =
       legs?.[index] ?? (previous ? travelMinutes(previous, place) : 0);
     clock += travel + (index > 0 ? settings.gapMinutes : 0);
-    const window = openingWindow(place);
+    const window = openingWindow(place, settings.day);
     if (place.meal) {
       // The first meal of the day still free that can start in time, opening hours too.
       const opens = window?.open ?? 0;
@@ -146,7 +153,8 @@ export function cheapestInsertion(
     if (place.closedDays?.includes(day + 1)) {
       continue;
     }
-    const before = scheduleDay(order, settings);
+    const daySettings = { ...settings, day: day + 1 };
+    const before = scheduleDay(order, daySettings);
     const base = before ? before.finishMinute : settings.dayStartMinute;
     for (let position = 0; position <= order.length; position++) {
       const candidate = [
@@ -154,7 +162,7 @@ export function cheapestInsertion(
         place,
         ...order.slice(position),
       ];
-      const after = scheduleDay(candidate, settings);
+      const after = scheduleDay(candidate, daySettings);
       if (!after) {
         continue;
       }

@@ -12,6 +12,7 @@ import {
   type SimulatedDay,
 } from '../planner/schedule.js';
 import { satisfaction } from '../planner/scoring.js';
+import { travelMinutes } from '../planner/travel.js';
 import type { PlannerMember, PlannerPlace } from '../planner/types.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { UpdateItineraryDto } from './dto/trip.dto.js';
@@ -87,6 +88,23 @@ function plannerMembers(
 }
 
 /**
+ * The legs of a day after its last visits were dropped: the legs to the visits kept, then
+ * an estimated way back to the hotel from the new last visit (not part of the response).
+ */
+function trimLegs(
+  legs: number[],
+  kept: PlannerPlace[],
+  settings: DaySettings,
+): number[] {
+  const toVisits = legs.slice(0, kept.length);
+  if (!settings.base) {
+    return toVisits;
+  }
+  const last = kept.at(-1);
+  return [...toVisits, last ? travelMinutes(last, settings.base) : 0];
+}
+
+/**
  * Builds and saves itineraries: the automatic plan (Greedy -> Local search -> Fairness
  * in src/planner) and itineraries the owner designs. Travel times start as straight-line
  * estimates; when Google Routes is configured, each saved day is timed again with real
@@ -117,7 +135,10 @@ export class PlanningService {
       options.length > 0
         ? [
             ...(
-              await this.tripPlaces.resolve(options.map((o) => o.placeId))
+              await this.tripPlaces.resolve(
+                options.map((o) => o.placeId),
+                { strict: true },
+              )
             ).values(),
           ]
         : await this.tripPlaces.discover(trip.city);
@@ -214,7 +235,7 @@ export class PlanningService {
     if (new Set(ids).size !== ids.length) {
       throw invalidItinerary('Each place can be visited only once');
     }
-    const resolved = await this.tripPlaces.resolve(ids);
+    const resolved = await this.tripPlaces.resolve(ids, { strict: true });
     const located = new Map<number, TripPlace & { location: LatLng }>();
     for (const id of ids) {
       const place = resolved.get(id);
@@ -243,7 +264,7 @@ export class PlanningService {
     for (const { day, placeIds } of dto.days) {
       const timed = await this.timeDay(
         placeIds.map((id) => places.get(id)!),
-        settings,
+        { ...settings, day },
       );
       timed.visits.forEach((visit, index) => {
         // Everyone goes; a place inside a ticketed area on the itinerary is free.
@@ -307,12 +328,16 @@ export class PlanningService {
       const dropped: PlannerPlace[] = [];
       for (const [index, day] of order.entries()) {
         if (timed[index]) continue;
-        let current = await this.timeDay(day, settings);
+        const daySettings = { ...settings, day: index + 1 };
+        // One Routes request per day: shorter days reuse the legs already fetched.
+        let legs = await this.dayLegs(day, daySettings);
+        let current = simulateDay(day, daySettings, legs);
         while (current.endsLate || current.closedPlaceIds.length > 0) {
           const last = day.pop();
           if (!last) break;
           dropped.push(last);
-          current = await this.timeDay(day, settings);
+          legs = legs && trimLegs(legs, day, daySettings);
+          current = simulateDay(day, daySettings, legs);
         }
         timed[index] = current;
       }
@@ -343,8 +368,16 @@ export class PlanningService {
     order: PlannerPlace[],
     settings: DaySettings,
   ): Promise<SimulatedDay> {
+    return simulateDay(order, settings, await this.dayLegs(order, settings));
+  }
+
+  /** Real travel minutes for the day in simulateDay's `legs` form; undefined without Routes. */
+  private async dayLegs(
+    order: PlannerPlace[],
+    settings: DaySettings,
+  ): Promise<number[] | undefined> {
     if (!this.routes.enabled || order.length === 0) {
-      return simulateDay(order, settings);
+      return undefined;
     }
     const stops = order.map((p) => ({ lat: p.lat, lng: p.lng }));
     const points = settings.base
@@ -352,10 +385,10 @@ export class PlanningService {
       : stops;
     const legs = await this.routes.legMinutes(points);
     if (!legs) {
-      return simulateDay(order, settings);
+      return undefined;
     }
     // Without a hotel the day starts at the first place: no leg leads to it.
-    return simulateDay(order, settings, settings.base ? legs : [0, ...legs]);
+    return settings.base ? legs : [0, ...legs];
   }
 
   /** Replaces the trip's itinerary, room shares and satisfaction; the trip is PLANNED. */

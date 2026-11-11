@@ -67,8 +67,12 @@ class LodgingViewModel(private val trips: TripsRepository) : ViewModel() {
                 is ApiResult.Success -> {
                     options = hotels.value
                     fetchedAt = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"))
-                    // The balanced hotel is the recommended one, as in the design.
-                    selected = (hotels.value.firstOrNull { it.tag == "BALANCED" } ?: hotels.value.firstOrNull())?.placeId ?: SELF_LODGING
+                    // Keep the hotel already chosen for the trip; otherwise the balanced one is
+                    // the recommended one, as in the design.
+                    val chosen = trip?.lodging?.placeId?.takeIf { id -> hotels.value.any { it.placeId == id } }
+                    selected = chosen
+                        ?: (hotels.value.firstOrNull { it.tag == "BALANCED" } ?: hotels.value.firstOrNull())?.placeId
+                        ?: SELF_LODGING
                 }
                 // A one-day trip has no night to book: only "Tự lo chỗ ở" is offered.
                 is ApiResult.Failure -> if (hotels.error.code != "LODGING_NOT_NEEDED") error = tripErrorMessage(hotels.error)

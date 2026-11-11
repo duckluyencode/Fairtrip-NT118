@@ -13,7 +13,10 @@ import type {
 import type { SearchPlacesQuery, SuggestionsQuery } from './dto/place.query.js';
 import { distanceKm, type LatLng } from './geo.js';
 import { googleCategories } from './google/google-categories.js';
-import { GooglePlacesClient } from './google/google-places.client.js';
+import {
+  GooglePlacesClient,
+  type GooglePlace,
+} from './google/google-places.client.js';
 import {
   catalogDetail,
   catalogSummary,
@@ -30,6 +33,8 @@ const SUGGESTION_LIMIT = 5;
 // Text used to browse places around the user when there is no search text.
 const DISCOVER_QUERY = 'điểm tham quan';
 const NEAR_RADIUS_METERS = 30_000;
+// Google pages read at most per search when the category filter leaves a page empty.
+const MAX_EXTRA_PAGES = 2;
 
 export function placeNotFound(): AppError {
   return new AppError(
@@ -98,20 +103,35 @@ export class PlacesService {
         nextPageToken: null,
       };
     }
-    const result = await this.google.search({
+    const request = {
       query: text || DISCOVER_QUERY,
       pageSize: query.limit,
-      pageToken: query.pageToken,
       includedType: query.category === 'FOOD' ? 'restaurant' : undefined,
       near: origin
         ? { ...origin, radiusMeters: NEAR_RADIUS_METERS }
         : undefined,
+    };
+    const inCategory = (place: GooglePlace) =>
+      !query.category ||
+      googleCategories(place.types).categories.includes(query.category);
+    // Google cannot filter FUN or SCENIC itself, so a page may hold none of them: read
+    // a few more pages before answering with an empty one.
+    let result = await this.google.search({
+      ...request,
+      pageToken: query.pageToken,
     });
-    const found = result.places.filter(
-      (place) =>
-        !query.category ||
-        googleCategories(place.types).categories.includes(query.category),
-    );
+    let found = result.places.filter(inCategory);
+    for (
+      let extra = 0;
+      found.length === 0 && result.nextPageToken && extra < MAX_EXTRA_PAGES;
+      extra++
+    ) {
+      result = await this.google.search({
+        ...request,
+        pageToken: result.nextPageToken,
+      });
+      found = result.places.filter(inCategory);
+    }
     const ids = await this.storeGoogleIds(found.map((place) => place.id));
     return {
       items: found.flatMap((place) => {

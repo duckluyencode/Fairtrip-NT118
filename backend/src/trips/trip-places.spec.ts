@@ -17,6 +17,7 @@ describe('hoursForTrip', () => {
       openMinute: 480,
       closeMinute: 1020,
       closedDays: [1],
+      dayHours: [null, { open: 480, close: 1020 }, { open: 480, close: 1020 }],
     });
     expect(hoursForTrip(week, MONDAY, 8).closedDays).toEqual([1, 8]);
   });
@@ -26,6 +27,7 @@ describe('hoursForTrip', () => {
       openMinute: null,
       closeMinute: null,
       closedDays: [],
+      dayHours: [null, null],
     });
     expect(
       hoursForTrip(
@@ -33,6 +35,25 @@ describe('hoursForTrip', () => {
         MONDAY,
         2,
       ),
-    ).toEqual({ openMinute: null, closeMinute: null, closedDays: [] });
+    ).toEqual({
+      openMinute: null,
+      closeMinute: null,
+      closedDays: [],
+      dayHours: [null, null],
+    });
+  });
+
+  it('keeps the hours of each trip day', () => {
+    // Open 08:00–17:00 except Sunday, 08:00–12:00.
+    const week: DayHours[] = Array.from({ length: 7 }, (_, weekday) =>
+      weekday === 0
+        ? { allDay: false, open: 480, close: 720 }
+        : { allDay: false, open: 480, close: 1020 },
+    );
+    const saturday = fromDateOnly('2026-11-28');
+    expect(hoursForTrip(week, saturday, 2).dayHours).toEqual([
+      { open: 480, close: 1020 },
+      { open: 480, close: 720 },
+    ]);
   });
 });

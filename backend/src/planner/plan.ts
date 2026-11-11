@@ -194,8 +194,8 @@ function isBetter(
 
 /** 2-opt within each day: reverse a run of visits when it makes the day end earlier. */
 function improveRoutes(plan: Plan): void {
-  const settings = plan.settingsForDays();
-  for (const order of plan.days) {
+  for (const [index, order] of plan.days.entries()) {
+    const settings = { ...plan.settingsForDays(), day: index + 1 };
     let improved = true;
     while (improved) {
       improved = false;
@@ -376,10 +376,12 @@ function lowestMember(plan: Plan): PlannerMember | undefined {
 }
 
 function toResult(plan: Plan): PlannerResult {
-  const settings = plan.settingsForDays();
   const stops: PlannedStop[] = [];
   for (const [index, order] of plan.days.entries()) {
-    const timed = scheduleDay(order, settings);
+    const timed = scheduleDay(order, {
+      ...plan.settingsForDays(),
+      day: index + 1,
+    });
     if (!timed) {
       throw new Error(`Day ${index + 1} no longer fits; this is a planner bug`);
     }
