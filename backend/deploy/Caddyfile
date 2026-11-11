@@ -1,0 +1,6 @@
+# HTTPS in front of the API. Caddy gets and renews the certificate itself (Let's Encrypt)
+# for SITE_ADDRESS, e.g. 13-250-10-20.sslip.io, and redirects HTTP to HTTPS.
+{$SITE_ADDRESS} {
+	encode zstd gzip
+	reverse_proxy tripfair-api:3000
+}
