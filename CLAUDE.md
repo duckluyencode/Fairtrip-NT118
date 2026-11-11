@@ -92,7 +92,7 @@ README.md
 - 2026-11-10: SOS gửi tin bằng cách mở ứng dụng tin nhắn của máy với người nhận và nội dung (tên, liên kết bản đồ, tọa độ) soạn sẵn, không dùng `SmsManager`: Android 17 từ chối app không phải ứng dụng SMS dù đã cấp quyền `SEND_SMS`, và cách này không cần quyền nào.
 - 2026-11-10: Nhận diện ảnh chụp bằng ứng dụng camera của máy hoặc chọn bằng bộ chọn ảnh của hệ thống (không cần quyền camera, không thêm CameraX), rồi gửi lên `POST /places/recognize`.
 
-- 2026-11-11: Thêm đăng nhập bằng Google (chưa làm): backend nhận Google ID token và tự xác minh; bảng `users` thêm cột `google_sub`, `password_hash` cho phép trống (tài khoản chỉ dùng Google). Email Google trùng tài khoản đã có thì gộp vào tài khoản đó (Google đã xác minh email). Android dùng Credential Manager (androidx.credentials, credentials-play-services-auth, googleid). Làm trên nhánh và PR riêng.
+- 2026-11-11: Thêm đăng nhập bằng Google (backend xong 2026-11-12 với `POST /auth/google` và biến `GOOGLE_CLIENT_ID`; Android chưa làm): backend nhận Google ID token và tự xác minh; bảng `users` thêm cột `google_sub`, `password_hash` cho phép trống (tài khoản chỉ dùng Google). Email Google trùng tài khoản đã có thì gộp vào tài khoản đó (Google đã xác minh email). Android dùng Credential Manager (androidx.credentials, credentials-play-services-auth, googleid). Làm trên nhánh và PR riêng.
 
 ## Câu hỏi mở
 Mỗi mục ghi rõ cần chốt trước khi làm phần nào. Chưa tới phần đó thì để nguyên.

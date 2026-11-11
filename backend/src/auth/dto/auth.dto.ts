@@ -53,6 +53,14 @@ export class LoginDto {
   password: string;
 }
 
+export class GoogleSignInDto {
+  /** The ID token Google gave the app for this server's GOOGLE_CLIENT_ID. */
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(4096)
+  idToken: string;
+}
+
 export class ForgotPasswordDto {
   @IsContact()
   contact: string;

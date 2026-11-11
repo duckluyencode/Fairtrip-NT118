@@ -48,7 +48,8 @@ erDiagram
 | id | INT | Khóa chính |
 | email | VARCHAR(254), unique | Có thể trống nếu đăng ký bằng số điện thoại |
 | phone | VARCHAR(16), unique | E.164; có thể trống nếu đăng ký bằng email |
-| password_hash | VARCHAR(255) | Mật khẩu đã hash, không lưu mật khẩu gốc |
+| password_hash | VARCHAR(255) | Mật khẩu đã hash, không lưu mật khẩu gốc. Trống với tài khoản chỉ đăng nhập bằng Google (từ A13) |
+| google_sub | VARCHAR(255), unique | Mã tài khoản Google (`sub` trong ID token), có sau lần đầu đăng nhập bằng Google; trống nếu chưa từng. Thêm ở A13 |
 | full_name | VARCHAR(100) | |
 | avatar_url | VARCHAR(2048) | Ảnh trên S3 (giai đoạn B) |
 | verified_at | DATETIME | Trống khi chưa nhập đúng mã OTP đăng ký; chưa xác thực thì chưa đăng nhập được |

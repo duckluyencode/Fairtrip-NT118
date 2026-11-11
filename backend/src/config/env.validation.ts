@@ -85,6 +85,11 @@ class EnvironmentVariables {
   @IsOptional()
   @IsString()
   GOOGLE_MAPS_API_KEY?: string;
+
+  /** Optional: OAuth web client id Google ID tokens are issued for; without it Google sign-in is off. */
+  @IsOptional()
+  @IsString()
+  GOOGLE_CLIENT_ID?: string;
 }
 
 function smtpRequired(env: EnvironmentVariables): boolean {

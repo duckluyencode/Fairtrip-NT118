@@ -25,6 +25,10 @@ export const ErrorCode = {
   CodeDeliveryFailed: 'CODE_DELIVERY_FAILED',
   /** Refresh or password reset token is unknown, expired, revoked or already used. */
   InvalidToken: 'INVALID_TOKEN',
+  /** The Google ID token is not valid for this app, expired, or its email is unverified. */
+  InvalidGoogleToken: 'INVALID_GOOGLE_TOKEN',
+  /** GOOGLE_CLIENT_ID is not set, or Google's keys cannot be read right now. */
+  GoogleSignInUnavailable: 'GOOGLE_SIGN_IN_UNAVAILABLE',
 
   // Places
   PlaceNotFound: 'PLACE_NOT_FOUND',

@@ -36,6 +36,7 @@ describe('Auth (e2e)', () => {
   beforeEach(async () => {
     await resetDatabase(t.prisma);
     t.otp.sent.length = 0;
+    t.googleSignIn.accounts.clear();
   });
 
   afterAll(async () => {
@@ -335,6 +336,163 @@ describe('Auth (e2e)', () => {
         .auth(accessToken, { type: 'bearer' })
         .send({ fullName: 'Đức', email: 'other@example.com' })
         .expect(400);
+    });
+  });
+
+  describe('Google sign-in', () => {
+    const GOOGLE = {
+      sub: 'google-1',
+      email: EMAIL,
+      name: 'Đỗ Duy Đức',
+      picture: 'https://lh3.googleusercontent.com/a/photo',
+    };
+    const google = (idToken: string) =>
+      api().post('/api/v1/auth/google').send({ idToken });
+
+    beforeEach(() => {
+      t.googleSignIn.accounts.set('token-1', GOOGLE);
+    });
+
+    it('creates an account without a password the first time, then signs in to it', async () => {
+      const first = await google('token-1').expect(200);
+      expect(first.body.user).toMatchObject({
+        email: EMAIL,
+        fullName: 'Đỗ Duy Đức',
+        avatarUrl: GOOGLE.picture,
+        hasPassword: false,
+        googleLinked: true,
+      });
+      expect(first.body.accessToken).toEqual(expect.any(String));
+      expect(first.body.refreshToken).toEqual(expect.any(String));
+
+      const again = await google('token-1').expect(200);
+      expect(again.body.user.id).toBe(first.body.user.id);
+      expect(await t.prisma.user.count()).toBe(1);
+
+      await api()
+        .get('/api/v1/me')
+        .auth(again.body.accessToken, { type: 'bearer' })
+        .expect(200);
+    });
+
+    it('rejects a token Google did not issue for this app', async () => {
+      await google('forged')
+        .expect(401)
+        .expect((res) => expect(res.body.code).toBe('INVALID_GOOGLE_TOKEN'));
+      await api().post('/api/v1/auth/google').send({}).expect(400);
+      expect(await t.prisma.user.count()).toBe(0);
+    });
+
+    it('joins the account that already uses the email and keeps its password', async () => {
+      await signUp();
+      const res = await google('token-1').expect(200);
+      expect(res.body.user).toMatchObject({
+        fullName: 'Duy Đức',
+        hasPassword: true,
+        googleLinked: true,
+      });
+      expect(await t.prisma.user.count()).toBe(1);
+
+      await api()
+        .post('/api/v1/auth/login')
+        .send({ contact: EMAIL, password: PASSWORD })
+        .expect(200);
+    });
+
+    it('takes over a sign-up that never proved it owns the email, dropping its password', async () => {
+      await api()
+        .post('/api/v1/auth/register')
+        .send({ fullName: 'Kẻ lạ', contact: EMAIL, password: 'matkhau-la1' })
+        .expect(202);
+
+      const res = await google('token-1').expect(200);
+      expect(res.body.user).toMatchObject({
+        hasPassword: false,
+        googleLinked: true,
+      });
+      await api()
+        .post('/api/v1/auth/login')
+        .send({ contact: EMAIL, password: 'matkhau-la1' })
+        .expect(401);
+      // The code sent to the stranger's sign-up no longer works.
+      await api()
+        .post('/api/v1/auth/register/verify')
+        .send({ contact: EMAIL, code: t.otp.lastCode(EMAIL) })
+        .expect(400);
+    });
+
+    it('does not let a password sign in to an account that only uses Google', async () => {
+      await google('token-1').expect(200);
+      await api()
+        .post('/api/v1/auth/login')
+        .send({ contact: EMAIL, password: PASSWORD })
+        .expect(401)
+        .expect((res) => expect(res.body.code).toBe('WRONG_CREDENTIALS'));
+    });
+
+    it('lets an account that only uses Google set a password with a reset code', async () => {
+      await google('token-1').expect(200);
+      await api()
+        .post('/api/v1/auth/password/forgot')
+        .send({ contact: EMAIL })
+        .expect(202);
+      const verified = await api()
+        .post('/api/v1/auth/password/verify')
+        .send({ contact: EMAIL, code: t.otp.lastCode(EMAIL) })
+        .expect(200);
+      await api()
+        .post('/api/v1/auth/password/reset')
+        .send({ resetToken: verified.body.resetToken, password: PASSWORD })
+        .expect(204);
+
+      const res = await api()
+        .post('/api/v1/auth/login')
+        .send({ contact: EMAIL, password: PASSWORD })
+        .expect(200);
+      expect(res.body.user).toMatchObject({
+        hasPassword: true,
+        googleLinked: true,
+      });
+    });
+
+    it('refuses an email that is linked to another Google account', async () => {
+      await google('token-1').expect(200);
+      t.googleSignIn.accounts.set('token-2', { ...GOOGLE, sub: 'google-2' });
+      await google('token-2')
+        .expect(409)
+        .expect((res) => expect(res.body.code).toBe('ACCOUNT_EXISTS'));
+    });
+
+    it('deletes an account without a password after a new Google sign-in', async () => {
+      const { body } = await google('token-1').expect(200);
+      const del = () =>
+        api().delete('/api/v1/me').auth(body.accessToken, { type: 'bearer' });
+      t.googleSignIn.accounts.set('token-other', {
+        ...GOOGLE,
+        sub: 'google-2',
+        email: 'other@example.com',
+      });
+
+      await del()
+        .send({ password: PASSWORD })
+        .expect(403)
+        .expect((res) => expect(res.body.code).toBe('WRONG_CREDENTIALS'));
+      await del().send({ googleIdToken: 'forged' }).expect(403);
+      await del().send({ googleIdToken: 'token-other' }).expect(403);
+      expect(await t.prisma.user.count()).toBe(1);
+
+      await del().send({ googleIdToken: 'token-1' }).expect(204);
+      expect(await t.prisma.user.count()).toBe(0);
+    });
+
+    it('does not accept a Google token to delete an account never linked to Google', async () => {
+      const { accessToken } = await signUp();
+      await api()
+        .delete('/api/v1/me')
+        .auth(accessToken, { type: 'bearer' })
+        .send({ googleIdToken: 'token-1' })
+        .expect(403);
+      expect(await t.prisma.user.count()).toBe(1);
     });
   });
 
