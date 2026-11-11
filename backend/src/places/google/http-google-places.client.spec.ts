@@ -53,6 +53,15 @@ describe('toGooglePlace', () => {
       priceLevel: 'PRICE_LEVEL_INEXPENSIVE',
       priceRange: { currencyCode: 'VND', start: 40000, end: 80000 },
       todayHours: { allDay: false, open: 390, close: 1260 },
+      weeklyHours: [
+        { closed: true },
+        { closed: true },
+        { closed: true },
+        { allDay: false, open: 390, close: 1260 },
+        { closed: true },
+        { closed: true },
+        { closed: true },
+      ],
       summary: null,
       mapsUri: 'https://maps.google.com/?cid=1',
     });
@@ -107,13 +116,58 @@ describe('HttpGooglePlacesClient', () => {
   it('is disabled without an API key', async () => {
     const google = client();
     expect(google.enabled).toBe(false);
-    await expect(google.searchText('phở', 5)).resolves.toEqual([]);
+    await expect(
+      google.search({ query: 'phở', pageSize: 5 }),
+    ).rejects.toMatchObject({ code: 'GOOGLE_PLACES_UNAVAILABLE' });
     await expect(google.getPlace('x')).rejects.toMatchObject({
       code: 'GOOGLE_PLACES_UNAVAILABLE',
     });
   });
 
-  it('sends the key and a field mask, and maps the results', async () => {
+  it('sends the key, a field mask and the search options, and maps the results', async () => {
+    const fetch = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(
+          JSON.stringify({ places: [apiPlace], nextPageToken: 'next' }),
+          { status: 200 },
+        ),
+      );
+    vi.stubGlobal('fetch', fetch);
+
+    const result = await client('test-key').search({
+      query: 'phở',
+      pageSize: 5,
+      pageToken: 'page-2',
+      includedType: 'restaurant',
+      near: { lat: 16.07, lng: 108.22, radiusMeters: 90_000 },
+    });
+
+    expect(result.places.map((p) => p.name)).toEqual(['Phở Hồng']);
+    expect(result.nextPageToken).toBe('next');
+    const [url, init] = fetch.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe('https://places.googleapis.com/v1/places:searchText');
+    expect(init.headers).toMatchObject({ 'X-Goog-Api-Key': 'test-key' });
+    const mask = (init.headers as Record<string, string>)['X-Goog-FieldMask'];
+    expect(mask).toContain('places.displayName');
+    expect(mask).not.toContain('regularOpeningHours');
+    expect(JSON.parse(init.body as string)).toEqual({
+      textQuery: 'phở',
+      languageCode: 'vi',
+      pageSize: 5,
+      pageToken: 'page-2',
+      includedType: 'restaurant',
+      // Google accepts at most 50 km.
+      locationBias: {
+        circle: {
+          center: { latitude: 16.07, longitude: 108.22 },
+          radius: 50_000,
+        },
+      },
+    });
+  });
+
+  it('reads prices and opening hours in the same call when planning', async () => {
     const fetch = vi
       .fn()
       .mockResolvedValue(
@@ -121,29 +175,69 @@ describe('HttpGooglePlacesClient', () => {
       );
     vi.stubGlobal('fetch', fetch);
 
-    const places = await client('test-key').searchText('phở', 5);
-
-    expect(places.map((p) => p.name)).toEqual(['Phở Hồng']);
-    const [url, init] = fetch.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe('https://places.googleapis.com/v1/places:searchText');
-    expect(init.headers).toMatchObject({ 'X-Goog-Api-Key': 'test-key' });
-    expect(
-      (init.headers as Record<string, string>)['X-Goog-FieldMask'],
-    ).toContain('places.displayName');
-    expect(JSON.parse(init.body as string)).toMatchObject({
-      textQuery: 'phở',
-      languageCode: 'vi',
-      regionCode: 'VN',
-      pageSize: 5,
+    await client('test-key').search({
+      query: 'điểm tham quan Đà Nẵng',
+      pageSize: 20,
+      withDetails: true,
     });
+
+    const [, init] = fetch.mock.calls[0] as [string, RequestInit];
+    const mask = (init.headers as Record<string, string>)['X-Goog-FieldMask'];
+    expect(mask).toContain('places.priceLevel');
+    expect(mask).toContain('places.regularOpeningHours');
   });
 
-  it('returns no results instead of failing the search when Google errors', async () => {
+  it('fails the search with 503 when Google errors', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue(new Response('quota', { status: 429 })),
     );
-    await expect(client('test-key').searchText('phở', 5)).resolves.toEqual([]);
+    await expect(
+      client('test-key').search({ query: 'phở', pageSize: 5 }),
+    ).rejects.toMatchObject({ code: 'GOOGLE_PLACES_UNAVAILABLE' });
+  });
+
+  it('maps autocomplete suggestions and sends the session token', async () => {
+    const fetch = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          suggestions: [
+            {
+              placePrediction: {
+                placeId: 'ChIJ-gold',
+                structuredFormat: {
+                  mainText: { text: 'Cầu Vàng' },
+                  secondaryText: { text: 'Hòa Vang, Đà Nẵng' },
+                },
+              },
+            },
+            { queryPrediction: { text: { text: 'cầu vàng đà nẵng' } } },
+          ],
+        }),
+        { status: 200 },
+      ),
+    );
+    vi.stubGlobal('fetch', fetch);
+
+    const suggestions = await client('test-key').autocomplete(
+      'cau va',
+      'session-1',
+      null,
+    );
+
+    expect(suggestions).toEqual([
+      {
+        placeId: 'ChIJ-gold',
+        mainText: 'Cầu Vàng',
+        secondaryText: 'Hòa Vang, Đà Nẵng',
+      },
+    ]);
+    const [url, init] = fetch.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe('https://places.googleapis.com/v1/places:autocomplete');
+    expect(JSON.parse(init.body as string)).toMatchObject({
+      input: 'cau va',
+      sessionToken: 'session-1',
+    });
   });
 
   it('returns null for an unknown place and 503 for other errors', async () => {

@@ -27,9 +27,9 @@ erDiagram
     places ||--o{ favorites : ""
     places ||--o{ trip_stops : ""
     places ||--o{ vote_options : ""
+    places ||--o{ trip_lodgings : "khách sạn"
     trips ||--o{ trip_members : "gồm"
     trips ||--o| trip_lodgings : "ở tại"
-    hotels ||--o{ trip_lodgings : ""
     trips ||--o{ trip_stops : "ghé"
     trips ||--o{ vote_options : "bình chọn"
     trip_members ||--o{ member_interests : "thích"
@@ -129,7 +129,7 @@ Thuật toán dùng `price_max` làm chi phí của điểm để không ai vư�
 
 Khóa chính (place_id, category). Mọi nhóm của một điểm (gồm cả nhóm chính) để lọc, vd. Chợ đêm Sơn Trà thuộc cả Vui chơi và Ăn uống. Điểm GOOGLE không có dòng ở đây; nhóm của chúng được suy ra từ loại địa điểm Google trả về.
 
-### `place_interests` · A8
+### `place_interests` · tạo ở A8
 
 Khóa chính (place_id, interest). `interest` là một trong 8 sở thích của app: FOOD (ẩm thực), BEACH (biển), SCENERY (cảnh đẹp), RELAX (thư giãn), FUN (vui chơi), PHOTO (chụp ảnh), CULTURE (văn hóa), EXPLORE (khám phá). Thuật toán so sở thích của thành viên với sở thích của điểm để tính mức hài lòng.
 
@@ -148,86 +148,88 @@ Lịch sử được lưu khi gọi `GET /places?q=…` có từ khóa (gợi ý
 
 ## Chuyến đi
 
-Thiết kế các bảng dưới đây được xem lại ở A8, khi chốt các câu hỏi mở [Trip] (khung giờ mỗi ngày, cách tính khoảng cách).
+Tạo ở A8/A9 (migration `trips`). Ràng buộc CHECK được thêm tay trong migration: ngày về không trước ngày đi, khung giờ hợp lệ, tiền không âm, mức hài lòng 0–100.
 
-### `trips` · A8
+### `trips` · tạo ở A8
 
 | Cột | Kiểu | Ghi chú |
 | --- | --- | --- |
 | id | INT | |
-| owner_id | INT → users | Người tạo chuyến |
-| type | ENUM(SOLO, GROUP) | Chuyến một mình có đúng một thành viên |
-| name | VARCHAR | Tên nhóm, vd. "Nhóm Đà Nẵng" |
-| destination | VARCHAR | |
-| start_date, end_date | DATE | |
-| lodging_mode | ENUM(HOTEL, SELF) | SELF là "Tự lo chỗ ở"; ngân sách 0đ mặc định SELF |
-| status | ENUM(DRAFT, PLANNED) | DRAFT khi đang mời thành viên, bình chọn |
-| invite_code | VARCHAR, unique | Mã tham gia nhóm, vd. DN1214; trống với chuyến một mình |
-| vote_deadline | DATETIME | Hạn bình chọn của nhóm |
+| owner_id | INT → users | Người tạo chuyến; xóa user thì xóa chuyến |
+| type | ENUM(SOLO, GROUP) | Chuyến một mình là nhóm một người, dùng chung thuật toán |
+| name | VARCHAR(100), trống được | Tên nhóm, bắt buộc với GROUP |
+| city | VARCHAR(100) | Thành phố đến, dùng để tìm điểm và khách sạn trên Google |
+| start_date, end_date | DATE | Tối đa 14 ngày |
+| day_start_minute, day_end_minute | INT | Khung giờ đi chơi mỗi ngày, phút từ 0:00; mặc định 08:00–21:00 |
+| gap_minutes | INT | Nghỉ tối thiểu giữa hai điểm ("thời gian giữa các lần đi chơi"), mặc định 30, 0–240 |
+| lodging_mode | ENUM(HOTEL, SELF) | SELF là "Tự lo chỗ ở"; chuyến một mình ngân sách 0đ luôn SELF |
+| status | ENUM(DRAFT, PLANNED) | Về DRAFT (và xóa lộ trình) mỗi khi dữ liệu đầu vào đổi |
+| invite_code | VARCHAR(8), unique | 6 ký tự không có 0/O/1/I; trống với chuyến một mình |
+| vote_deadline | DATETIME, trống được | Sau hạn này thành viên không đổi phiếu được |
+| planned_at | DATETIME, trống được | Lần lập lộ trình gần nhất |
 | created_at, updated_at | DATETIME | |
 
 Mỗi nhóm lập đúng một chuyến nên thông tin nhóm nằm luôn trong `trips`.
 
-### `trip_members` · A8
+### `trip_members` · tạo ở A8
 
 | Cột | Kiểu | Ghi chú |
 | --- | --- | --- |
 | id | INT | |
 | trip_id, user_id | INT | Unique theo cặp |
-| role | ENUM(OWNER, MEMBER) | |
+| role | ENUM(OWNER, MEMBER) | Chỉ OWNER lập lộ trình, chọn chỗ ở, xóa chuyến |
 | budget | INT | Ngân sách tối đa; API chỉ trả cho chính người đó, cả nhóm chỉ thấy phần chi |
-| lodging_share | INT | Phần tiền phòng của người này (chia đều cho người ở chung phòng) |
-| satisfaction | TINYINT | Mức hài lòng (%) sau khi tối ưu |
-| ballot_sent_at | DATETIME | Thời điểm gửi phiếu bình chọn |
-| joined_at | DATETIME | |
+| lodging_share | INT | Phần tiền phòng cả chuyến, ghi lúc lập lộ trình |
+| satisfaction | INT, trống được | Mức hài lòng (%) sau khi lập lộ trình |
+| ballot_sent_at | DATETIME, trống được | Thời điểm "Gửi phiếu"; sau đó phiếu không đổi được |
+| joined_at | DATETIME | Thứ tự vào nhóm cũng là thứ tự xếp phòng |
 
-### `member_interests` · A8
+### `member_interests` · tạo ở A8
 
 Khóa chính (member_id, interest), cùng danh sách sở thích với `place_interests`. Lưu theo từng chuyến vì mỗi chuyến có thể chọn sở thích khác.
 
-### `hotels` · A8
+### `trip_lodgings` · tạo ở A8
 
-id, agoda_hotel_id (unique), name, address, lat, lng, rating, image_url, updated_at. Chỉ lưu thông tin cố định của khách sạn; giá phòng thay đổi theo ngày nên 3 gợi ý (rẻ nhất, cân bằng, gần lộ trình nhất) được tính lúc gọi API, không lưu.
-
-### `trip_lodgings` · A8
+Khách sạn là địa điểm thật tìm qua Google Places (loại `lodging`), nên không có bảng `hotels` riêng: khách sạn là một dòng `places` nguồn GOOGLE (chỉ lưu place ID); tên, địa chỉ, vị trí lấy trực tiếp từ Google mỗi lần hiển thị.
 
 | Cột | Kiểu | Ghi chú |
 | --- | --- | --- |
 | trip_id | INT → trips | Khóa chính; mỗi chuyến tối đa một nơi ở |
-| hotel_id | INT → hotels | |
-| check_in, check_out | DATE | |
-| rooms, guests_per_room | INT | |
+| place_id | INT → places | Khách sạn đã chọn |
+| check_in, check_out | DATE | Ngày đầu và ngày cuối chuyến |
+| rooms, guests_per_room | INT | 2 người một phòng; số phòng tính lại theo số thành viên lúc lập lộ trình |
 | price_per_night | INT | Giá một phòng một đêm, chụp lại lúc chọn |
-| price_provider, price_fetched_at | VARCHAR, DATETIME | |
+| price_source, price_provider, priced_at | ENUM, VARCHAR, DATETIME | Nguồn giá: GOOGLE_API khi Google có khoảng giá VND, còn lại ESTIMATED theo price_level (cho tới khi có Agoda API) |
 
-### `trip_stops` · A8
+### `trip_stops` · tạo ở A8
 
 | Cột | Kiểu | Ghi chú |
 | --- | --- | --- |
 | id | INT | |
 | trip_id | INT → trips | |
 | place_id | INT → places | |
-| day, position | INT | Ngày thứ mấy và thứ tự trong ngày |
-| start_minute | INT | Giờ bắt đầu, tính bằng phút từ 0:00 |
+| day, position | INT | Ngày thứ mấy và thứ tự trong ngày; unique (trip_id, day, position) |
+| start_minute | INT | Giờ bắt đầu, phút từ 0:00 |
+| travel_minutes | INT | Thời gian đi tới điểm này (Google Routes, hoặc ước tính đường chim bay) |
 | visit_minutes | INT | |
-| cost_per_person | INT | Giá chụp lại lúc lập lộ trình |
-| price_source | ENUM | Chụp lại cùng với giá |
+| cost_per_person | INT | Giá chụp lại lúc lập lộ trình (mức cao của khoảng giá) |
+| price_source, price_provider | ENUM, VARCHAR | Chụp lại cùng với giá |
 
 Giá được chụp lại vì giá đối tác thay đổi, còn lộ trình đã lập phải giữ đúng số đã tính. Điểm lưu trú trên dòng thời gian được API ghép từ `trip_lodgings`.
 
 ## Nhóm
 
-### `vote_options` · A9
+### `vote_options` · tạo ở A9
 
-id, trip_id → trips, place_id → places (unique theo cặp), added_by → trip_members, created_at. Các địa điểm thành viên đưa vào bình chọn.
+id, trip_id → trips, place_id → places (unique theo cặp), added_by_id → trip_members (trống khi người thêm rời nhóm), created_at. Các địa điểm thành viên đưa vào bình chọn; điểm người dùng tự chọn khi tạo chuyến một mình cũng là lựa chọn ở đây, nên thuật toán luôn lập từ `vote_options` khi có.
 
-### `votes` · A9
+### `votes` · tạo ở A9
 
-Khóa chính (option_id, member_id). Mỗi dòng là một thành viên tick đồng ý một địa điểm; số phiếu là đầu vào cho mức giá trị của điểm.
+Khóa chính (option_id, member_id), created_at. Mỗi dòng là một thành viên tick đồng ý một địa điểm; điểm được tick có giá trị cao hơn với người đã tick.
 
-### `stop_participants` · A9
+### `stop_participants` · tạo ở A9
 
-Khóa chính (stop_id, member_id). Ai đi điểm nào; phần chi của một người là tổng `cost_per_person` các điểm người đó đi cộng `lodging_share`. Vd. một thành viên không đi Cầu Vàng thì không trả vé 900.000đ.
+Khóa chính (stop_id, member_id), cost. Ai đi điểm nào và trả bao nhiêu ở đó (0đ khi vé khu bao trọn, vd. Cầu Vàng với người đã có vé Bà Nà Hills). Phần chi của một người là tổng `cost` cộng `lodging_share`. Vd. một thành viên không đủ tiền đi Bà Nà Hills thì không có dòng ở điểm đó và không trả vé 900.000đ.
 
 ## Cá nhân
 
@@ -235,12 +237,23 @@ Khóa chính (stop_id, member_id). Ai đi điểm nào; phần chi của một n
 
 Khóa chính (user_id, place_id), created_at; chỉ mục place_id. Lưu lại một điểm đã lưu hoặc bỏ lưu điểm chưa lưu đều không lỗi. Xóa user hoặc điểm thì xóa luôn dòng yêu thích. Điểm GOOGLE trong danh sách yêu thích được lấy chi tiết trực tiếp từ Google khi hiển thị.
 
-### `emergency_contacts` · A10
+### `emergency_contacts` · tạo ở A10
 
-id, user_id → users, name, relation, phone (E.164), receives_sos (nhận tin SOS hay không), created_at. Lưu trên server để giữ được khi đổi điện thoại; app Android giữ bản sao để SOS vẫn chạy khi mất mạng.
+| Cột | Kiểu | Ghi chú |
+| --- | --- | --- |
+| id | INT | |
+| user_id | INT → users | Xóa user thì xóa luôn liên hệ |
+| name | VARCHAR(100) | |
+| relation | VARCHAR(50), trống được | vd. "Mẹ" |
+| phone | VARCHAR(16) | E.164; unique theo (user_id, phone) |
+| receives_sos | BOOLEAN | Có nhận tin SOS không, mặc định có |
+| created_at, updated_at | DATETIME | |
+
+Mỗi người tối đa 5 liên hệ (mỗi lần SOS gửi một SMS cho từng người). Lưu trên server để giữ được khi đổi điện thoại; app Android giữ bản sao để SOS vẫn chạy khi mất mạng, và tự gửi SMS bằng SmsManager.
 
 ## Không lưu trong database
 
 - **Đánh giá địa điểm**: lấy từ Google Places API (New), không có bảng `reviews`.
-- **Kết quả nhận diện ảnh**: Cloud Vision trả kết quả theo từng lần chụp, không cần lưu.
-- **Gợi ý khách sạn**: tính lúc gọi API theo ngày của chuyến đi.
+- **Ảnh và kết quả nhận diện**: ảnh chỉ được gửi tới Cloud Vision rồi bỏ, không lưu; địa điểm tìm được lưu như mọi điểm Google (chỉ place ID).
+- **Gợi ý khách sạn**: tìm trên Google Places lúc gọi API; chỉ khách sạn đã chọn mới được lưu (place ID và giá chụp lại).
+- **Tổng dồn, số tiền còn lại, cảnh báo của lộ trình**: tính khi trả lộ trình.

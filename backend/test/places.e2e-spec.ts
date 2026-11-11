@@ -28,6 +28,11 @@ const googlePho: GooglePlace = {
   priceLevel: 'PRICE_LEVEL_MODERATE',
   priceRange: null,
   todayHours: { allDay: false, open: 390, close: 1260 },
+  weeklyHours: Array.from({ length: 7 }, () => ({
+    allDay: false as const,
+    open: 390,
+    close: 1260,
+  })),
   summary: null,
   mapsUri: 'https://maps.google.com/?cid=1',
 };
@@ -39,6 +44,7 @@ const googleBeach: GooglePlace = {
   types: ['beach'],
   priceLevel: null,
   todayHours: { allDay: true },
+  weeklyHours: Array.from({ length: 7 }, () => ({ allDay: true as const })),
 };
 
 describe('Places, search history and favorites (e2e)', () => {
@@ -61,8 +67,7 @@ describe('Places, search history and favorites (e2e)', () => {
     await resetDatabase(t.prisma);
     await seedCatalog(t.prisma);
     t.otp.sent.length = 0;
-    t.google.enabled = false;
-    t.google.places = [];
+    t.google.reset();
     token = await signUp(t);
   });
 
@@ -356,15 +361,20 @@ describe('Places, search history and favorites (e2e)', () => {
       t.google.places = [googlePho, googleBeach];
     });
 
-    it('fills the first page with Google results and stores only their IDs', async () => {
+    it('searches Google instead of the sample catalog and stores only place IDs', async () => {
       const first = await get('/places?q=pham%20van%20dong').expect(200);
       expect(first.body.items.map((p: Summary) => [p.name, p.source])).toEqual([
         ['Phở Hồng', 'GOOGLE'],
         ['Bãi biển Phạm Văn Đồng', 'GOOGLE'],
       ]);
+      expect(first.body).toMatchObject({ total: null, nextPageToken: null });
       expect(first.body.items[0]).toMatchObject({
         attribution: 'Google Maps',
         category: 'FOOD',
+      });
+      expect(t.google.searches[0]).toMatchObject({
+        query: 'pham van dong',
+        pageSize: 20,
       });
 
       const stored = await t.prisma.place.findMany({
@@ -383,6 +393,32 @@ describe('Places, search history and favorites (e2e)', () => {
       );
     });
 
+    it('pages with nextPageToken and searches around the user', async () => {
+      const res = await get('/places?q=pho&limit=1&lat=16.06&lng=108.2').expect(
+        200,
+      );
+      expect(res.body.nextPageToken).toBe('next-page');
+
+      await get('/places?q=pho&limit=1&pageToken=next-page').expect(200);
+      expect(t.google.searches[0].near).toEqual({
+        lat: 16.06,
+        lng: 108.2,
+        radiusMeters: 30000,
+      });
+      expect(t.google.searches[1].pageToken).toBe('next-page');
+    });
+
+    it('browses places around the user without a query', async () => {
+      const res = await get('/places?lat=16.06&lng=108.2').expect(200);
+      expect(res.body.items).toHaveLength(2);
+      expect(t.google.searches[0].query).toBe('điểm tham quan');
+
+      // Without text or a position there is nothing to ask Google.
+      const empty = await get('/places').expect(200);
+      expect(empty.body.items).toEqual([]);
+      expect(t.google.searches).toHaveLength(1);
+    });
+
     it('applies the category filter to Google results', async () => {
       const res = await get('/places?q=pham&category=SCENIC').expect(200);
       expect(res.body.items.map((p: Summary) => p.name)).toEqual([
@@ -390,16 +426,17 @@ describe('Places, search history and favorites (e2e)', () => {
       ]);
     });
 
-    it('shows catalog results before Google results', async () => {
-      const res = await get('/places?q=cau').expect(200);
-      expect(res.body.items.map((p: Summary) => p.source)).toEqual([
-        'CATALOG',
-        'CATALOG',
-        'CATALOG',
-        'GOOGLE',
-        'GOOGLE',
+    it('suggests Google places while typing', async () => {
+      const res = await get(
+        `/places/suggestions?q=${encodeURIComponent('Phở')}`,
+      ).expect(200);
+      expect(res.body).toEqual([
+        {
+          id: expect.any(Number),
+          name: 'Phở Hồng',
+          area: '10 Lê Duẩn, Hải Châu',
+        },
       ]);
-      expect(res.body.total).toBe(5);
     });
 
     it('fetches details live and prices them with the estimate chain', async () => {

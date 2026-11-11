@@ -24,6 +24,7 @@ const codeByStatus: Partial<Record<number, ErrorCode>> = {
   [HttpStatus.FORBIDDEN]: ErrorCode.Forbidden,
   [HttpStatus.NOT_FOUND]: ErrorCode.NotFound,
   [HttpStatus.CONFLICT]: ErrorCode.Conflict,
+  [HttpStatus.PAYLOAD_TOO_LARGE]: ErrorCode.PayloadTooLarge,
   [HttpStatus.TOO_MANY_REQUESTS]: ErrorCode.TooManyRequests,
 };
 

@@ -7,6 +7,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsUUID,
   Max,
   MaxLength,
   Min,
@@ -40,11 +41,18 @@ export class SearchPlacesQuery extends OriginQuery {
   @IsIn(Object.values(PlaceCategory))
   category?: PlaceCategory;
 
+  /** Catalog search only; Google results page with pageToken instead. */
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
   page: number = 1;
+
+  /** nextPageToken of the previous Google results page. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  pageToken?: string;
 
   @IsOptional()
   @Type(() => Number)
@@ -54,12 +62,24 @@ export class SearchPlacesQuery extends OriginQuery {
   limit: number = 20;
 }
 
-export class SuggestionsQuery {
+export class SuggestionsQuery extends OriginQuery {
   @TrimSpaces()
   @IsString()
   @IsNotEmpty()
   @MaxLength(100)
   q: string;
+
+  /** Same UUID for one typing session, then on the detail request of the chosen place. */
+  @IsOptional()
+  @IsUUID()
+  sessionToken?: string;
+}
+
+export class PlaceDetailQuery extends OriginQuery {
+  /** The typing session's token when the place was chosen from suggestions. */
+  @IsOptional()
+  @IsUUID()
+  sessionToken?: string;
 }
 
 export class CategoryQuery {

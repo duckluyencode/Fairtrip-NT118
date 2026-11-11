@@ -66,8 +66,10 @@ export class PlacePage {
   items: PlaceSummary[];
   page: number;
   limit: number;
-  /** Matching places across all pages. */
-  total: number;
+  /** Matching places across all pages; null for Google results (use nextPageToken). */
+  total: number | null;
+  /** Pass as pageToken for the next Google results page; null when there is none. */
+  nextPageToken: string | null;
 }
 
 export class PlaceSuggestion {

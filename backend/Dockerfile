@@ -18,7 +18,7 @@ COPY src ./src
 RUN npm run build
 
 # One-off job: applies pending migrations, then exits. Needs DATABASE_URL at run time.
-# The sample catalog can be loaded with the command `npx prisma db seed` (needs MYSQL_*).
+# The sample catalog is for development only: prisma/seed.ts refuses to run in production.
 FROM build AS migrate
 ENV NODE_ENV=production
 CMD ["npx", "prisma", "migrate", "deploy"]

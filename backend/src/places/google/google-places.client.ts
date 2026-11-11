@@ -20,18 +20,57 @@ export interface GooglePlace {
   priceRange: GooglePriceInput['priceRange'];
   /** Today's hours in Vietnam, or null when Google has none. */
   todayHours: DayHours | null;
+  /** Hours for each weekday, 0 = Sunday; null when Google has none. */
+  weeklyHours: (DayHours | null)[] | null;
   summary: string | null;
   mapsUri: string | null;
 }
 
+export interface TextSearchRequest {
+  query: string;
+  /** 1–20 results. */
+  pageSize: number;
+  /** From the previous page's nextPageToken. */
+  pageToken?: string;
+  /** Only this Google place type, e.g. "lodging" or "restaurant". */
+  includedType?: string;
+  /** Prefer results around this point. */
+  near?: { lat: number; lng: number; radiusMeters: number };
+  /** Also read price and opening hours (a pricier field mask, used for trip planning). */
+  withDetails?: boolean;
+}
+
+export interface TextSearchResult {
+  places: GooglePlace[];
+  nextPageToken: string | null;
+}
+
+export interface AutocompleteSuggestion {
+  placeId: string;
+  /** e.g. "Cầu Vàng" */
+  mainText: string;
+  /** e.g. "Hòa Vang, Đà Nẵng, Việt Nam" */
+  secondaryText: string | null;
+}
+
 /** Google Places API (New). Injected as a token so tests and keyless setups can replace it. */
 export abstract class GooglePlacesClient {
-  /** False without GOOGLE_MAPS_API_KEY; search then uses the catalog only. */
+  /** False without GOOGLE_MAPS_API_KEY; the app then uses the sample catalog (development). */
   abstract readonly enabled: boolean;
-  abstract searchText(
-    query: string,
-    maxResults: number,
-  ): Promise<GooglePlace[]>;
+  /** Text Search; throws GOOGLE_PLACES_UNAVAILABLE when Google cannot answer. */
+  abstract search(request: TextSearchRequest): Promise<TextSearchResult>;
+  /**
+   * Suggestions while typing. Pass the same sessionToken until the user opens a place, so
+   * Google bills the typing session together with that place's details.
+   */
+  abstract autocomplete(
+    input: string,
+    sessionToken: string | undefined,
+    near: { lat: number; lng: number } | null,
+  ): Promise<AutocompleteSuggestion[]>;
   /** Null when Google does not know the place (any more). */
-  abstract getPlace(placeId: string): Promise<GooglePlace | null>;
+  abstract getPlace(
+    placeId: string,
+    sessionToken?: string,
+  ): Promise<GooglePlace | null>;
 }

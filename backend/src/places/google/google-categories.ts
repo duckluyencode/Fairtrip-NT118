@@ -1,4 +1,4 @@
-import type { PlaceCategory } from '../../generated/prisma/enums.js';
+import type { Interest, PlaceCategory } from '../../generated/prisma/enums.js';
 
 const FOOD_TYPES = new Set([
   'restaurant',
@@ -70,6 +70,68 @@ export function googleCategories(types: string[]): {
   return categories.length > 0
     ? { category: categories[0], categories }
     : { category: 'FUN', categories: ['FUN'] };
+}
+
+// Google place types for each of the app's travel preferences.
+const INTEREST_TYPES: Record<Interest, string[]> = {
+  FOOD: [
+    'restaurant',
+    'food',
+    'cafe',
+    'coffee_shop',
+    'bakery',
+    'food_court',
+    'market',
+  ],
+  BEACH: ['beach'],
+  SCENERY: [
+    'tourist_attraction',
+    'natural_feature',
+    'park',
+    'national_park',
+    'bridge',
+    'observation_deck',
+    'garden',
+  ],
+  RELAX: ['spa', 'park', 'beach', 'garden', 'cafe'],
+  FUN: [
+    'amusement_park',
+    'water_park',
+    'night_club',
+    'bowling_alley',
+    'aquarium',
+    'zoo',
+    'shopping_mall',
+  ],
+  PHOTO: [
+    'tourist_attraction',
+    'observation_deck',
+    'bridge',
+    'historical_landmark',
+    'monument',
+  ],
+  CULTURE: [
+    'museum',
+    'art_gallery',
+    'historical_landmark',
+    'monument',
+    'church',
+    'hindu_temple',
+    'buddhist_temple',
+    'place_of_worship',
+  ],
+  EXPLORE: ['tourist_attraction', 'market', 'hiking_area', 'national_park'],
+};
+
+/** The app's travel preferences a Google place suits, from its place types. */
+export function googleInterests(types: string[]): Interest[] {
+  // "vietnamese_restaurant", "seafood_restaurant"... all count as restaurants.
+  const all = types.some((t) => t.endsWith('_restaurant'))
+    ? [...types, 'restaurant']
+    : types;
+  return (Object.keys(INTEREST_TYPES) as Interest[]).filter((interest) =>
+    INTEREST_TYPES[interest].some((t) => all.includes(t)),
+  );
 }
 
 /** Visit time used for Google places, which have no TripFair estimate. */
