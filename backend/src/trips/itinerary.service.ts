@@ -3,6 +3,7 @@ import { AppError } from '../common/errors/app-error.js';
 import { ErrorCode } from '../common/errors/error-code.js';
 import { addDays, daysInclusive, toDateOnly, toHhmm } from '../common/time.js';
 import { jainIndex } from '../planner/scoring.js';
+import { travelMinutes } from '../planner/travel.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type {
   ItineraryDayResponse,
@@ -125,7 +126,14 @@ export class ItineraryService {
     }
     for (const day of dayViews) {
       const last = stops.filter((s) => s.day === day.day).at(-1);
-      if (last && last.startMinute + last.visitMinutes > trip.dayEndMinute) {
+      // The day ends back at the hotel, as the planner counts it.
+      const from = last ? places.get(last.placeId)?.location : null;
+      const back =
+        from && lodging?.location ? travelMinutes(from, lodging.location) : 0;
+      if (
+        last &&
+        last.startMinute + last.visitMinutes + back > trip.dayEndMinute
+      ) {
         warnings.push({ code: 'DAY_TOO_LONG', day: day.day });
       }
     }

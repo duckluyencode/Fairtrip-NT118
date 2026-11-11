@@ -27,7 +27,7 @@ interface LocationProvider {
     suspend fun current(): LocationDto?
 }
 
-/** Uses Google Play services: the last known fix when there is one, else a fresh one. */
+/** Uses Google Play services: the last known fix when it is recent, else a fresh one. */
 class FusedLocationProvider(context: Context) : LocationProvider {
     private val appContext = context.applicationContext
     private val client = LocationServices.getFusedLocationProviderClient(appContext)
@@ -53,17 +53,22 @@ class FusedLocationProvider(context: Context) : LocationProvider {
 
     @SuppressLint("MissingPermission") // checked by hasPermission()
     private suspend fun locate(): LocationDto? {
-        client.lastLocation.awaitOrNull()?.let { return LocationDto(it.latitude, it.longitude) }
+        // The last fix can be hours old (SOS must not send where the phone was this morning):
+        // only a recent one is used as is.
+        client.lastLocation.awaitOrNull()
+            ?.takeIf { SystemClock.elapsedRealtimeNanos() - it.elapsedRealtimeNanos <= MAX_LAST_FIX_AGE_NANOS }
+            ?.let { return LocationDto(it.latitude, it.longitude) }
         val cancel = CancellationTokenSource()
         val fresh = withTimeoutOrNull(FRESH_FIX_TIMEOUT_MS) {
-            client.getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, cancel.token).awaitOrNull()
+            client.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, cancel.token).awaitOrNull()
         }
         if (fresh == null) cancel.cancel()
         return fresh?.let { LocationDto(it.latitude, it.longitude) }
     }
 
     private companion object {
-        const val FRESH_FIX_TIMEOUT_MS = 4_000L
+        const val FRESH_FIX_TIMEOUT_MS = 10_000L
+        const val MAX_LAST_FIX_AGE_NANOS = 2 * 60 * 1_000_000_000L
         const val REUSE_FIX_MS = 60_000L
         const val RETRY_AFTER_MS = 15_000L
     }

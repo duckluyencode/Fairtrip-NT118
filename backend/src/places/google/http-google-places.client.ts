@@ -7,6 +7,7 @@ import {
   type AutocompleteSuggestion,
   type DayHours,
   type GooglePlace,
+  type PlaceFields,
   type TextSearchRequest,
   type TextSearchResult,
 } from './google-places.client.js';
@@ -49,6 +50,11 @@ const DETAIL_FIELDS = [
   'priceRange',
   'regularOpeningHours',
   'utcOffsetMinutes',
+];
+// Trips need prices and hours, not the description and Maps link of the place screen.
+const TRIP_DETAIL_FIELDS = DETAIL_FIELDS.join(',');
+const PLACE_DETAIL_FIELDS = [
+  ...DETAIL_FIELDS,
   'editorialSummary',
   'googleMapsUri',
 ].join(',');
@@ -257,6 +263,7 @@ export class HttpGooglePlacesClient extends GooglePlacesClient {
   async getPlace(
     placeId: string,
     sessionToken?: string,
+    fields: PlaceFields = 'detail',
   ): Promise<GooglePlace | null> {
     if (!this.apiKey) {
       throw unavailable();
@@ -268,7 +275,9 @@ export class HttpGooglePlacesClient extends GooglePlacesClient {
       res = await fetch(
         `${BASE_URL}/places/${encodeURIComponent(placeId)}?${params.toString()}`,
         {
-          headers: this.headers(DETAIL_FIELDS),
+          headers: this.headers(
+            fields === 'trip' ? TRIP_DETAIL_FIELDS : PLACE_DETAIL_FIELDS,
+          ),
           signal: AbortSignal.timeout(TIMEOUT_MS),
         },
       );

@@ -86,10 +86,7 @@ export class TripsService {
       await this.places.assertExists(placeId);
     }
     // A 0 VND budget cannot pay for a room: "Tự lo chỗ ở" (rule in CLAUDE.md).
-    const lodgingMode =
-      dto.budget === 0 && dto.type === 'SOLO'
-        ? 'SELF'
-        : (dto.lodging ?? 'SELF');
+    const lodgingMode = dto.budget === 0 ? 'SELF' : (dto.lodging ?? 'SELF');
 
     for (let attempt = 0; ; attempt++) {
       try {

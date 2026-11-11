@@ -38,6 +38,11 @@ export interface PlannerPlace extends LatLng {
   /** Minutes after midnight; both null means open all day. */
   openMinute: number | null;
   closeMinute: number | null;
+  /**
+   * Hours of each trip day (index 0 = day 1), overriding openMinute/closeMinute on days a
+   * schedule is built for; null means open all day (or unknown).
+   */
+  dayHours?: ({ open: number; close: number } | null)[];
   /** 1-based trip days on which the place is closed (e.g. museums on Mondays). */
   closedDays?: number[];
   /**

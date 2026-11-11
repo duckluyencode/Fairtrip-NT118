@@ -259,7 +259,7 @@ export class LodgingService {
   ): Promise<GooglePlace | null> {
     if (!googlePlaceId || !this.google.enabled) return null;
     try {
-      return await this.google.getPlace(googlePlaceId);
+      return await this.google.getPlace(googlePlaceId, undefined, 'trip');
     } catch (error) {
       this.logger.warn(`Hotel ${googlePlaceId} unavailable: ${String(error)}`);
       return null;
@@ -270,7 +270,7 @@ export class LodgingService {
     const row = await this.prisma.place.findUnique({ where: { id: placeId } });
     const place =
       row?.source === 'GOOGLE' && row.googlePlaceId && this.google.enabled
-        ? await this.google.getPlace(row.googlePlaceId)
+        ? await this.google.getPlace(row.googlePlaceId, undefined, 'trip')
         : null;
     if (!place || !isLodging(place)) {
       throw new AppError(
