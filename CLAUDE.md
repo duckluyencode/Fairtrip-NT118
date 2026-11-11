@@ -18,7 +18,7 @@ Khi đề xuất tạo thư mục hoặc module mới: giải thích vai trò c�
 Khi có `android/` và `backend/`: lệnh build/test và quy ước riêng của từng phần đặt trong `android/CLAUDE.md` và `backend/CLAUDE.md`; file này chỉ giữ phần dùng chung.
 
 ```
-.github/     GitHub Actions (CI backend)
+.github/     GitHub Actions (CI backend, CI Android)
 android/     App Android Kotlin + Jetpack Compose, xem android/CLAUDE.md
 backend/     API server NestJS (TypeScript), xem backend/CLAUDE.md
 docs/        Tài liệu dự án (mô tả tổng quan, thiết kế database, lộ trình và tiến độ)

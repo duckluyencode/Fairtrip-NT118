@@ -109,3 +109,4 @@ Nội dung đầy đủ ở mục "Câu hỏi mở" của [CLAUDE.md](../CLAUDE.
 - **2026-11-10:** Chạy thử app trên máy ảo Android 17 với backend trên máy: đăng nhập, tìm kiếm, tạo chuyến và lập lộ trình chạy trọn luồng. Sửa hai lỗi lộ ra khi chạy thật (app không gọi được `10.0.2.2` trên Android 17; hộp chọn ngày hiện tiếng Anh). Bắt đầu AN6: thêm Google Maps SDK và vị trí.
 - **2026-11-10:** AN6: SOS đọc vị trí thật và mở ứng dụng tin nhắn với tin soạn sẵn (Android 17 không cho app gửi SMS trực tiếp); nhận diện ảnh qua camera của máy; thêm địa điểm khi tự thiết kế lộ trình; xóa liên hệ, rời nhóm, xóa chuyến đi.
 - **2026-11-11:** Có khóa Google (server và Android): app tìm được địa điểm thật trên cả nước, bản đồ hiện đường phố, chuyến Hà Nội lập được lộ trình với khách sạn và điểm tham quan từ Google.
+- **2026-11-11:** Thêm CI cho Android: unit test, lint và build debug cho mọi PR chạm `android/`.

@@ -15,6 +15,7 @@ Package `com.tripfair.app`, minSdk 26, compileSdk/targetSdk 37. Giao diện luô
 - `./gradlew installDebug`: cài APK debug lên máy ảo hoặc điện thoại đang kết nối
 - `./gradlew lint`: kiểm tra code bằng Android Lint
 - `./gradlew testDebugUnitTest`: chạy unit test (JUnit 4) trong `app/src/test/`
+- GitHub Actions (`.github/workflows/android-ci.yml`) chạy unit test, lint và build debug cho mọi PR chạm `android/`; CI không có `local.properties` nên build không có khóa Maps.
 
 ## Cấu trúc code (`app/src/main/java/com/tripfair/app/`)
 - `data/`: repository theo từng loại dữ liệu, mỗi cái gồm interface và bản `Remote…` gọi backend bằng Retrofit: `auth/` (tài khoản), `places/` (tìm kiếm, chi tiết, lịch sử, yêu thích), `contacts/` (liên hệ khẩn cấp, kèm bản sao trong DataStore để SOS dùng khi mất mạng), `trips/` (chuyến đi, chỗ ở, bình chọn, lộ trình), `recognition/` (gửi ảnh để nhận diện địa danh), `sos/` (nội dung và intent tin SOS). `AppContainer.kt` tạo repository một lần (giữ trong `TripFairApplication`).
