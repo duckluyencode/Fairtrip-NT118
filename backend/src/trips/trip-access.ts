@@ -15,6 +15,25 @@ export const tripInclude = {
 export type LoadedTrip = Prisma.TripGetPayload<{ include: typeof tripInclude }>;
 export type LoadedMember = LoadedTrip['members'][number];
 
+/**
+ * Any change to what the planner uses (members, budgets, interests, places, votes,
+ * lodging) makes the itinerary stale, so it is removed and the trip goes back to DRAFT.
+ */
+export async function resetPlan(
+  tx: Prisma.TransactionClient,
+  tripId: number,
+): Promise<void> {
+  await tx.tripStop.deleteMany({ where: { tripId } });
+  await tx.tripMember.updateMany({
+    where: { tripId },
+    data: { lodgingShare: 0, satisfaction: null },
+  });
+  await tx.trip.update({
+    where: { id: tripId },
+    data: { status: 'DRAFT', plannedAt: null },
+  });
+}
+
 export function tripNotFound(): AppError {
   return new AppError(
     HttpStatus.NOT_FOUND,
@@ -59,19 +78,8 @@ export class TripAccess {
     return loaded;
   }
 
-  /**
-   * Any change to what the planner uses (members, budgets, interests, places, votes,
-   * lodging) makes the itinerary stale, so it is removed and the trip goes back to DRAFT.
-   */
-  async resetPlan(tx: Prisma.TransactionClient, tripId: number): Promise<void> {
-    await tx.tripStop.deleteMany({ where: { tripId } });
-    await tx.tripMember.updateMany({
-      where: { tripId },
-      data: { lodgingShare: 0, satisfaction: null },
-    });
-    await tx.trip.update({
-      where: { id: tripId },
-      data: { status: 'DRAFT', plannedAt: null },
-    });
+  /** See resetPlan. */
+  resetPlan(tx: Prisma.TransactionClient, tripId: number): Promise<void> {
+    return resetPlan(tx, tripId);
   }
 }

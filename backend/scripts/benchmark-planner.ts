@@ -43,6 +43,7 @@ function interests(rng: Random): Interest[] {
 // Prices in VND per person, like the app's data: many free places, a few big tickets.
 const COSTS = [0, 0, 0, 30_000, 50_000, 100_000, 150_000, 300_000, 600_000];
 const VISITS = [30, 45, 60, 90, 120, 180];
+const MEAL_COSTS = [30_000, 50_000, 100_000, 150_000];
 const BUDGETS = [0, 150_000, 300_000, 600_000, 1_200_000];
 const CENTER = { lat: 16.05, lng: 108.22 }; // Đà Nẵng
 
@@ -68,14 +69,20 @@ function instance(
       rng.next() < 0.15
         ? places.find((p) => p.cost >= 300_000 && p.coveredBy === null)
         : undefined;
+    // A quarter of the places are restaurants, planned at lunch or dinner time.
+    const meal = !parent && rng.next() < 0.25;
+    const placeInterests = interests(rng);
     places.push({
       id: i + 1,
       lat: CENTER.lat + rng.between(-0.06, 0.06),
       lng: CENTER.lng + rng.between(-0.06, 0.06),
-      visitMinutes: rng.pick(VISITS),
-      cost: parent ? parent.cost : rng.pick(COSTS),
+      visitMinutes: meal ? 60 : rng.pick(VISITS),
+      cost: parent ? parent.cost : rng.pick(meal ? MEAL_COSTS : COSTS),
       coveredBy: parent ? parent.id : null,
-      interests: interests(rng),
+      interests: meal
+        ? [...new Set<Interest>(['FOOD', ...placeInterests])]
+        : placeInterests,
+      meal,
       rating: Math.round(rng.between(3.5, 5) * 10) / 10,
       openMinute: hours ? Math.round(rng.between(420, 540)) : null,
       closeMinute: hours ? Math.round(rng.between(1020, 1320)) : null,

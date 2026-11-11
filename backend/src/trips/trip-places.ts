@@ -11,6 +11,8 @@ import {
   DEFAULT_VISIT_MINUTES,
   googleCategories,
   googleInterests,
+  isMealPlace,
+  visitMinutesFor,
 } from '../places/google/google-categories.js';
 import {
   GooglePlacesClient,
@@ -39,6 +41,8 @@ export interface TripPlace {
   visitMinutes: number;
   price: PriceInfo;
   interests: Interest[];
+  /** Restaurants: planned at lunch or dinner time only. */
+  meal: boolean;
   /** Catalog places inside a ticketed area (Cầu Vàng in Bà Nà Hills). */
   parentId: number | null;
   /** Hours for each weekday, 0 = Sunday; null when unknown (treated as always open). */
@@ -118,9 +122,10 @@ export function fromGoogle(id: number, place: GooglePlace): TripPlace {
         ? { lat: place.lat, lng: place.lng }
         : null,
     rating: place.rating,
-    visitMinutes: DEFAULT_VISIT_MINUTES[category],
+    visitMinutes: visitMinutesFor(place.types, category),
     price: googlePrice(place, category),
     interests: googleInterests(place.types),
+    meal: isMealPlace(place.types),
     parentId: null,
     weeklyHours: place.weeklyHours,
     types: place.types,
@@ -158,6 +163,8 @@ function fromCatalog(row: CatalogTripRow): TripPlace {
     visitMinutes: row.visitMinutes ?? DEFAULT_VISIT_MINUTES[category],
     price,
     interests: row.interests.map((i) => i.interest),
+    // Catalog food places are restaurants and markets: both make a meal.
+    meal: category === 'FOOD',
     parentId: row.parentId,
     weeklyHours: Array.from({ length: 7 }, () => hours),
     types: [],

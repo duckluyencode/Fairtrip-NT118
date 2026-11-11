@@ -10,7 +10,9 @@ import {
   Patch,
   Post,
   Put,
+  Query,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CurrentUser, type AuthUser } from '../auth/auth.decorators.js';
 import {
@@ -18,9 +20,11 @@ import {
   ChooseLodgingDto,
   CreateTripDto,
   JoinTripDto,
+  TransferOwnershipDto,
   UpdateItineraryDto,
   UpdateMembershipDto,
 } from './dto/trip.dto.js';
+import { LodgingOptionsQuery } from './dto/trip.query.js';
 import {
   ItineraryResponse,
   LodgingOptionResponse,
@@ -33,6 +37,9 @@ import { LodgingService } from './lodging.service.js';
 import { PlanningService } from './planning.service.js';
 import { TripsService } from './trips.service.js';
 import { VotesService } from './votes.service.js';
+
+// Planning and hotel suggestions make several billed Google calls each.
+const GOOGLE_HEAVY_PER_MINUTE = 10;
 
 @ApiTags('trips')
 @ApiBearerAuth()
@@ -108,13 +115,46 @@ export class TripsController {
     return this.trips.leave(me.id, id);
   }
 
+  /** Owner only: takes a member out of the group. */
+  @Delete(':id/members/:memberId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  removeMember(
+    @CurrentUser() me: AuthUser,
+    @Param('id', ParseIntPipe) id: number,
+    @Param('memberId', ParseIntPipe) memberId: number,
+  ): Promise<void> {
+    return this.trips.removeMember(me.id, id, memberId);
+  }
+
+  /** Owner only: makes another member the owner. */
+  @Put(':id/owner')
+  transferOwnership(
+    @CurrentUser() me: AuthUser,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: TransferOwnershipDto,
+  ): Promise<TripDetailResponse> {
+    return this.trips.transferOwnership(me.id, id, dto.memberId);
+  }
+
+  /** Owner only, groups only: replaces the invite code; the old one stops working. */
+  @Post(':id/invite-code')
+  @HttpCode(HttpStatus.OK)
+  renewInviteCode(
+    @CurrentUser() me: AuthUser,
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<TripDetailResponse> {
+    return this.trips.renewInviteCode(me.id, id);
+  }
+
   /** Three hotels everyone can afford: CHEAPEST, BALANCED and NEAREST. */
   @Get(':id/lodging/options')
+  @Throttle({ default: { limit: GOOGLE_HEAVY_PER_MINUTE, ttl: 60_000 } })
   lodgingOptions(
     @CurrentUser() me: AuthUser,
     @Param('id', ParseIntPipe) id: number,
+    @Query() query: LodgingOptionsQuery,
   ): Promise<LodgingOptionResponse[]> {
-    return this.lodging.options(me.id, id);
+    return this.lodging.options(me.id, id, query.guestsPerRoom);
   }
 
   /** Owner only: a suggested hotel, or SELF ("Tự lo chỗ ở"). */
@@ -191,6 +231,7 @@ export class TripsController {
    */
   @Post(':id/plan')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: GOOGLE_HEAVY_PER_MINUTE, ttl: 60_000 } })
   async plan(
     @CurrentUser() me: AuthUser,
     @Param('id', ParseIntPipe) id: number,
@@ -209,6 +250,7 @@ export class TripsController {
 
   /** Owner only: "Tự thiết kế lộ trình", the places of each day in order. */
   @Put(':id/itinerary')
+  @Throttle({ default: { limit: GOOGLE_HEAVY_PER_MINUTE, ttl: 60_000 } })
   async designItinerary(
     @CurrentUser() me: AuthUser,
     @Param('id', ParseIntPipe) id: number,

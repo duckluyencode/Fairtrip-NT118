@@ -53,6 +53,7 @@ function plannerPlace(
   days: number,
   inPlan: Set<number>,
   votes: number[],
+  meals: boolean,
 ): PlannerPlace {
   return {
     id: place.id,
@@ -69,6 +70,8 @@ function plannerPlace(
     rating: place.rating,
     ...hoursForTrip(place.weeklyHours, trip.startDate, days),
     votes,
+    // Self-designed itineraries keep the order and times the owner chose.
+    meal: meals && place.meal,
   };
 }
 
@@ -134,7 +137,7 @@ export class PlanningService {
         .find((o) => o.placeId === placeId)
         ?.votes.map((v) => v.memberId) ?? [];
     const places = located.map((p) =>
-      plannerPlace(p, trip, days, inPlan, votesFor(p.id)),
+      plannerPlace(p, trip, days, inPlan, votesFor(p.id), true),
     );
     const settings: DaySettings = {
       dayStartMinute: trip.dayStartMinute,
@@ -227,7 +230,7 @@ export class PlanningService {
     const places = new Map(
       [...located.values()].map((p) => [
         p.id,
-        plannerPlace(p, trip, days, inPlan, []),
+        plannerPlace(p, trip, days, inPlan, [], false),
       ]),
     );
     const settings: DaySettings = {

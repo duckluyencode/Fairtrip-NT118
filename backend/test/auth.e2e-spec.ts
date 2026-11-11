@@ -337,4 +337,36 @@ describe('Auth (e2e)', () => {
         .expect(400);
     });
   });
+
+  describe('account deletion', () => {
+    it('deletes the account after checking the password, and its token stops working', async () => {
+      const { accessToken } = await signUp();
+      const del = () =>
+        api().delete('/api/v1/me').auth(accessToken, { type: 'bearer' });
+
+      await del()
+        .send({ password: 'wrong-password' })
+        .expect(403)
+        .expect((res) => expect(res.body.code).toBe('WRONG_CREDENTIALS'));
+      await del().send({}).expect(400);
+
+      await del().send({ password: PASSWORD }).expect(204);
+
+      // The access token has not expired yet, but the account is gone.
+      await api()
+        .get('/api/v1/me')
+        .auth(accessToken, { type: 'bearer' })
+        .expect(401);
+      await api()
+        .post('/api/v1/auth/login')
+        .send({ contact: EMAIL, password: PASSWORD })
+        .expect(401)
+        .expect((res) => expect(res.body.code).toBe('WRONG_CREDENTIALS'));
+      expect(await t.prisma.refreshToken.count()).toBe(0);
+      expect(await t.prisma.otpCode.count()).toBe(0);
+
+      // The same email can sign up again.
+      await signUp();
+    });
+  });
 });

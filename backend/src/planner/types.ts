@@ -40,6 +40,11 @@ export interface PlannerPlace extends LatLng {
   closeMinute: number | null;
   /** 1-based trip days on which the place is closed (e.g. museums on Mondays). */
   closedDays?: number[];
+  /**
+   * A place to have a meal (a restaurant): visited only at lunch or dinner time, and at
+   * most one per meal of a day. Cafés and snacks are not meals.
+   */
+  meal?: boolean;
   /** Members who voted for the place (group trips). */
   votes: number[];
 }

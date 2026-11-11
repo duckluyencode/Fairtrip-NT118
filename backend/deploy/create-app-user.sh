@@ -4,7 +4,11 @@
 # Needs a temporary role policy to read /tripfair/admin/MYSQL_MASTER_PASSWORD (see
 # docs/deploy.md); the API itself never gets the master password.
 set -eu
-R=ap-southeast-1
+# The region the host runs in, from the instance metadata service (IMDSv2).
+IMDS_TOKEN=$(curl -fsS -X PUT http://169.254.169.254/latest/api/token \
+  -H 'X-aws-ec2-metadata-token-ttl-seconds: 60')
+R=$(curl -fsS -H "X-aws-ec2-metadata-token: $IMDS_TOKEN" \
+  http://169.254.169.254/latest/meta-data/placement/region)
 get() { aws ssm get-parameter --region "$R" --name "$1" --with-decryption --query Parameter.Value --output text; }
 MASTER=$(get /tripfair/admin/MYSQL_MASTER_PASSWORD)
 APP=$(get /tripfair/prod/MYSQL_PASSWORD)

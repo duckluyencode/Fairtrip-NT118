@@ -17,7 +17,8 @@ Ràng buộc cứng:
 1. Không ai tiêu quá `A_m` (ngân sách 0đ thì chỉ đi điểm miễn phí).
 2. Mỗi ngày kết thúc (tính cả đường về khách sạn) trước giờ kết thúc ngày: tổng thời gian ≤ T.
 3. Mỗi lần ghé nằm trong giờ mở cửa; không xếp điểm vào ngày nó đóng cửa.
-4. Mỗi điểm ghé tối đa một lần.
+4. Quán ăn (nhà hàng, không tính quán cà phê hay tiệm bánh) chỉ bắt đầu trong giờ ăn: trưa 11:00–13:30, tối 17:30–20:30, và mỗi bữa trong ngày tối đa một quán.
+5. Mỗi điểm ghé tối đa một lần.
 
 Mục tiêu: tổng giá trị các điểm mỗi người đi càng cao càng tốt, và giá trị chia đều giữa các thành viên (công bằng).
 
@@ -33,6 +34,10 @@ giáTrị  = 0,7 · sởThích + 0,3 · (đánhGiá / 5) + (0,5 nếu người �
 ```
 
 **Chi phí**: mỗi người trả `c_p` ở điểm họ đi, trừ khi họ cũng đi khu có vé bao trọn điểm đó (khi đó 0đ). Ai không đủ tiền thì không đi điểm đó, những người khác vẫn đi.
+
+**Thời gian ghé**: điểm trong danh mục có số phút riêng; điểm Google lấy theo loại cụ thể nhất có số liệu (vd. công viên giải trí 240 phút, bảo tàng 90, quán cà phê 45, cầu 30), không có thì theo nhóm ([google-categories.ts](../backend/src/places/google/google-categories.ts)).
+
+**Giờ ăn** ([schedule.ts](../backend/src/planner/schedule.ts)): khi tới một quán ăn, lịch chờ tới bữa đầu tiên trong ngày còn trống mà quán kịp mở (trưa trước, rồi tối); không còn bữa nào kịp thì không xếp được quán đó vào ngày ấy. Lộ trình tự thiết kế giữ nguyên giờ người dùng chọn, không áp quy tắc này.
 
 **Thời gian di chuyển** khi lập lộ trình: đường chim bay × 1,4 (hệ số đường vòng) với tốc độ 25 km/h ([travel.ts](../backend/src/planner/travel.ts)). Thuật toán gọi hàm này hàng nghìn lần nên không gọi API. Lộ trình đã lập được tính lại bằng Google Routes (mục 4).
 
@@ -108,7 +113,7 @@ npm run bench:planner
 npm run bench:planner -- --seed 7
 ```
 
-Chương trình ([scripts/benchmark-planner.ts](../backend/scripts/benchmark-planner.ts)) sinh 20 bộ dữ liệu ngẫu nhiên cho mỗi kịch bản từ một seed (cùng seed luôn ra cùng số liệu): điểm rải trong bán kính ~7 km quanh Đà Nẵng, nhiều điểm miễn phí và vài vé lớn, 30% điểm có giờ mở cửa, 15% điểm nằm trong khu có vé, ngân sách mỗi người ngẫu nhiên từ 0đ tới 1,2 triệu/ngày, mỗi người bình chọn ngẫu nhiên 20% số điểm.
+Chương trình ([scripts/benchmark-planner.ts](../backend/scripts/benchmark-planner.ts)) sinh 20 bộ dữ liệu ngẫu nhiên cho mỗi kịch bản từ một seed (cùng seed luôn ra cùng số liệu): điểm rải trong bán kính ~7 km quanh Đà Nẵng, nhiều điểm miễn phí và vài vé lớn, 25% điểm là quán ăn (theo quy tắc giờ ăn), 30% điểm có giờ mở cửa, 15% điểm nằm trong khu có vé, ngân sách mỗi người ngẫu nhiên từ 0đ tới 1,2 triệu/ngày, mỗi người bình chọn ngẫu nhiên 20% số điểm.
 
 Các chỉ số:
 
@@ -119,43 +124,43 @@ Các chỉ số:
 - **Vượt ngân sách**: số thành viên tiêu quá ngân sách (luôn phải bằng 0).
 - **Thời gian**: thời gian chạy trung bình một lần (ms), trên máy phát triển (Windows, Node.js 24).
 
-Kết quả với seed 2026 (ngày 2026-11-07):
+Kết quả với seed 2026 (ngày 2026-11-07, đã có quy tắc giờ ăn):
 
 **6 điểm, 1 người, 1 ngày**
 
 | Thuật toán | Tổng giá trị | % tối ưu | Hài lòng TB | Jain | Lệch ngân sách | Vượt ngân sách | Số điểm | Thời gian (ms) |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Greedy thuần | 2.25 | 93.9% | 86.9% | 1.000 | 38.8% | 0 | 3.8 | 0.180 |
-| Greedy + Local search + Fairness | 2.35 | 99.0% | 90.6% | 1.000 | 27.5% | 0 | 3.9 | 0.310 |
-| Tối ưu (vét cạn) | 2.38 | 100.0% | 91.3% | 1.000 | 21.4% | 0 | 3.9 | 8.130 |
+| Greedy thuần | 2.39 | 97.9% | 89.5% | 1.000 | 31.5% | 0 | 4.1 | 0.180 |
+| Greedy + Local search + Fairness | 2.39 | 98.0% | 89.6% | 1.000 | 29.4% | 0 | 4.1 | 0.287 |
+| Tối ưu (vét cạn) | 2.44 | 100.0% | 90.7% | 1.000 | 21.9% | 0 | 4.2 | 7.982 |
 
 **8 điểm, 3 người, 1 ngày**
 
 | Thuật toán | Tổng giá trị | % tối ưu | Hài lòng TB | Jain | Lệch ngân sách | Vượt ngân sách | Số điểm | Thời gian (ms) |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Greedy thuần | 8.84 | 95.3% | 70.3% | 0.925 | 34.5% | 0 | 4.8 | 0.382 |
-| Greedy + Local search + Fairness | 9.04 | 97.3% | 70.9% | 0.920 | 26.4% | 0 | 5.0 | 0.830 |
-| Tối ưu (vét cạn) | 9.25 | 100.0% | 70.7% | 0.907 | 21.3% | 0 | 5.2 | 226.448 |
+| Greedy thuần | 9.76 | 94.3% | 72.0% | 0.886 | 33.5% | 0 | 5.4 | 0.459 |
+| Greedy + Local search + Fairness | 10.10 | 97.7% | 73.8% | 0.889 | 23.5% | 0 | 5.5 | 1.066 |
+| Tối ưu (vét cạn) | 10.30 | 100.0% | 72.6% | 0.891 | 21.9% | 0 | 5.8 | 322.859 |
 
 **10 điểm, 4 người, 2 ngày**
 
 | Thuật toán | Tổng giá trị | % tối ưu | Hài lòng TB | Jain | Lệch ngân sách | Vượt ngân sách | Số điểm | Thời gian (ms) |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Greedy thuần | 18.73 | 98.1% | 74.6% | 0.901 | 20.5% | 0 | 9.2 | 1.402 |
-| Greedy + Local search + Fairness | 18.86 | 98.8% | 75.2% | 0.903 | 16.8% | 0 | 9.2 | 1.816 |
-| Tối ưu (vét cạn) | 19.06 | 100.0% | 75.3% | 0.906 | 15.7% | 0 | 9.4 | 3890.958 |
+| Greedy thuần | 19.22 | 98.2% | 73.8% | 0.871 | 27.6% | 0 | 9.3 | 1.195 |
+| Greedy + Local search + Fairness | 19.50 | 99.7% | 74.7% | 0.869 | 25.4% | 0 | 9.3 | 2.032 |
+| Tối ưu (vét cạn) | 19.56 | 100.0% | 74.5% | 0.868 | 25.3% | 0 | 9.4 | 3361.486 |
 
 Nhận xét:
 
-- Bản đầy đủ đạt 97–99% tối ưu, cao hơn Greedy thuần 0,7–5 điểm phần trăm, trong khi chỉ chạy dưới 2 ms; lời giải vét cạn mất tới gần 4 giây với 10 điểm và tăng theo hàm mũ, không dùng được trong app.
-- Ngân sách được dùng tốt hơn: lệch ngân sách giảm khoảng 4–11 điểm phần trăm so với Greedy thuần. Benchmark chưa tách riêng đóng góp của từng bước (đổi điểm, đổi phần tham gia).
+- Bản đầy đủ đạt 97,7–99,7% tối ưu, cao hơn Greedy thuần 0,1–3,4 điểm phần trăm, trong khi chỉ chạy khoảng 2 ms; lời giải vét cạn mất tới 3,4 giây với 10 điểm và tăng theo hàm mũ, không dùng được trong app.
+- Mức cải thiện lớn nhất ở chuyến nhóm (8 điểm, 3 người: từ 94,3% lên 97,7%), nơi ngân sách của mỗi người khác nhau và việc đổi phần tham gia có tác dụng. Ngân sách được dùng tốt hơn: lệch ngân sách giảm khoảng 2–10 điểm phần trăm so với Greedy thuần. Benchmark chưa tách riêng đóng góp của từng bước (đổi điểm, đổi phần tham gia).
 - Không thuật toán nào để ai vượt ngân sách (cột "Vượt ngân sách" luôn 0), kể cả người có 0đ.
-- Jain của bản đầy đủ có lúc thấp hơn Greedy thuần một chút (0,920 so với 0,925): tổng giá trị tăng nhưng phần tăng không chia đều. Lời giải tối ưu theo tổng giá trị cũng có Jain thấp hơn, cho thấy hai mục tiêu tổng và công bằng có đánh đổi.
-- Phiên bản đầu của thuật toán (chỉ 2-opt và thêm điểm cho người kém hài lòng) cho kết quả giống hệt Greedy thuần trên cả ba kịch bản, vì Greedy đã thêm mọi điểm còn vừa thời gian và có người trả được. Benchmark này là lý do thêm hai phép đổi ở mục 3.2 và 3.3.
+- Jain của ba thuật toán gần như nhau (0,868–0,891); lời giải tối ưu theo tổng giá trị cũng không công bằng hơn rõ rệt, nên muốn công bằng hơn phải đưa độ công bằng vào mục tiêu, đổi lại tổng giá trị thấp hơn.
+- Phiên bản đầu của thuật toán (chỉ 2-opt và thêm điểm cho người kém hài lòng) cho kết quả giống hệt Greedy thuần trên mọi kịch bản, vì Greedy đã thêm mọi điểm còn vừa thời gian và có người trả được. Benchmark này là lý do thêm hai phép đổi ở mục 3.2 và 3.3.
 
 Giới hạn: dữ liệu ngẫu nhiên chứ không phải dữ liệu người dùng thật; thời gian di chuyển trong đánh giá là ước tính đường chim bay (không gọi Google Routes); số điểm nhỏ để lời giải vét cạn chạy được.
 
 ## 7. Kiểm thử
 
-- `npm test` chạy unit test của thuật toán ([plan.spec.ts](../backend/src/planner/plan.spec.ts), [exact.spec.ts](../backend/src/planner/exact.spec.ts), [scoring.spec.ts](../backend/src/planner/scoring.spec.ts)): ngân sách 0đ, điểm miễn phí trước, giờ mở cửa, ngày đóng cửa, vé khu, khung giờ, bình chọn, đổi điểm, đổi phần tham gia, lời giải tối ưu không kém thuật toán.
+- `npm test` chạy unit test của thuật toán ([plan.spec.ts](../backend/src/planner/plan.spec.ts), [exact.spec.ts](../backend/src/planner/exact.spec.ts), [scoring.spec.ts](../backend/src/planner/scoring.spec.ts)): ngân sách 0đ, điểm miễn phí trước, giờ mở cửa, ngày đóng cửa, giờ ăn ([schedule.spec.ts](../backend/src/planner/schedule.spec.ts)), vé khu, khung giờ, bình chọn, đổi điểm, đổi phần tham gia, lời giải tối ưu không kém thuật toán.
 - `npm run test:e2e` chạy [trips.e2e-spec.ts](../backend/test/trips.e2e-spec.ts) trên cả API: tổng dồn và số tiền còn lại khớp nhau, không ai vượt ngân sách, khách sạn và Google Routes (giả lập).

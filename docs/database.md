@@ -197,7 +197,7 @@ Khách sạn là địa điểm thật tìm qua Google Places (loại `lodging`)
 | trip_id | INT → trips | Khóa chính; mỗi chuyến tối đa một nơi ở |
 | place_id | INT → places | Khách sạn đã chọn |
 | check_in, check_out | DATE | Ngày đầu và ngày cuối chuyến |
-| rooms, guests_per_room | INT | 2 người một phòng; số phòng tính lại theo số thành viên lúc lập lộ trình |
+| rooms, guests_per_room | INT | Số người mỗi phòng 1–4 do nhóm chọn (mặc định 2); số phòng tính lại theo số thành viên lúc lập lộ trình |
 | price_per_night | INT | Giá một phòng một đêm, chụp lại lúc chọn |
 | price_source, price_provider, priced_at | ENUM, VARCHAR, DATETIME | Nguồn giá: GOOGLE_API khi Google có khoảng giá VND, còn lại ESTIMATED theo price_level (cho tới khi có Agoda API) |
 

@@ -103,6 +103,7 @@ export class LodgingService {
   async options(
     userId: number,
     tripId: number,
+    guestsPerRoom = GUESTS_PER_ROOM,
   ): Promise<LodgingOptionResponse[]> {
     const { trip, me } = await this.access.load(userId, tripId);
     const nights = nightsOf(trip);
@@ -130,7 +131,7 @@ export class LodgingService {
       const price = lodgingPrice(place);
       const shares = roomShares(
         memberIds,
-        GUESTS_PER_ROOM,
+        guestsPerRoom,
         price.pricePerNight,
         nights,
       );
@@ -150,7 +151,7 @@ export class LodgingService {
       trip.members.every((m) => (c.shares.get(m.id) ?? 0) <= m.budget),
     );
     return pickThree(affordable).map(({ tag, candidate }) =>
-      this.toOption(tag, candidate, trip, me, nights),
+      this.toOption(tag, candidate, trip, me, nights, guestsPerRoom),
     );
   }
 
@@ -182,9 +183,10 @@ export class LodgingService {
     }
     const hotel = await this.readHotel(dto.placeId ?? 0);
     const price = lodgingPrice(hotel);
+    const guestsPerRoom = dto.guestsPerRoom ?? GUESTS_PER_ROOM;
     const shares = roomShares(
       trip.members.map((m) => m.id),
-      GUESTS_PER_ROOM,
+      guestsPerRoom,
       price.pricePerNight,
       nights,
     );
@@ -195,8 +197,8 @@ export class LodgingService {
       placeId: dto.placeId ?? 0,
       checkIn: trip.startDate,
       checkOut: trip.endDate,
-      rooms: roomsNeeded(trip.members.length, GUESTS_PER_ROOM),
-      guestsPerRoom: GUESTS_PER_ROOM,
+      rooms: roomsNeeded(trip.members.length, guestsPerRoom),
+      guestsPerRoom,
       pricePerNight: price.pricePerNight,
       priceSource: price.source,
       priceProvider: price.provider,
@@ -308,6 +310,7 @@ export class LodgingService {
     trip: LoadedTrip,
     me: LoadedMember,
     nights: number,
+    guestsPerRoom: number,
   ): LodgingOptionResponse {
     const myShare = c.shares.get(me.id) ?? 0;
     return {
@@ -323,7 +326,8 @@ export class LodgingService {
       provider: c.price.provider,
       isEstimate: c.price.source !== 'PARTNER_API',
       nights,
-      rooms: roomsNeeded(trip.members.length, GUESTS_PER_ROOM),
+      rooms: roomsNeeded(trip.members.length, guestsPerRoom),
+      guestsPerRoom,
       myShare,
       leftForPlaces: me.budget - myShare,
       attribution: GOOGLE_ATTRIBUTION,

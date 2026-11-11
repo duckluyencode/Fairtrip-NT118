@@ -91,6 +91,7 @@ export class LodgingOptionResponse {
   isEstimate: boolean;
   nights: number;
   rooms: number;
+  guestsPerRoom: number;
   /** Your part of the room cost for the whole stay. */
   myShare: number;
   /** Your budget left for places after the room. */

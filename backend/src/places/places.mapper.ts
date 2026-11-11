@@ -10,6 +10,7 @@ import { distanceKm, type LatLng } from './geo.js';
 import {
   DEFAULT_VISIT_MINUTES,
   googleCategories,
+  visitMinutesFor,
 } from './google/google-categories.js';
 import type { DayHours, GooglePlace } from './google/google-places.client.js';
 import { catalogPrice, googlePrice } from './pricing.js';
@@ -158,7 +159,7 @@ export function googleDetail(
   const summary = googleSummary(id, place, origin, isFavorite);
   return Object.assign(summary, {
     description: place.summary,
-    visitMinutes: DEFAULT_VISIT_MINUTES[summary.category],
+    visitMinutes: visitMinutesFor(place.types, summary.category),
     openingHours: googleHours(place.todayHours),
     price: googlePrice(place, summary.category),
     mapsUri: place.mapsUri,

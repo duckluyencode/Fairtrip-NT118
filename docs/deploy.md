@@ -27,7 +27,7 @@ Nguyên tắc:
 
 ## 2. Chi phí và cách tiết kiệm
 
-Region Singapore (`ap-southeast-1`). Giá tham khảo, kiểm tra lại trên trang giá của AWS:
+TripFair chạy ở region Sydney (`ap-southeast-2`), region mà tài khoản AWS hiện tại được gắn khi tạo. Singapore (`ap-southeast-1`) gần Việt Nam hơn (nhanh hơn khoảng 100 ms mỗi request); script không ghi cứng region nên đổi region chỉ cần đổi biến `$region` dưới đây. Giá tham khảo (Sydney và Singapore gần như nhau), kiểm tra lại trên trang giá của AWS:
 
 | Tài nguyên | Khi chạy | Khi tắt |
 | --- | --- | --- |
@@ -41,17 +41,18 @@ Cách dùng tiết kiệm: chỉ bật EC2 và RDS khi cần (deploy, demo, Andr
 ## 3. Chuẩn bị (B1)
 
 1. Tài khoản AWS: bật MFA cho root, không dùng root để làm việc hằng ngày; tạo IAM user riêng cho mình.
-2. Cài AWS CLI v2 (Windows: `winget install Amazon.AWSCLI`), đăng nhập bằng IAM user:
+2. Cài AWS CLI v2 (Windows: `winget install Amazon.AWSCLI`), lưu region một lần (`aws configure set region ap-southeast-2`), rồi đăng nhập bằng IAM user:
 
    ```bash
-   aws login
+   aws login --region ap-southeast-2
    ```
 
-   Phiên đăng nhập hết hạn sau vài giờ; khi lệnh báo `Your session has expired` thì chạy lại `aws login`.
-3. Profile không lưu region, nên đặt cho mỗi cửa sổ terminal:
+   Lệnh mở trình duyệt để bạn đăng nhập (đăng nhập AWS Console trên web không thay được bước này). Phiên hết hạn sau vài giờ; khi lệnh báo `Your session has expired` thì chạy lại `aws login`. Đổi sang tài khoản khác: `aws logout` rồi `aws login`. Tài khoản tạo theo kiểu "project" chỉ cho đăng nhập ở region của project; sai region thì trang đăng nhập báo `not supported for your project` và chỉ ra lệnh cần chạy.
+3. Đặt region cho mỗi cửa sổ PowerShell; các lệnh bên dưới dùng biến `$region`:
 
    ```powershell
-   $env:AWS_REGION = 'ap-southeast-1'
+   $region = 'ap-southeast-2'
+   $env:AWS_REGION = $region
    ```
 
 4. Cảnh báo chi phí: Billing → Budgets → Create budget → "Monthly cost budget", ví dụ 20 USD, gửi email khi vượt 80%.
@@ -68,9 +69,11 @@ Dùng VPC mặc định (đã có subnet public và Internet Gateway) cho EC2, v
 $vpc = (& $aws ec2 describe-vpcs --filters Name=isDefault,Values=true --query 'Vpcs[0].VpcId' --output text)
 $tag = 'Key=Project,Value=TripFair'
 $rt = & $aws ec2 create-route-table --vpc-id $vpc --tag-specifications "ResourceType=route-table,Tags=[{Key=Name,Value=tripfair-db-private},{$tag}]" --query 'RouteTable.RouteTableId' --output text
-# Hai dải CIDR chưa dùng trong VPC mặc định (172.31.0.0/16); kiểm tra bằng describe-subnets trước.
-$a = & $aws ec2 create-subnet --vpc-id $vpc --availability-zone ap-southeast-1a --cidr-block 172.31.16.0/20 --tag-specifications "ResourceType=subnet,Tags=[{Key=Name,Value=tripfair-db-a},{$tag}]" --query 'Subnet.SubnetId' --output text
-$c = & $aws ec2 create-subnet --vpc-id $vpc --availability-zone ap-southeast-1c --cidr-block 172.31.32.0/20 --tag-specifications "ResourceType=subnet,Tags=[{Key=Name,Value=tripfair-db-c},{$tag}]" --query 'Subnet.SubnetId' --output text
+# Subnet mặc định của VPC (172.31.0.0/16) đã chiếm 172.31.0.0/20, .16.0/20, .32.0/20 (mỗi AZ một cái).
+# Xem các dải đang dùng trước, rồi chọn hai dải /20 còn trống, vd. 172.31.128.0/20 và 172.31.144.0/20:
+& $aws ec2 describe-subnets --filters "Name=vpc-id,Values=$vpc" --query 'Subnets[].[CidrBlock,AvailabilityZone]' --output text
+$a = & $aws ec2 create-subnet --vpc-id $vpc --availability-zone "${region}a" --cidr-block 172.31.128.0/20 --tag-specifications "ResourceType=subnet,Tags=[{Key=Name,Value=tripfair-db-a},{$tag}]" --query 'Subnet.SubnetId' --output text
+$c = & $aws ec2 create-subnet --vpc-id $vpc --availability-zone "${region}c" --cidr-block 172.31.144.0/20 --tag-specifications "ResourceType=subnet,Tags=[{Key=Name,Value=tripfair-db-c},{$tag}]" --query 'Subnet.SubnetId' --output text
 & $aws ec2 associate-route-table --route-table-id $rt --subnet-id $a
 & $aws ec2 associate-route-table --route-table-id $rt --subnet-id $c
 & $aws rds create-db-subnet-group --db-subnet-group-name tripfair-db-subnets --db-subnet-group-description 'TripFair database, private subnets' --subnet-ids $a $c --tags $tag
@@ -114,12 +117,12 @@ Tạo RDS:
   --allocated-storage 20 --storage-type gp3 --storage-encrypted `
   --master-username tripfair_admin --master-user-password $master --db-name tripfair `
   --db-subnet-group-name tripfair-db-subnets --vpc-security-group-ids $db `
-  --no-publicly-accessible --no-multi-az --backup-retention-period 7 `
+  --no-publicly-accessible --no-multi-az --backup-retention-period 1 `
   --auto-minor-version-upgrade --deletion-protection --copy-tags-to-snapshot --tags $tag
 Remove-Variable master, appPw, jwt
 ```
 
-Lý do: MySQL 8.4 LTS giống bản chạy trên máy; `db.t4g.micro` là loại rẻ nhất; mã hóa ổ đĩa; không public; backup tự động 7 ngày; `--deletion-protection` chặn xóa nhầm. Chờ khoảng 10 phút tới khi trạng thái là `available`, rồi lấy endpoint:
+Lý do: MySQL 8.4 LTS giống bản chạy trên máy; `db.t4g.micro` là loại rẻ nhất; mã hóa ổ đĩa; không public; backup tự động (tài khoản gói Free chỉ cho giữ 1 ngày, báo `FreeTierRestrictionError` nếu đặt nhiều hơn; tài khoản trả phí nên đặt 7); `--deletion-protection` chặn xóa nhầm. Chờ khoảng 10 phút tới khi trạng thái là `available`, rồi lấy endpoint:
 
 ```powershell
 & $aws rds describe-db-instances --db-instance-identifier tripfair-db --query 'DBInstances[0].[DBInstanceStatus,Endpoint.Address]' --output text
@@ -143,7 +146,7 @@ Role gồm `AmazonSSMManagedInstanceCore` (để SSM Run Command điều khiển
 
 ```powershell
 $account = & $aws sts get-caller-identity --query Account --output text
-(Get-Content backend\deploy\iam\app-policy.template.json) -replace 'ACCOUNT_ID', $account | Set-Content "$env:TEMP\app-policy.json" -Encoding ascii
+(Get-Content backend\deploy\iam\app-policy.template.json) -replace 'ACCOUNT_ID', $account -replace 'REGION', $region | Set-Content "$env:TEMP\app-policy.json" -Encoding ascii
 & $aws iam create-role --role-name tripfair-ec2-role --assume-role-policy-document file://backend/deploy/iam/ec2-trust.json --tags $tag
 & $aws iam attach-role-policy --role-name tripfair-ec2-role --policy-arn arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
 & $aws iam put-role-policy --role-name tripfair-ec2-role --policy-name tripfair-app --policy-document "file://$env:TEMP\app-policy.json"
@@ -157,7 +160,7 @@ Amazon Linux 2023 (có sẵn AWS CLI và SSM agent); [user-data.sh](../backend/d
 
 ```powershell
 $ami = & $aws ssm get-parameter --name /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64 --query Parameter.Value --output text
-$subnet = & $aws ec2 describe-subnets --filters "Name=vpc-id,Values=$vpc" Name=default-for-az,Values=true Name=availability-zone,Values=ap-southeast-1b --query 'Subnets[0].SubnetId' --output text
+$subnet = & $aws ec2 describe-subnets --filters "Name=vpc-id,Values=$vpc" Name=default-for-az,Values=true "Name=availability-zone,Values=${region}b" --query 'Subnets[0].SubnetId' --output text
 $iid = & $aws ec2 run-instances --image-id $ami --instance-type t3.micro --subnet-id $subnet `
   --security-group-ids $api --iam-instance-profile Name=tripfair-ec2-profile `
   --metadata-options HttpTokens=required,HttpPutResponseHopLimit=1,HttpEndpoint=enabled `
@@ -172,7 +175,7 @@ $alloc, $ip = (& $aws ec2 allocate-address --domain vpc --query '[AllocationId,P
 "site: $($ip.Replace('.', '-')).sslip.io"
 ```
 
-Lý do: `HttpTokens=required` bắt buộc IMDSv2 (chặn lấy trộm credential của role qua lỗi SSRF); `CpuCredits=standard` không bị tính thêm tiền khi dùng CPU nhiều; Elastic IP giữ địa chỉ cố định qua các lần tắt/bật. `sslip.io` biến IP thành tên miền (`47-128-180-54.sslip.io` trỏ về `47.128.180.54`) để có chứng chỉ HTTPS mà không cần mua tên miền.
+Lý do: `HttpTokens=required` bắt buộc IMDSv2 (chặn lấy trộm credential của role qua lỗi SSRF); `CpuCredits=standard` không bị tính thêm tiền khi dùng CPU nhiều; Elastic IP giữ địa chỉ cố định qua các lần tắt/bật. `sslip.io` biến IP thành tên miền (vd. `13-250-10-20.sslip.io` trỏ về `13.250.10.20`) để có chứng chỉ HTTPS mà không cần mua tên miền.
 
 Kiểm tra SSM thấy máy (vài phút sau khi bật):
 
@@ -204,7 +207,7 @@ Mọi biến môi trường của API nằm dưới `/tripfair/prod/`; tên tham
 Thêm hoặc sửa một tham số:
 
 ```powershell
-& $aws ssm put-parameter --name /tripfair/prod/SITE_ADDRESS --type String --value '47-128-180-54.sslip.io' --overwrite
+& $aws ssm put-parameter --name /tripfair/prod/SITE_ADDRESS --type String --value '<ip-gạch-ngang>.sslip.io' --overwrite
 ```
 
 Secret do người dùng tự nhập (App Password, API key) nên được nhập bằng Console (Systems Manager → Parameter Store → Create parameter, chọn SecureString) để giá trị không nằm trong lịch sử terminal. Chưa có SMTP thì API vẫn chạy, đăng ký bằng email báo `CODE_DELIVERY_FAILED`; chưa có key Google thì tìm kiếm trả rỗng (không có danh mục mẫu ở production).
@@ -229,7 +232,7 @@ foreach ($f in 'deploy.sh', 'Caddyfile') {
 API đăng nhập RDS bằng user `tripfair` (chỉ có quyền trên database `tripfair`, bắt buộc TLS), không bao giờ dùng master. Để tạo user này, máy EC2 cần đọc mật khẩu master **một lần**: gắn tạm một policy, chạy [create-app-user.sh](../backend/deploy/create-app-user.sh), rồi gỡ policy ngay (khối `finally` gỡ cả khi script lỗi).
 
 ```powershell
-(Get-Content backend\deploy\iam\admin-read-temp.template.json) -replace 'ACCOUNT_ID', $account | Set-Content "$env:TEMP\admin-read.json" -Encoding ascii
+(Get-Content backend\deploy\iam\admin-read-temp.template.json) -replace 'ACCOUNT_ID', $account -replace 'REGION', $region | Set-Content "$env:TEMP\admin-read.json" -Encoding ascii
 & $aws iam put-role-policy --role-name tripfair-ec2-role --policy-name tripfair-setup-temp --policy-document "file://$env:TEMP\admin-read.json"
 Start-Sleep -Seconds 15   # IAM cần vài giây để áp dụng
 $b64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes('backend\deploy\create-app-user.sh'))
@@ -266,7 +269,7 @@ AWS="/c/Program Files/Amazon/AWSCLIV2/aws.exe" sh deploy/push-images.sh
 ### 10.5 Kiểm tra
 
 ```bash
-curl https://47-128-180-54.sslip.io/health
+curl https://<ip-gạch-ngang>.sslip.io/health
 ```
 
 Kết quả đúng: `{"status":"ok","database":"up"}`. Xem log khi có lỗi:
@@ -310,4 +313,44 @@ Kiểm tra trạng thái:
 | Image báo `Cannot find module '.../client.ts'` | Prisma đoán sai đuôi import khi build trong Docker | Giữ `moduleFormat` và `importFileExtension` trong generator của `schema.prisma` |
 | API dừng ngay khi khởi động ở production | Thiếu biến bắt buộc (vd. `MYSQL_SSL_CA`) | Thêm tham số vào SSM rồi deploy lại |
 | `Your session has expired` | Phiên `aws login` hết hạn | Chạy lại `aws login` |
+| `FreeTierRestrictionError ... backup retention period` khi tạo RDS | Tài khoản gói Free giới hạn số ngày giữ sao lưu | `--backup-retention-period 1`, hoặc nâng gói tài khoản |
+| `failed commit on ref ... timeout awaiting response headers` khi đẩy image | Mạng chậm khi đẩy layer lớn sang region xa | `push-images.sh` tự thử lại 5 lần và bỏ qua image đã có trên ECR; chạy lại script nếu vẫn lỗi |
+| Trang đăng nhập báo `not supported for your project` | Tài khoản gắn với region khác | `aws login --region <region của tài khoản>` |
 | Lệnh dài truyền qua `--parameters` bị hỏng dấu nháy | PowerShell 5.1 | `ssm-run.ps1` ghi tham số ra file JSON rồi truyền `file://` |
+
+## 13. Gỡ toàn bộ hạ tầng
+
+Khi không dùng tài khoản nữa (hoặc chuyển sang tài khoản khác), tắt máy vẫn còn tính tiền Elastic IP, ổ đĩa, lưu trữ RDS và image. Muốn hết phí thì phải xóa. Xóa là **không khôi phục được**: sao lưu database trước nếu có dữ liệu cần giữ. Kiểm tra tag `Project=TripFair` trước mỗi lần xóa để không đụng tài nguyên khác trong tài khoản.
+
+Thứ tự (tài nguyên phía sau phụ thuộc vào tài nguyên phía trước):
+
+```powershell
+# 1. Elastic IP: gỡ khỏi máy rồi trả lại
+& $aws ec2 disassociate-address --association-id <eipassoc-…>
+& $aws ec2 release-address --allocation-id <eipalloc-…>
+# 2. EC2 (ổ đĩa tự xóa theo vì DeleteOnTermination=true)
+& $aws ec2 terminate-instances --instance-ids $iid
+& $aws ec2 wait instance-terminated --instance-ids $iid
+# 3. RDS: tắt chống xóa (làm được cả khi đang tắt), xóa không giữ snapshot, xóa cả sao lưu tự động
+& $aws rds modify-db-instance --db-instance-identifier tripfair-db --no-deletion-protection --apply-immediately
+& $aws rds delete-db-instance --db-instance-identifier tripfair-db --skip-final-snapshot --delete-automated-backups
+# 4. ECR, SSM, IAM (không tốn tiền nhưng chứa image và secret)
+& $aws ecr delete-repository --repository-name tripfair-api --force
+& $aws ecr delete-repository --repository-name tripfair-migrate --force
+& $aws ssm delete-parameters --names <tối đa 10 tên mỗi lần>
+& $aws iam remove-role-from-instance-profile --instance-profile-name tripfair-ec2-profile --role-name tripfair-ec2-role
+& $aws iam delete-instance-profile --instance-profile-name tripfair-ec2-profile
+& $aws iam detach-role-policy --role-name tripfair-ec2-role --policy-arn arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+& $aws iam delete-role-policy --role-name tripfair-ec2-role --policy-name tripfair-app
+& $aws iam delete-role --role-name tripfair-ec2-role
+# 5. Mạng, sau khi RDS đã xóa xong
+& $aws rds wait db-instance-deleted --db-instance-identifier tripfair-db
+& $aws rds delete-db-subnet-group --db-subnet-group-name tripfair-db-subnets
+& $aws ec2 delete-security-group --group-id <tripfair-db-sg>   # trước: nó tham chiếu tới SG của API
+& $aws ec2 delete-security-group --group-id <tripfair-api-sg>
+& $aws ec2 delete-subnet --subnet-id <tripfair-db-a>
+& $aws ec2 delete-subnet --subnet-id <tripfair-db-c>
+& $aws ec2 delete-route-table --route-table-id <tripfair-db-private>
+```
+
+Kiểm tra lại: `aws resourcegroupstaggingapi get-resources --tag-filters Key=Project,Values=TripFair` (API này có thể còn hiện tài nguyên vừa xóa thêm vài phút). Snapshot tự động của RDS biến mất vài phút sau khi xóa database.
