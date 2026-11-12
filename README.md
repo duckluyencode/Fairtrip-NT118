@@ -13,6 +13,21 @@ An Android app that recommends places to visit and generates travel itineraries 
 - **Photo search**: recognize a place from a photo and suggest similar places nearby
 - **SOS**: send your GPS location by SMS to saved emergency contacts
 
+## Getting started
+
+1. Install the latest stable Android Studio with the Android 37 SDK platform.
+2. Clone the repository and open the `android/` folder in Android Studio.
+3. Add the shared backend to `android/local.properties`:
+
+   ```properties
+   tripfair.apiBaseUrl=https://52-65-234-138.sslip.io/api/v1/
+   MAPS_API_KEY=<Android Maps key from the team lead>
+   ```
+
+4. Sync Gradle and run the `app` configuration on an emulator with Google Play.
+
+Step-by-step guide and common errors (in Vietnamese): [docs/setup.md](docs/setup.md).
+
 ## Tech stack
 
 | Layer | Technologies |
