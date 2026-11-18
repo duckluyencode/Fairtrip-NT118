@@ -42,7 +42,11 @@ import com.tripfair.app.ui.components.PlaceCard
 import com.tripfair.app.ui.components.SectionHeader
 import com.tripfair.app.ui.components.TripFairTopBar
 import com.tripfair.app.ui.sample.SampleData
+import com.tripfair.app.data.places.HistoryEntryDto
 import com.tripfair.app.data.places.PlaceSummaryDto
+import com.tripfair.app.ui.screens.explore.HistoryRow
+import com.tripfair.app.ui.screens.explore.searchedAtLabel
+import java.time.Instant
 import com.tripfair.app.data.trips.TripSummaryDto
 import com.tripfair.app.ui.screens.trip.title
 import com.tripfair.app.ui.screens.trip.tripDatesLine
@@ -58,7 +62,9 @@ fun HomeScreen(
     userName: String,
     suggestions: List<PlaceSummaryDto>,
     upcomingTrip: TripSummaryDto?,
+    recentSearches: List<HistoryEntryDto>,
     onSearch: () -> Unit,
+    onRecentSearch: (query: String) -> Unit,
     onSos: () -> Unit,
     onCamera: () -> Unit,
     onTrip: (TripSummaryDto) -> Unit,
@@ -140,6 +146,23 @@ fun HomeScreen(
                 actionLabel = stringResource(R.string.action_history),
                 onAction = onHistory,
             )
+            if (recentSearches.isEmpty()) {
+                Text(
+                    text = stringResource(R.string.history_empty),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colors.onSurfaceVariant,
+                )
+            } else {
+                Column(
+                    modifier = Modifier
+                        .clip(MaterialTheme.shapes.small)
+                        .background(colors.surfaceContainerLow),
+                ) {
+                    recentSearches.forEach { entry ->
+                        HistoryRow(entry = entry, time = searchedAtLabel(entry), onClick = { onRecentSearch(entry.query) })
+                    }
+                }
+            }
         }
     }
 }
@@ -270,7 +293,12 @@ private fun HomeScreenPreview() {
             userName = SampleData.USER_NAME,
             suggestions = emptyList(),
             upcomingTrip = SampleTrip.summaries.first(),
+            recentSearches = listOf(
+                HistoryEntryDto(1, "Cầu Vàng", null, Instant.now().toString()),
+                HistoryEntryDto(2, "Mì Quảng", "FOOD", Instant.now().minusSeconds(86_400).toString()),
+            ),
             onSearch = {},
+            onRecentSearch = {},
             onSos = {},
             onCamera = {},
             onTrip = {},
