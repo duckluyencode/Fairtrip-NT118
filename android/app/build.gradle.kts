@@ -26,7 +26,7 @@ android {
         val localProperties = Properties().apply {
             rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use(::load)
         }
-        val apiBaseUrl = localProperties.getProperty("tripfair.apiBaseUrl", "http://localhost:3000/api/v1/")
+        val apiBaseUrl = localProperties.getProperty("tripfair.apiBaseUrl", "https://3-24-16-117.sslip.io/api/v1/")
         buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
 
         // Google Maps SDK key, set as MAPS_API_KEY in local.properties (not committed). Without

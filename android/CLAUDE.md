@@ -6,7 +6,7 @@ Package `com.tripfair.app`, minSdk 26, compileSdk/targetSdk 37. Giao diện luô
 ## Thiết lập lần đầu
 - Mở thư mục `android/` bằng Android Studio; Studio tự tạo `local.properties` chứa `sdk.dir`.
 - Chạy Gradle từ dòng lệnh cần `JAVA_HOME` trỏ tới JDK 17 trở lên (vd. JDK đi kèm Android Studio, thư mục `jbr`) và `local.properties` có `sdk.dir`.
-- Địa chỉ backend: thêm `tripfair.apiBaseUrl=...` vào `local.properties` (kết thúc bằng `/api/v1/`). Không khai báo thì dùng `http://localhost:3000/api/v1/`, tức backend đang chạy trên chính máy tính; trước khi mở app chạy `adb reverse tcp:3000 tcp:3000` (dùng được cho cả máy ảo và điện thoại cắm USB, chạy lại mỗi lần khởi động thiết bị). Không dùng `10.0.2.2`: Android 17 chặn app gọi địa chỉ mạng nội bộ khi chưa có quyền mạng cục bộ, còn `localhost` thì không bị chặn. Bản debug cho phép HTTP tới `localhost` và `10.0.2.2`; mọi địa chỉ khác phải là HTTPS.
+- Địa chỉ backend: thêm `tripfair.apiBaseUrl=...` vào `local.properties` (kết thúc bằng `/api/v1/`). Không khai báo thì dùng `https://3-24-16-117.sslip.io/api/v1/` (backend trên VPS). Bản debug cho phép HTTP tới `localhost` và `10.0.2.2`; mọi địa chỉ khác phải là HTTPS.
 
 - Bản đồ: thêm `MAPS_API_KEY=...` vào `local.properties` (khóa Google Cloud bật Maps SDK for Android, giới hạn theo package `com.tripfair.app` và SHA-1 của chứng chỉ ký; xem SHA-1 bằng `./gradlew :app:signingReport`). Chưa có khóa thì app vẫn chạy: chỗ bản đồ hiện ô thông báo, lộ trình hiện sơ đồ chấm tròn.
 
