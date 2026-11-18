@@ -439,17 +439,42 @@ describe('Places, search history and favorites (e2e)', () => {
       expect(res.body.items.map((p: Summary) => p.name)).toEqual(['Asia Park']);
       // The name is searched first (a few pages), then the places near it.
       expect(t.google.searches[0].query).toBe('pham');
-      expect(t.google.searches.at(-1)?.query).toBe('điểm vui chơi gần pham');
-      expect(res.body.nextPageToken).toBe('near:next-page');
+      // Around the place the text names (Phở Hồng comes first), not around the user.
+      const aroundPho = { lat: 16.07, lng: 108.22, radiusMeters: 5000 };
+      expect(t.google.searches.at(-1)).toMatchObject({
+        query: 'điểm vui chơi gần pham',
+        near: aroundPho,
+      });
+      expect(res.body.nextPageToken).toBe('near:16.07,108.22:next-page');
 
-      // The next page goes to the nearby query, with Google's own token.
+      // The next page goes to the nearby query, same center, with Google's own token.
       await get(
-        '/places?q=pham&category=FUN&limit=1&pageToken=near:next-page',
+        `/places?q=pham&category=FUN&limit=1&lat=10.87&lng=106.8&pageToken=${encodeURIComponent(res.body.nextPageToken)}`,
       ).expect(200);
       expect(t.google.searches.at(-1)).toMatchObject({
         query: 'điểm vui chơi gần pham',
         pageToken: 'next-page',
+        near: aroundPho,
       });
+
+      // FOOD searches restaurants only, so the named place is looked up without the
+      // type to find the center.
+      t.google.places = [googleBeach];
+      t.google.placesForQuery.set('quán ăn gần pham', [googlePho]);
+      t.google.searches.length = 0;
+      const food = await get(
+        '/places?q=pham&category=FOOD&lat=10.87&lng=106.8',
+      ).expect(200);
+      expect(food.body.items.map((p: Summary) => p.name)).toEqual(['Phở Hồng']);
+      expect(t.google.searches.at(-1)).toMatchObject({
+        query: 'quán ăn gần pham',
+        near: {
+          lat: googleBeach.lat,
+          lng: googleBeach.lng,
+          radiusMeters: 5000,
+        },
+      });
+      t.google.places = [googlePho, googleBeach];
 
       // A category the name itself matches is searched once, as typed.
       t.google.searches.length = 0;
