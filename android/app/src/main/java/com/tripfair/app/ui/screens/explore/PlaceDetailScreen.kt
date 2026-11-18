@@ -116,6 +116,7 @@ private fun PlaceContent(
     val colors = MaterialTheme.colorScheme
     PlacePlaceholder(
         category = place.category,
+        imageUrl = place.imageUrl,
         iconSize = 56,
         modifier = Modifier
             .fillMaxWidth()

@@ -64,6 +64,7 @@ describe('toGooglePlace', () => {
       ],
       summary: null,
       mapsUri: 'https://maps.google.com/?cid=1',
+      photo: null,
     });
   });
 });

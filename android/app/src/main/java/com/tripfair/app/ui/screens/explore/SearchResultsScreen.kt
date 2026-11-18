@@ -257,6 +257,7 @@ private fun ResultRow(
     ) {
         PlacePlaceholder(
             category = place.category,
+            imageUrl = place.imageUrl,
             modifier = Modifier
                 .size(width = 72.dp, height = 64.dp)
                 .clip(MaterialTheme.shapes.extraSmall),

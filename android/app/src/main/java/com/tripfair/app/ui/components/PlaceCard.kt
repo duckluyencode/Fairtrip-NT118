@@ -28,6 +28,7 @@ fun PlaceCard(
     category: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    imageUrl: String? = null,
 ) {
     Column(
         modifier = modifier
@@ -36,7 +37,7 @@ fun PlaceCard(
             .clickable(role = Role.Button, onClick = onClick),
         verticalArrangement = Arrangement.spacedBy(9.dp),
     ) {
-        PlacePlaceholder(category = category, modifier = Modifier.fillMaxWidth().height(112.dp))
+        PlacePlaceholder(category = category, imageUrl = imageUrl, modifier = Modifier.fillMaxWidth().height(112.dp))
         Column(
             modifier = Modifier.padding(start = 12.dp, end = 12.dp, bottom = 12.dp),
             verticalArrangement = Arrangement.spacedBy(3.dp),

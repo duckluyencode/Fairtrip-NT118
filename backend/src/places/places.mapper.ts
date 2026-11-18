@@ -106,6 +106,14 @@ export function catalogDetail(
   });
 }
 
+/**
+ * Where the app loads a Google photo: this API's photo route, relative to /api/v1/. The
+ * route needs the user's token, so the Google key and the photo quota stay behind it.
+ */
+export function googlePhotoPath(name: string): string {
+  return `places/photo?name=${encodeURIComponent(name)}`;
+}
+
 export function googleSummary(
   id: number,
   place: GooglePlace,
@@ -124,7 +132,7 @@ export function googleSummary(
     categories,
     rating: place.rating,
     ratingCount: place.ratingCount,
-    imageUrl: null,
+    imageUrl: place.photo ? googlePhotoPath(place.photo) : null,
     location,
     distanceKm: distanceFrom(origin, location),
     isFavorite,
