@@ -98,6 +98,17 @@ export class FakeGooglePlacesClient extends GooglePlacesClient {
     );
   }
 
+  /** Every photo asked for, to check the route. */
+  readonly photos: string[] = [];
+
+  photoUri(name: string): Promise<string> {
+    if (!this.enabled) {
+      return Promise.reject(new Error('Google is disabled in this test'));
+    }
+    this.photos.push(name);
+    return Promise.resolve(`https://photos.example/${name}`);
+  }
+
   getPlace(placeId: string): Promise<GooglePlace | null> {
     if (!this.enabled) {
       return Promise.reject(new Error('Google is disabled in this test'));

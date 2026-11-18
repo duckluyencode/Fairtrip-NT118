@@ -24,6 +24,8 @@ const LIST_FIELDS = [
   'types',
   'rating',
   'userRatingCount',
+  // Same Text Search SKU as rating; only the photos a screen shows are billed (photoUri).
+  'photos',
 ];
 const SEARCH_FIELDS = [
   ...LIST_FIELDS.map((f) => `places.${f}`),
@@ -57,6 +59,7 @@ const PLACE_DETAIL_FIELDS = [
   ...DETAIL_FIELDS,
   'editorialSummary',
   'googleMapsUri',
+  'photos',
 ].join(',');
 
 interface Money {
@@ -85,6 +88,7 @@ interface ApiPlace {
   };
   editorialSummary?: { text?: string };
   googleMapsUri?: string;
+  photos?: { name?: string }[];
   /** The place's offset from UTC now, e.g. 420 in Vietnam. */
   utcOffsetMinutes?: number;
 }
@@ -169,6 +173,7 @@ export function toGooglePlace(place: ApiPlace, now = new Date()): GooglePlace {
       : null,
     summary: place.editorialSummary?.text ?? null,
     mapsUri: place.googleMapsUri ?? null,
+    photo: place.photos?.[0]?.name ?? null,
   };
 }
 
@@ -295,6 +300,36 @@ export class HttpGooglePlacesClient extends GooglePlacesClient {
       throw unavailable();
     }
     return toGooglePlace((await res.json()) as ApiPlace);
+  }
+
+  async photoUri(name: string, maxWidthPx: number): Promise<string> {
+    if (!this.apiKey) {
+      throw unavailable();
+    }
+    // skipHttpRedirect: Google answers with the photo's address instead of the image, so
+    // the app loads it straight from Google and never sees the key.
+    const params = new URLSearchParams({
+      maxWidthPx: String(maxWidthPx),
+      skipHttpRedirect: 'true',
+    });
+    try {
+      const res = await fetch(
+        `${BASE_URL}/${name}/media?${params.toString()}`,
+        {
+          headers: { 'X-Goog-Api-Key': this.apiKey },
+          signal: AbortSignal.timeout(TIMEOUT_MS),
+        },
+      );
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}: ${await res.text()}`);
+      }
+      const { photoUri } = (await res.json()) as { photoUri?: string };
+      if (!photoUri) throw new Error('no photoUri');
+      return photoUri;
+    } catch (error) {
+      this.logger.warn(`Google photo failed: ${String(error)}`);
+      throw unavailable();
+    }
   }
 
   private async post<T>(

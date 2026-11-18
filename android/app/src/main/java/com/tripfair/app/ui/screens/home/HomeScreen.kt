@@ -134,6 +134,7 @@ fun HomeScreen(
                             name = place.name,
                             detail = place.rating?.let { stringResource(R.string.place_card_detail, ratingText(it), category) } ?: category,
                             category = place.category,
+                            imageUrl = place.imageUrl,
                             onClick = { onPlace(place.id) },
                             modifier = Modifier.weight(1f),
                         )

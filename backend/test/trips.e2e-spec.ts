@@ -66,6 +66,7 @@ function googlePlace(
     weeklyHours: everyDay({ allDay: true }),
     summary: null,
     mapsUri: null,
+    photo: null,
     ...extra,
   };
 }
