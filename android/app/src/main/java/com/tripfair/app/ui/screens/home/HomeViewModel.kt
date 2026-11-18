@@ -6,6 +6,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tripfair.app.data.network.ApiResult
+import com.tripfair.app.data.places.HistoryEntryDto
 import com.tripfair.app.data.places.PlaceSummaryDto
 import com.tripfair.app.data.places.PlacesRepository
 import com.tripfair.app.data.trips.TripSummaryDto
@@ -24,6 +25,18 @@ class HomeViewModel(private val places: PlacesRepository, private val trips: Tri
     var upcomingTrip by mutableStateOf<TripSummaryDto?>(null)
         private set
 
+    /** The last searches, newest first. */
+    var recentSearches by mutableStateOf<List<HistoryEntryDto>>(emptyList())
+        private set
+
+    /** Called each time the home screen shows, so a search just made appears. */
+    fun loadRecentSearches() {
+        viewModelScope.launch {
+            val result = places.history()
+            if (result is ApiResult.Success) recentSearches = result.value.take(RECENT_SEARCHES)
+        }
+    }
+
     init {
         viewModelScope.launch {
             // Browsing without text: the catalog in development; Google needs the position.
@@ -36,3 +49,6 @@ class HomeViewModel(private val places: PlacesRepository, private val trips: Tri
         }
     }
 }
+
+/** How many past searches the home screen lists. */
+const val RECENT_SEARCHES = 5
