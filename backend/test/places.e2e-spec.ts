@@ -35,6 +35,7 @@ const googlePho: GooglePlace = {
   })),
   summary: null,
   mapsUri: 'https://maps.google.com/?cid=1',
+  photo: 'places/google-pho-hong/photos/AbC_1-2',
 };
 
 const googleBeach: GooglePlace = {
@@ -42,6 +43,7 @@ const googleBeach: GooglePlace = {
   id: 'google-pham-van-dong-beach',
   name: 'Bãi biển Phạm Văn Đồng',
   types: ['beach'],
+  photo: null,
   priceLevel: null,
   todayHours: { allDay: true },
   weeklyHours: Array.from({ length: 7 }, () => ({ allDay: true as const })),
@@ -486,6 +488,30 @@ describe('Places, search history and favorites (e2e)', () => {
       expect(
         history.body.items.every((h: { query: string }) => h.query === 'pham'),
       ).toBe(true);
+    });
+
+    it('serves Google photos through the API without the key', async () => {
+      const search = await get('/places?q=pho').expect(200);
+      const pho = search.body.items.find((p: Summary) => p.name === 'Phở Hồng');
+      expect(pho.imageUrl).toBe(
+        'places/photo?name=places%2Fgoogle-pho-hong%2Fphotos%2FAbC_1-2',
+      );
+      // Places without a photo keep the category icon in the app.
+      const beach = await get('/places?q=pham&category=SCENIC').expect(200);
+      expect(beach.body.items[0].imageUrl).toBeNull();
+
+      // imageUrl is relative to /api/v1: the app adds its base address.
+      const photo = await get(`/${pho.imageUrl}`).expect(302);
+      expect(photo.headers.location).toBe(
+        'https://photos.example/places/google-pho-hong/photos/AbC_1-2',
+      );
+
+      // Only Google photo names, and only for signed-in users.
+      await get('/places/photo?name=https://evil.example/x').expect(400);
+      await api().get(`/api/v1/${pho.imageUrl}`).expect(401);
+      expect(t.google.photos).toEqual([
+        'places/google-pho-hong/photos/AbC_1-2',
+      ]);
     });
 
     it('suggests Google places while typing', async () => {

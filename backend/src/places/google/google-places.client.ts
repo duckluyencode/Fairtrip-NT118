@@ -27,6 +27,8 @@ export interface GooglePlace {
   weeklyHours: (DayHours | null)[] | null;
   summary: string | null;
   mapsUri: string | null;
+  /** Resource name of the first photo (places/<id>/photos/<ref>); null without photos. */
+  photo: string | null;
 }
 
 export interface TextSearchRequest {
@@ -80,4 +82,9 @@ export abstract class GooglePlacesClient {
     sessionToken?: string,
     fields?: PlaceFields,
   ): Promise<GooglePlace | null>;
+  /**
+   * A short-lived address of a photo (no API key in it), for a resource name from
+   * GooglePlace.photo. Each call is a billed Place Photo.
+   */
+  abstract photoUri(name: string, maxWidthPx: number): Promise<string>;
 }

@@ -35,6 +35,8 @@ const SUGGESTION_LIMIT = 5;
 // Text used to browse places around the user when there is no search text.
 const DISCOVER_QUERY = 'điểm tham quan';
 const NEAR_RADIUS_METERS = 30_000;
+// Wide enough for the place screen's header on a phone, small enough to load fast.
+const PHOTO_WIDTH_PX = 800;
 // Google pages read at most per search when the category filter leaves a page empty.
 const MAX_EXTRA_PAGES = 2;
 // What a category means next to a searched name: "<this> gần <name>".
@@ -242,6 +244,11 @@ export class PlacesService {
           ? nearbyToken(nearbyCenter, nextPageToken)
           : nextPageToken,
     };
+  }
+
+  /** A short-lived Google address for a place photo, sized for cards and the place screen. */
+  photoUri(name: string): Promise<string> {
+    return this.google.photoUri(name, PHOTO_WIDTH_PX);
   }
 
   /**

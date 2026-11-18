@@ -54,6 +54,9 @@ android {
 }
 
 dependencies {
+    // Place photos from Google, loaded through the API with the user's token.
+    implementation(libs.coil.compose)
+    implementation(libs.coil.network.okhttp)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)

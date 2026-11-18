@@ -9,6 +9,7 @@ import {
   IsString,
   IsUUID,
   Max,
+  Matches,
   MaxLength,
   Min,
   ValidateIf,
@@ -86,4 +87,13 @@ export class CategoryQuery {
   @IsOptional()
   @IsIn(Object.values(PlaceCategory))
   category?: PlaceCategory;
+}
+
+/** A Google photo resource name, as GooglePlace.photo gives it. */
+export class PlacePhotoQuery {
+  @IsString()
+  @MaxLength(1000)
+  // Only Google place photos: the key is never sent anywhere else.
+  @Matches(/^places\/[A-Za-z0-9_-]+\/photos\/[A-Za-z0-9_-]+$/)
+  name: string;
 }
