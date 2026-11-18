@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Release builds: HTTPS only. The debug build overrides this file (src/debug/res/xml). -->
+<!-- HTTPS only, debug builds included: the app always talks to the team's shared server. -->
 <network-security-config>
     <base-config cleartextTrafficPermitted="false" />
 </network-security-config>

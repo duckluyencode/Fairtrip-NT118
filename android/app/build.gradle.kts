@@ -19,10 +19,9 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        // Backend address, set as tripfair.apiBaseUrl in local.properties (not committed).
-        // The default is a backend on this computer, reached after `adb reverse tcp:3000 tcp:3000`
-        // (emulator or USB phone). Android 17 blocks apps from LAN addresses such as 10.0.2.2
-        // unless they hold the local network permission; loopback is not affected.
+        // Backend address. The default is the team's shared server, so the app runs without a
+        // backend on the developer's computer; tripfair.apiBaseUrl in local.properties (not
+        // committed) overrides it. HTTPS only (res/xml/network_security_config.xml).
         val localProperties = Properties().apply {
             rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use(::load)
         }
