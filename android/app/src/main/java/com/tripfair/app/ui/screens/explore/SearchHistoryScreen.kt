@@ -48,6 +48,12 @@ import java.time.format.DateTimeFormatter
 private val DayFormat = DateTimeFormatter.ofPattern("dd/MM/yyyy")
 private val TimeFormat = DateTimeFormatter.ofPattern("HH:mm")
 
+/** When a search was made, local time: "HH:mm" for today, the date for older ones. */
+internal fun searchedAtLabel(entry: HistoryEntryDto, zone: ZoneId = ZoneId.systemDefault()): String {
+    val at = Instant.parse(entry.searchedAt).atZone(zone)
+    return if (at.toLocalDate() == LocalDate.now(zone)) at.format(TimeFormat) else at.format(DayFormat)
+}
+
 @Composable
 fun SearchHistoryRoute(
     onBack: () -> Unit,
@@ -151,8 +157,9 @@ fun SearchHistoryScreen(
     }
 }
 
+/** One past search; without [onRemove] (the home screen) the row has no remove button. */
 @Composable
-private fun HistoryRow(entry: HistoryEntryDto, time: String, onClick: () -> Unit, onRemove: () -> Unit) {
+internal fun HistoryRow(entry: HistoryEntryDto, time: String, onClick: () -> Unit, onRemove: (() -> Unit)? = null) {
     val colors = MaterialTheme.colorScheme
     val filter = entry.category?.let { stringResource(categoryLabel(it)) } ?: stringResource(R.string.filter_all)
     Column {
@@ -184,13 +191,15 @@ private fun HistoryRow(entry: HistoryEntryDto, time: String, onClick: () -> Unit
                 )
                 Text(text = "$filter · $time", style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant)
             }
-            IconButton(onClick = onRemove) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_x),
-                    contentDescription = stringResource(R.string.cd_clear),
-                    tint = colors.onSurfaceVariant,
-                    modifier = Modifier.size(16.dp),
-                )
+            if (onRemove != null) {
+                IconButton(onClick = onRemove) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_x),
+                        contentDescription = stringResource(R.string.cd_clear),
+                        tint = colors.onSurfaceVariant,
+                        modifier = Modifier.size(16.dp),
+                    )
+                }
             }
         }
         HorizontalDivider(thickness = 1.dp, color = colors.outline)

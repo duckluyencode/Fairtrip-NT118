@@ -1,5 +1,8 @@
 package com.tripfair.app.ui.components
 
+import com.tripfair.app.BuildConfig
+import androidx.compose.ui.layout.ContentScale
+import coil3.compose.AsyncImage
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -71,7 +74,7 @@ fun EmptyState(text: String, modifier: Modifier = Modifier) {
  * request and need an image loader), so the category's icon is shown instead.
  */
 @Composable
-fun PlacePlaceholder(category: String, modifier: Modifier = Modifier, iconSize: Int = 24) {
+fun PlacePlaceholder(category: String, modifier: Modifier = Modifier, iconSize: Int = 24, imageUrl: String? = null) {
     val colors = MaterialTheme.colorScheme
     val (background, tint, icon) = when (category) {
         "FOOD" -> Triple(colors.tertiaryContainer, colors.tertiary, R.drawable.ic_utensils)
@@ -80,5 +83,17 @@ fun PlacePlaceholder(category: String, modifier: Modifier = Modifier, iconSize: 
     }
     Box(modifier = modifier.background(background), contentAlignment = Alignment.Center) {
         Icon(painter = painterResource(icon), contentDescription = null, tint = tint, modifier = Modifier.size(iconSize.dp))
+        // The icon stays underneath while the photo loads, and when there is none.
+        imageUrl?.let {
+            AsyncImage(
+                model = apiUrl(it),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.matchParentSize(),
+            )
+        }
     }
 }
+
+/** imageUrl from the backend is relative to /api/v1/ (its photo route) unless it is a full address. */
+fun apiUrl(path: String): String = if (path.startsWith("http")) path else BuildConfig.API_BASE_URL + path

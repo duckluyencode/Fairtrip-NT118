@@ -162,6 +162,7 @@ private fun SavedPlaceCard(place: PlaceSummaryDto, onClick: () -> Unit, onUnsave
     ) {
         PlacePlaceholder(
             category = place.category,
+            imageUrl = place.imageUrl,
             modifier = Modifier
                 .size(width = 86.dp, height = 92.dp)
                 .clip(MaterialTheme.shapes.extraSmall),

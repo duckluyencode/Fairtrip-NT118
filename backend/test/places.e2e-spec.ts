@@ -35,6 +35,7 @@ const googlePho: GooglePlace = {
   })),
   summary: null,
   mapsUri: 'https://maps.google.com/?cid=1',
+  photo: 'places/google-pho-hong/photos/AbC_1-2',
 };
 
 const googleBeach: GooglePlace = {
@@ -42,6 +43,7 @@ const googleBeach: GooglePlace = {
   id: 'google-pham-van-dong-beach',
   name: 'Bãi biển Phạm Văn Đồng',
   types: ['beach'],
+  photo: null,
   priceLevel: null,
   todayHours: { allDay: true },
   weeklyHours: Array.from({ length: 7 }, () => ({ allDay: true as const })),
@@ -439,17 +441,42 @@ describe('Places, search history and favorites (e2e)', () => {
       expect(res.body.items.map((p: Summary) => p.name)).toEqual(['Asia Park']);
       // The name is searched first (a few pages), then the places near it.
       expect(t.google.searches[0].query).toBe('pham');
-      expect(t.google.searches.at(-1)?.query).toBe('điểm vui chơi gần pham');
-      expect(res.body.nextPageToken).toBe('near:next-page');
+      // Around the place the text names (Phở Hồng comes first), not around the user.
+      const aroundPho = { lat: 16.07, lng: 108.22, radiusMeters: 5000 };
+      expect(t.google.searches.at(-1)).toMatchObject({
+        query: 'điểm vui chơi gần pham',
+        near: aroundPho,
+      });
+      expect(res.body.nextPageToken).toBe('near:16.07,108.22:next-page');
 
-      // The next page goes to the nearby query, with Google's own token.
+      // The next page goes to the nearby query, same center, with Google's own token.
       await get(
-        '/places?q=pham&category=FUN&limit=1&pageToken=near:next-page',
+        `/places?q=pham&category=FUN&limit=1&lat=10.87&lng=106.8&pageToken=${encodeURIComponent(res.body.nextPageToken)}`,
       ).expect(200);
       expect(t.google.searches.at(-1)).toMatchObject({
         query: 'điểm vui chơi gần pham',
         pageToken: 'next-page',
+        near: aroundPho,
       });
+
+      // FOOD searches restaurants only, so the named place is looked up without the
+      // type to find the center.
+      t.google.places = [googleBeach];
+      t.google.placesForQuery.set('quán ăn gần pham', [googlePho]);
+      t.google.searches.length = 0;
+      const food = await get(
+        '/places?q=pham&category=FOOD&lat=10.87&lng=106.8',
+      ).expect(200);
+      expect(food.body.items.map((p: Summary) => p.name)).toEqual(['Phở Hồng']);
+      expect(t.google.searches.at(-1)).toMatchObject({
+        query: 'quán ăn gần pham',
+        near: {
+          lat: googleBeach.lat,
+          lng: googleBeach.lng,
+          radiusMeters: 5000,
+        },
+      });
+      t.google.places = [googlePho, googleBeach];
 
       // A category the name itself matches is searched once, as typed.
       t.google.searches.length = 0;
@@ -461,6 +488,30 @@ describe('Places, search history and favorites (e2e)', () => {
       expect(
         history.body.items.every((h: { query: string }) => h.query === 'pham'),
       ).toBe(true);
+    });
+
+    it('serves Google photos through the API without the key', async () => {
+      const search = await get('/places?q=pho').expect(200);
+      const pho = search.body.items.find((p: Summary) => p.name === 'Phở Hồng');
+      expect(pho.imageUrl).toBe(
+        'places/photo?name=places%2Fgoogle-pho-hong%2Fphotos%2FAbC_1-2',
+      );
+      // Places without a photo keep the category icon in the app.
+      const beach = await get('/places?q=pham&category=SCENIC').expect(200);
+      expect(beach.body.items[0].imageUrl).toBeNull();
+
+      // imageUrl is relative to /api/v1: the app adds its base address.
+      const photo = await get(`/${pho.imageUrl}`).expect(302);
+      expect(photo.headers.location).toBe(
+        'https://photos.example/places/google-pho-hong/photos/AbC_1-2',
+      );
+
+      // Only Google photo names, and only for signed-in users.
+      await get('/places/photo?name=https://evil.example/x').expect(400);
+      await api().get(`/api/v1/${pho.imageUrl}`).expect(401);
+      expect(t.google.photos).toEqual([
+        'places/google-pho-hong/photos/AbC_1-2',
+      ]);
     });
 
     it('suggests Google places while typing', async () => {

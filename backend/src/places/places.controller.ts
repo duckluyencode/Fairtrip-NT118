@@ -1,9 +1,17 @@
-import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  ParseIntPipe,
+  Query,
+  Redirect,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { CurrentUser, type AuthUser } from '../auth/auth.decorators.js';
 import {
   PlaceDetailQuery,
+  PlacePhotoQuery,
   SearchPlacesQuery,
   SuggestionsQuery,
 } from './dto/place.query.js';
@@ -35,6 +43,16 @@ export class PlacesController {
   @Get('suggestions')
   suggestions(@Query() query: SuggestionsQuery): Promise<PlaceSuggestion[]> {
     return this.places.suggestions(query);
+  }
+
+  /**
+   * Redirects to a Google photo of a place (from `imageUrl`). Each call is a billed
+   * Google Place Photo, so the app caches the image.
+   */
+  @Get('photo')
+  @Redirect()
+  async photo(@Query() query: PlacePhotoQuery): Promise<{ url: string }> {
+    return { url: await this.places.photoUri(query.name) };
   }
 
   /** Details with price, opening hours and visit time. */

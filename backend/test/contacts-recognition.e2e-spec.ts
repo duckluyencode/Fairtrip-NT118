@@ -28,6 +28,7 @@ const DRAGON_BRIDGE: GooglePlace = {
   weeklyHours: null,
   summary: null,
   mapsUri: null,
+  photo: null,
 };
 
 describe('Emergency contacts and photo recognition (e2e)', () => {

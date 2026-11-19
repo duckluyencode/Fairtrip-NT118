@@ -17,6 +17,7 @@ import { googleCategories } from './google/google-categories.js';
 import {
   GooglePlacesClient,
   type GooglePlace,
+  type TextSearchRequest,
 } from './google/google-places.client.js';
 import {
   catalogDetail,
@@ -34,6 +35,8 @@ const SUGGESTION_LIMIT = 5;
 // Text used to browse places around the user when there is no search text.
 const DISCOVER_QUERY = 'điểm tham quan';
 const NEAR_RADIUS_METERS = 30_000;
+// Wide enough for the place screen's header on a phone, small enough to load fast.
+const PHOTO_WIDTH_PX = 800;
 // Google pages read at most per search when the category filter leaves a page empty.
 const MAX_EXTRA_PAGES = 2;
 // What a category means next to a searched name: "<this> gần <name>".
@@ -43,6 +46,26 @@ const NEARBY_QUERY: Record<PlaceCategory, string> = {
   SCENIC: 'điểm tham quan',
 };
 const NEARBY_TOKEN_PREFIX = 'near:';
+// "Near" a named place means walking or a short ride, not the user's whole city.
+const NEARBY_RADIUS_METERS = 5_000;
+
+function nearbyToken(center: LatLng | null, token: string): string {
+  return `${NEARBY_TOKEN_PREFIX}${center ? `${center.lat},${center.lng}` : ''}:${token}`;
+}
+
+/** Reads nearbyToken's output; a malformed token pages without a center. */
+function parseNearbyToken(value: string): {
+  center: LatLng | null;
+  token: string;
+} {
+  const rest = value.slice(NEARBY_TOKEN_PREFIX.length);
+  const split = rest.indexOf(':');
+  if (split < 0) return { center: null, token: rest };
+  const [lat, lng] = rest.slice(0, split).split(',').map(Number);
+  const center =
+    Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
+  return { center, token: rest.slice(split + 1) };
+}
 
 export function placeNotFound(): AppError {
   return new AppError(
@@ -116,16 +139,20 @@ export class PlacesService {
       googleCategories(place.types).categories.includes(query.category);
     // Google cannot filter FUN or SCENIC itself, so a page may hold none of them: read
     // a few more pages before answering with an empty one.
-    const run = async (searchText: string, pageToken: string | undefined) => {
+    const run = async (
+      searchText: string,
+      pageToken: string | undefined,
+      near: TextSearchRequest['near'],
+    ) => {
       const request = {
         query: searchText,
         pageSize: query.limit,
         includedType: query.category === 'FOOD' ? 'restaurant' : undefined,
-        near: origin
-          ? { ...origin, radiusMeters: NEAR_RADIUS_METERS }
-          : undefined,
+        near,
       };
       let result = await this.google.search({ ...request, pageToken });
+      // What the text itself names (e.g. Cầu Rồng), before the category filter.
+      const top = result.places[0];
       let places = result.places.filter(inCategory);
       for (
         let extra = 0;
@@ -138,7 +165,7 @@ export class PlacesService {
         });
         places = result.places.filter(inCategory);
       }
-      return { places, nextPageToken: result.nextPageToken };
+      return { places, nextPageToken: result.nextPageToken, top };
     };
     // A name with a category ("Cầu Rồng" + FOOD) finds the place itself, which the
     // filter then removes. The category then means "places of this kind near it".
@@ -146,20 +173,61 @@ export class PlacesService {
       text && query.category
         ? `${NEARBY_QUERY[query.category]} gần ${text}`
         : null;
-    // Google only accepts a page token with the query that produced it, so the token
-    // of a nearby search is marked.
-    let nearby = Boolean(
-      nearbyText && query.pageToken?.startsWith(NEARBY_TOKEN_PREFIX),
-    );
-    let { places: found, nextPageToken } = await run(
-      nearby && nearbyText ? nearbyText : text || DISCOVER_QUERY,
-      nearby
-        ? query.pageToken?.slice(NEARBY_TOKEN_PREFIX.length)
-        : query.pageToken,
-    );
-    if (found.length === 0 && nearbyText && !query.pageToken) {
-      nearby = true;
-      ({ places: found, nextPageToken } = await run(nearbyText, undefined));
+    const aroundUser = origin
+      ? { ...origin, radiusMeters: NEAR_RADIUS_METERS }
+      : undefined;
+    // Google only accepts a page token with the request that produced it, so the token
+    // of a nearby search carries its center: "near:<lat>,<lng>:<Google's token>".
+    const nearbyPage =
+      nearbyText && query.pageToken?.startsWith(NEARBY_TOKEN_PREFIX)
+        ? parseNearbyToken(query.pageToken)
+        : null;
+    let nearbyCenter: LatLng | null = null;
+    let found: GooglePlace[];
+    let nextPageToken: string | null;
+    if (nearbyText && nearbyPage) {
+      nearbyCenter = nearbyPage.center;
+      ({ places: found, nextPageToken } = await run(
+        nearbyText,
+        nearbyPage.token,
+        nearbyCenter
+          ? { ...nearbyCenter, radiusMeters: NEARBY_RADIUS_METERS }
+          : undefined,
+      ));
+    } else {
+      const first = await run(
+        text || DISCOVER_QUERY,
+        query.pageToken,
+        aroundUser,
+      );
+      ({ places: found, nextPageToken } = first);
+      if (found.length === 0 && nearbyText && !query.pageToken) {
+        // Around the place the text names, not around the user: "quán ăn gần Cầu Rồng"
+        // asked from Hồ Chí Minh City must not list restaurants in Hồ Chí Minh City.
+        // FOOD searched restaurants only, so the place itself was not in the answer:
+        // look it up without the type.
+        const named =
+          query.category === 'FOOD'
+            ? (
+                await this.google.search({
+                  query: text!,
+                  pageSize: 1,
+                  near: aroundUser,
+                })
+              ).places[0]
+            : first.top;
+        nearbyCenter =
+          named?.lat != null && named.lng != null
+            ? { lat: named.lat, lng: named.lng }
+            : (origin ?? null);
+        ({ places: found, nextPageToken } = await run(
+          nearbyText,
+          undefined,
+          nearbyCenter
+            ? { ...nearbyCenter, radiusMeters: NEARBY_RADIUS_METERS }
+            : undefined,
+        ));
+      }
     }
     const ids = await this.storeGoogleIds(found.map((place) => place.id));
     return {
@@ -172,10 +240,15 @@ export class PlacesService {
       // Google does not say how many results there are; follow nextPageToken instead.
       total: null,
       nextPageToken:
-        nearby && nextPageToken
-          ? NEARBY_TOKEN_PREFIX + nextPageToken
+        nearbyText && nextPageToken && (nearbyPage || nearbyCenter)
+          ? nearbyToken(nearbyCenter, nextPageToken)
           : nextPageToken,
     };
+  }
+
+  /** A short-lived Google address for a place photo, sized for cards and the place screen. */
+  photoUri(name: string): Promise<string> {
+    return this.google.photoUri(name, PHOTO_WIDTH_PX);
   }
 
   /**

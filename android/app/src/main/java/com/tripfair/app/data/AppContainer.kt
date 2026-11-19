@@ -38,6 +38,9 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import coil3.ImageLoader
+import coil3.network.okhttp.OkHttpNetworkFetcherFactory
+import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 
 /**
@@ -60,12 +63,22 @@ class AppContainer(context: Context) {
     }
 
     // Everything else: the access token is added, and refreshed on 401.
-    private val retrofit: Retrofit by lazy {
-        val client = ApiClient.httpClient(
+    private val authedClient: OkHttpClient by lazy {
+        ApiClient.httpClient(
             interceptors = listOf(AuthInterceptor(session)),
             authenticator = TokenAuthenticator(session, publicRetrofit.create(RefreshApi::class.java)),
         )
-        ApiClient.retrofit(BuildConfig.API_BASE_URL, client)
+    }
+    private val retrofit: Retrofit by lazy { ApiClient.retrofit(BuildConfig.API_BASE_URL, authedClient) }
+
+    /**
+     * Loads place photos. The photo route needs the access token; OkHttp drops it when the
+     * route redirects to Google, and Coil keeps the images in its memory and disk caches.
+     */
+    val imageLoader: ImageLoader by lazy {
+        ImageLoader.Builder(appContext)
+            .components { add(OkHttpNetworkFetcherFactory(callFactory = { authedClient })) }
+            .build()
     }
 
     val authApi: AuthApi by lazy { publicRetrofit.create(AuthApi::class.java) }

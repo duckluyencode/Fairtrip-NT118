@@ -213,11 +213,15 @@ private fun TripFairNavHost(container: AppContainer, startSignedIn: Boolean) {
             // Main tabs
             entry<Home> {
                 val home: HomeViewModel = viewModel(factory = AppViewModelProvider.Factory)
+                // Runs each time Home comes back on top, so a search just made shows up.
+                LaunchedEffect(Unit) { home.loadRecentSearches() }
                 HomeScreen(
                     userName = account?.fullName.orEmpty(),
                     suggestions = home.suggestions,
                     upcomingTrip = home.upcomingTrip,
+                    recentSearches = home.recentSearches,
                     onSearch = { backStack.add(Search) },
+                    onRecentSearch = { query -> backStack.add(SearchResults(query)) },
                     onSos = { backStack.add(Sos) },
                     onCamera = { backStack.add(CameraScan) },
                     onTrip = openTrip,
