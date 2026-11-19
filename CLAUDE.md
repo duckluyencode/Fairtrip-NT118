@@ -30,7 +30,7 @@ README.md
 ## Lệnh thường dùng
 - Android: xem [android/CLAUDE.md](android/CLAUDE.md).
 - Backend: xem [backend/CLAUDE.md](backend/CLAUDE.md).
-- Database trên máy: `docker compose up -d` trong `backend/` (MySQL 8.4), chi tiết trong backend/CLAUDE.md.
+- Backend và database chạy trên server chung (EC2 + RDS, https://3-24-16-117.sslip.io); không chạy trên máy cá nhân. Thay đổi backend được kiểm tra bằng CI trên GitHub.
 
 ## Cách làm việc với tôi
 - Kế hoạch và tiến độ theo dõi ở [docs/roadmap.md](docs/roadmap.md). Đầu mỗi task, nói rõ task thuộc bước nào trong roadmap. PR của bước nào thì cập nhật luôn trạng thái, ngày xong, việc còn lại và nhật ký của bước đó trong cùng PR. Kế hoạch thay đổi thì sửa roadmap trước rồi mới làm.
@@ -88,7 +88,7 @@ README.md
 - 2026-11-04: Giá điểm không có vé đối tác: `priceRange` của Google → loại điểm thường miễn phí (bãi biển, công viên, chùa, cầu…) = 0đ ước tính → bảng quy đổi theo price_level → mức mặc định theo nhóm. Điểm nằm trong khu có bán vé (vd. Le Jardin trong Bà Nà Hills) dùng giá vé của khu; trong lộ trình tính 0đ nếu vé khu đã có trong lộ trình.
 - 2026-11-05: Dữ liệu người dùng thật chỉ nằm trên AWS (RDS); database trên máy chỉ dùng để phát triển và chạy test. Làm B1–B4 trước A8. Backend đóng gói thành hai image Docker: API và migration (`backend/Dockerfile`).
 - 2026-11-10: Bản đồ trong app dùng Google Maps SDK qua maps-compose 8.3.1 (bản mới nhất còn build bằng Kotlin 2.3, đọc được bởi Kotlin 2.2.10 của dự án) và vị trí qua play-services-location 21.4.0. Khóa Android đặt trong `android/local.properties` (`MAPS_API_KEY`), khóa server trong `backend/.env` (`GOOGLE_MAPS_API_KEY`); hai khóa tách riêng và giới hạn theo đúng API.
-- 2026-11-10 (sửa 2026-11-18): Cả nhóm cùng phát triển và sửa app, nên app (kể cả bản debug) mặc định gọi server chung trên EC2 qua HTTPS (`https://3-24-16-117.sslip.io/api/v1/`), không cần backend trên máy hay `adb reverse`; bản debug không còn cho phép HTTP. Server chung hiện cũng là production (dữ liệu thử lẫn dữ liệu thật); khi có người dùng thật thì tách thêm server staging cho nhóm. Người sửa backend vẫn chạy backend và MySQL trên máy mình để thử (danh mục mẫu, không cần khóa Google), mở PR qua CI; chỉ bản đã merge vào `main` mới được deploy, không sửa trực tiếp trên server. Khóa Google server chỉ giới hạn theo IP của EC2.
+- 2026-11-10 (sửa 2026-11-18): Cả nhóm cùng phát triển và sửa app, nên app (kể cả bản debug) mặc định gọi server chung trên EC2 qua HTTPS (`https://3-24-16-117.sslip.io/api/v1/`), không cần backend trên máy hay `adb reverse`; bản debug không còn cho phép HTTP. Server chung hiện cũng là production (dữ liệu thử lẫn dữ liệu thật); khi có người dùng thật thì tách thêm server staging cho nhóm. Không chạy backend hay MySQL trên máy cá nhân: thay đổi backend đi qua nhánh và PR, được CI kiểm tra (lint, build, unit test và e2e test với MySQL trong GitHub Actions), merge vào `main` rồi mới deploy lên server chung; không sửa code trực tiếp trên server. Khóa Google server chỉ giới hạn theo IP của EC2.
 - 2026-11-10: SOS gửi tin bằng cách mở ứng dụng tin nhắn của máy với người nhận và nội dung (tên, liên kết bản đồ, tọa độ) soạn sẵn, không dùng `SmsManager`: Android 17 từ chối app không phải ứng dụng SMS dù đã cấp quyền `SEND_SMS`, và cách này không cần quyền nào.
 - 2026-11-10: Nhận diện ảnh chụp bằng ứng dụng camera của máy hoặc chọn bằng bộ chọn ảnh của hệ thống (không cần quyền camera, không thêm CameraX), rồi gửi lên `POST /places/recognize`.
 

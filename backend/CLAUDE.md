@@ -1,6 +1,7 @@
 # Backend (NestJS)
 
 API server cho app Android TripFair: xác thực, nguồn giá, thuật toán lộ trình và truy cập MySQL.
+Nhóm không chạy backend hay MySQL trên máy cá nhân: backend chạy trên server chung (EC2 + RDS), mọi thay đổi được CI kiểm tra qua PR rồi deploy sau khi merge vào `main` (xem [CLAUDE.md gốc](../CLAUDE.md)). Các lệnh chạy trên máy bên dưới (`start:dev`, `docker compose`, `test:e2e`) là cách CI và người viết code dùng để tái hiện lỗi, không phải môi trường làm việc chung.
 NestJS 12 + TypeScript (ESM), chạy trên Node.js 24 LTS. Quy tắc chung của dự án nằm ở [CLAUDE.md gốc](../CLAUDE.md).
 
 ## Lệnh thường dùng (chạy trong `backend/`)
